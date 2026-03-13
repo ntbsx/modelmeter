@@ -1,0 +1,35 @@
+from __future__ import annotations
+
+import json
+import tomllib
+from pathlib import Path
+
+from modelmeter.common.version import get_product_version
+from modelmeter.config.settings import AppSettings
+
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parent.parent
+
+
+def _pyproject_version(root: Path) -> str:
+    pyproject = tomllib.loads((root / "pyproject.toml").read_text())
+    version = pyproject["project"]["version"]
+    assert isinstance(version, str)
+    return version
+
+
+def test_runtime_product_version_matches_pyproject() -> None:
+    root = _project_root()
+    expected = _pyproject_version(root)
+
+    assert get_product_version() == expected
+    assert AppSettings().app_version == expected
+
+
+def test_frontend_version_matches_pyproject() -> None:
+    root = _project_root()
+    expected = _pyproject_version(root)
+    web_package = json.loads((root / "web" / "package.json").read_text())
+
+    assert web_package["version"] == expected

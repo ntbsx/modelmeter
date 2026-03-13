@@ -87,8 +87,30 @@ make test
 # Regenerate web API types from FastAPI OpenAPI
 make gen-types
 
+# Keep frontend + backend product versions aligned
+make version-sync
+make version-check
+
 # Validate generated API types are up to date
 npm run --prefix web check:types
+```
+
+## Versioning
+
+ModelMeter uses a **single product version** for backend, CLI, and frontend.
+
+- Canonical source: `pyproject.toml` (`[project].version`)
+- Frontend version in `web/package.json` must match backend version
+- Runtime backend version is resolved from package metadata/project config (no separate hardcoded version)
+
+Common version commands:
+
+```bash
+# Sync frontend version to backend version
+make version-sync
+
+# Check backend/frontend versions are aligned (non-zero exit on mismatch)
+make version-check
 ```
 
 ### Web App (Local Dev)

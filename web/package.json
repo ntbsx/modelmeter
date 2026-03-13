@@ -1,13 +1,15 @@
 {
   "name": "web",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "version:sync": "uv run python ../scripts/sync_product_version.py",
+    "version:check": "uv run python ../scripts/sync_product_version.py --check",
     "gen:types": "uv run python ../scripts/export_openapi.py ./openapi.json && openapi-typescript ./openapi.json -o ./src/generated/api.ts && uv run python ../scripts/write_openapi_hash.py ./openapi.json ./src/generated/openapi.sha256",
     "check:types": "npm run gen:types && git diff --exit-code -- src/generated/api.ts src/generated/openapi.sha256"
   },

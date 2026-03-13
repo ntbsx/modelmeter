@@ -7,6 +7,8 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from modelmeter.common.version import get_product_version
+
 
 class AppSettings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -14,7 +16,7 @@ class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="MODELMETER_", extra="ignore")
 
     app_name: str = "modelmeter"
-    app_version: str = "0.1.0"
+    app_version: str = Field(default_factory=get_product_version)
     opencode_data_dir: Path = Field(default=Path.home() / ".local" / "share" / "opencode")
     opencode_db_path: Path | None = None
     pricing_file: Path | None = None
