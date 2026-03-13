@@ -16,7 +16,6 @@ class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="MODELMETER_", extra="ignore")
 
     app_name: str = "modelmeter"
-    app_version: str = Field(default_factory=get_product_version)
     opencode_data_dir: Path = Field(default=Path.home() / ".local" / "share" / "opencode")
     opencode_db_path: Path | None = None
     pricing_file: Path | None = None
@@ -24,3 +23,7 @@ class AppSettings(BaseSettings):
     pricing_remote_url: str = "https://models.dev/api.json"
     pricing_remote_timeout_seconds: int = Field(default=8, ge=1, le=60)
     pricing_cache_ttl_hours: int = Field(default=24, ge=1, le=168)
+
+    @property
+    def app_version(self) -> str:
+        return get_product_version()
