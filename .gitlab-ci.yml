@@ -11,7 +11,7 @@ cache:
     - .cache/uv
 
 before_script:
-  - apt-get update && apt-get install -y --no-install-recommends libatomic1 make && rm -rf /var/lib/apt/lists/*
+  - apt-get update && apt-get install -y --no-install-recommends libatomic1 make git && rm -rf /var/lib/apt/lists/*
   - pip install uv==$UV_VERSION
   - uv sync --frozen --all-groups
 
@@ -95,15 +95,17 @@ release_publish:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v\d{4}\.\d{1,2}\.\d{1,2}$/'
   script:
-    - apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
-    - VERSION="${CI_COMMIT_TAG#v}"
-    - WHEEL_FILE="modelmeter-${VERSION}-py3-none-any.whl"
-    - SDIST_FILE="modelmeter-${VERSION}.tar.gz"
-    - WHEEL_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/modelmeter/${CI_COMMIT_TAG}/${WHEEL_FILE}"
-    - SDIST_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/modelmeter/${CI_COMMIT_TAG}/${SDIST_FILE}"
-    - curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "dist/${WHEEL_FILE}" "${WHEEL_URL}"
-    - curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "dist/${SDIST_FILE}" "${SDIST_URL}"
     - |
+      apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+      VERSION="${CI_COMMIT_TAG#v}"
+      WHEEL_FILE="modelmeter-${VERSION}-py3-none-any.whl"
+      SDIST_FILE="modelmeter-${VERSION}.tar.gz"
+      WHEEL_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/modelmeter/${CI_COMMIT_TAG}/${WHEEL_FILE}"
+      SDIST_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/modelmeter/${CI_COMMIT_TAG}/${SDIST_FILE}"
+
+      curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "dist/${WHEEL_FILE}" "${WHEEL_URL}"
+      curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "dist/${SDIST_FILE}" "${SDIST_URL}"
+
       RELEASE_PAYLOAD="$(cat <<EOF
       {
         \"name\": \"ModelMeter ${CI_COMMIT_TAG}\",
@@ -118,12 +120,14 @@ release_publish:
       }
       EOF
       )"
+
       STATUS_CODE=$(curl --silent --output /tmp/release.json --write-out "%{http_code}" \
         --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
         --header "Content-Type: application/json" \
         --data "${RELEASE_PAYLOAD}" \
         --request POST \
         "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases")
+
       if [ "${STATUS_CODE}" = "201" ]; then
         echo "Release created for ${CI_COMMIT_TAG}."
       elif [ "${STATUS_CODE}" = "409" ]; then
