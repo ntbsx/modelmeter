@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { fetchApi } from '../lib/api'
@@ -5,11 +6,14 @@ import { formatTokens, formatUsd } from '../lib/utils'
 import type { ProjectsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
+import TimeRangeFilter from '../components/TimeRangeFilter'
 
 export default function Projects() {
+  const [days, setDays] = useState<1 | 7 | 30 | 90>(7)
+
   const { data, isLoading } = useQuery<ProjectsResponse>({
-    queryKey: ['projects'],
-    queryFn: () => fetchApi('/projects', { days: 7 })
+    queryKey: ['projects', days],
+    queryFn: () => fetchApi('/projects', { days })
   })
 
   if (isLoading) return <PageLoading title="Projects" subtitle="Loading project usage" cards={3} />
@@ -25,8 +29,15 @@ export default function Projects() {
   return (
     <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Projects</h1>
-        <p className="text-gray-500 dark:text-gray-400">Usage breakdown by project workspace (last 7 days)</p>
+        <div className="flex justify-between items-end gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Projects</h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              Usage breakdown by project workspace ({days === 1 ? 'last 24 hours' : `last ${days} days`})
+            </p>
+          </div>
+          <TimeRangeFilter days={days} onChange={setDays} />
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">

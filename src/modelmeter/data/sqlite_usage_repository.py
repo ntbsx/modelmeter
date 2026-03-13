@@ -32,6 +32,14 @@ class SQLiteUsageRepository:
             [cutoff_ms],
         )
 
+    @staticmethod
+    def _day_bucket_expr(*, time_expr: str, timezone_offset_minutes: int = 0) -> str:
+        if timezone_offset_minutes == 0:
+            return f"date({time_expr} / 1000, 'unixepoch')"
+
+        offset_modifier = f"{timezone_offset_minutes:+d} minutes"
+        return f"date({time_expr} / 1000, 'unixepoch', '{offset_modifier}')"
+
     def fetch_summary(self, *, days: int | None = None) -> sqlite3.Row:
         """Fetch aggregate usage totals and distinct session count."""
         time_filter, params = self._time_filter(
@@ -77,12 +85,21 @@ class SQLiteUsageRepository:
                 return 0
             return int(row["total_sessions"])
 
-    def fetch_daily_session_counts(self, *, days: int | None = None) -> dict[str, int]:
+    def fetch_daily_session_counts(
+        self,
+        *,
+        days: int | None = None,
+        timezone_offset_minutes: int = 0,
+    ) -> dict[str, int]:
         """Fetch sessions created per day in the selected window."""
         time_filter, params = self._time_filter(days, time_expr="time_created")
+        day_expr = self._day_bucket_expr(
+            time_expr="time_created",
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
         query = f"""
             SELECT
-                date(time_created / 1000, 'unixepoch') AS day,
+                {day_expr} AS day,
                 COUNT(*) AS total_sessions
             FROM session
             WHERE 1=1
@@ -121,15 +138,24 @@ class SQLiteUsageRepository:
                 raise RuntimeError("Step summary query returned no row")
             return row
 
-    def fetch_daily(self, *, days: int | None = None) -> list[sqlite3.Row]:
+    def fetch_daily(
+        self,
+        *,
+        days: int | None = None,
+        timezone_offset_minutes: int = 0,
+    ) -> list[sqlite3.Row]:
         """Fetch daily usage aggregates ordered by day ascending."""
         time_filter, params = self._time_filter(
             days,
             time_expr="json_extract(data, '$.time.created')",
         )
+        day_expr = self._day_bucket_expr(
+            time_expr="json_extract(data, '$.time.created')",
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
         query = f"""
             SELECT
-                date(json_extract(data, '$.time.created') / 1000, 'unixepoch') AS day,
+                {day_expr} AS day,
                 COUNT(DISTINCT session_id) AS total_sessions,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.input'), 0) > 0
                     THEN json_extract(data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
@@ -151,12 +177,21 @@ class SQLiteUsageRepository:
         with self._connect() as conn:
             return conn.execute(query, params).fetchall()
 
-    def fetch_daily_steps(self, *, days: int | None = None) -> list[sqlite3.Row]:
+    def fetch_daily_steps(
+        self,
+        *,
+        days: int | None = None,
+        timezone_offset_minutes: int = 0,
+    ) -> list[sqlite3.Row]:
         """Fetch daily usage aggregates from step-finish parts."""
         time_filter, params = self._time_filter(days, time_expr="time_created")
+        day_expr = self._day_bucket_expr(
+            time_expr="time_created",
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
         query = f"""
             SELECT
-                date(time_created / 1000, 'unixepoch') AS day,
+                {day_expr} AS day,
                 COUNT(DISTINCT session_id) AS total_sessions,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.input'), 0) > 0
                     THEN json_extract(data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
@@ -239,15 +274,24 @@ class SQLiteUsageRepository:
         with self._connect() as conn:
             return conn.execute(query, params).fetchall()
 
-    def fetch_daily_model_usage(self, *, days: int | None = None) -> list[sqlite3.Row]:
+    def fetch_daily_model_usage(
+        self,
+        *,
+        days: int | None = None,
+        timezone_offset_minutes: int = 0,
+    ) -> list[sqlite3.Row]:
         """Fetch token usage grouped by day and model."""
         time_filter, params = self._time_filter(
             days,
             time_expr="json_extract(data, '$.time.created')",
         )
+        day_expr = self._day_bucket_expr(
+            time_expr="json_extract(data, '$.time.created')",
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
         query = f"""
             SELECT
-                date(json_extract(data, '$.time.created') / 1000, 'unixepoch') AS day,
+                {day_expr} AS day,
                 COALESCE(
                     json_extract(data, '$.modelID'),
                     json_extract(data, '$.model.modelID'),

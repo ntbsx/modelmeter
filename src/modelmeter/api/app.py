@@ -13,7 +13,13 @@ from typing import Literal, NoReturn
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    RedirectResponse,
+    Response,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 
 from modelmeter.config.settings import AppSettings
@@ -173,6 +179,7 @@ def create_app(
     @app.get("/api/daily", response_model=DailyResponse)
     def daily(
         days: int | None = Query(default=7, ge=1),
+        timezone_offset_minutes: int = Query(default=0, ge=-840, le=840),
         token_source: Literal["auto", "message", "steps"] = Query(default="auto"),
         session_source: Literal["auto", "activity", "session"] = Query(default="auto"),
         db_path: str | None = Query(default=None),
@@ -182,6 +189,7 @@ def create_app(
             return get_daily(
                 settings=settings,
                 days=days,
+                timezone_offset_minutes=timezone_offset_minutes,
                 token_source=token_source,
                 session_count_source=session_source,
                 db_path_override=_optional_path(db_path),
@@ -347,6 +355,13 @@ def create_app(
     web_dist = local_web_dist if local_web_dist.exists() else packaged_web_dist
     if web_dist.exists():
         app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
+
+        @app.get("/favicon.svg", include_in_schema=False)
+        async def serve_favicon() -> FileResponse:
+            favicon_path = web_dist / "favicon.svg"
+            if not favicon_path.exists():
+                raise HTTPException(status_code=404, detail="Favicon not found")
+            return FileResponse(favicon_path, media_type="image/svg+xml")
 
         @app.get("/{full_path:path}", include_in_schema=False)
         async def serve_spa(full_path: str):

@@ -1125,6 +1125,18 @@
           },
           {
             "in": "query",
+            "name": "timezone_offset_minutes",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 840,
+              "minimum": -840,
+              "title": "Timezone Offset Minutes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
             "name": "token_source",
             "required": false,
             "schema": {

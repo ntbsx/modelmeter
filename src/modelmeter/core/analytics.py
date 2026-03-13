@@ -106,6 +106,7 @@ def get_daily(
     *,
     settings: AppSettings,
     days: int | None = None,
+    timezone_offset_minutes: int = 0,
     db_path_override: Path | None = None,
     pricing_file_override: Path | None = None,
     token_source: Literal["auto", "message", "steps"] = "auto",
@@ -120,19 +121,28 @@ def get_daily(
         session_count_source=session_count_source,
     )
     if resolved_source == "steps":
-        rows = repository.fetch_daily_steps(days=days)
+        rows = repository.fetch_daily_steps(
+            days=days,
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
         summary_row = repository.fetch_summary_steps(days=days)
     else:
-        rows = repository.fetch_daily(days=days)
+        rows = repository.fetch_daily(days=days, timezone_offset_minutes=timezone_offset_minutes)
         summary_row = repository.fetch_summary(days=days)
 
-    daily_session_counts = repository.fetch_daily_session_counts(days=days)
+    daily_session_counts = repository.fetch_daily_session_counts(
+        days=days,
+        timezone_offset_minutes=timezone_offset_minutes,
+    )
     if resolved_session_source == "session":
         total_sessions = repository.fetch_session_count(days=days)
     else:
         total_sessions = int(summary_row["total_sessions"])
 
-    daily_model_rows = repository.fetch_daily_model_usage(days=days)
+    daily_model_rows = repository.fetch_daily_model_usage(
+        days=days,
+        timezone_offset_minutes=timezone_offset_minutes,
+    )
 
     pricing_book, pricing_source = load_pricing_book(
         settings=settings,

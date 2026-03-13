@@ -1,14 +1,18 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { ModelsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
+import TimeRangeFilter from '../components/TimeRangeFilter'
 
 export default function Models() {
+  const [days, setDays] = useState<1 | 7 | 30 | 90>(7)
+
   const { data, isLoading } = useQuery<ModelsResponse>({
-    queryKey: ['models'],
-    queryFn: () => fetchApi('/models', { days: 7 })
+    queryKey: ['models', days],
+    queryFn: () => fetchApi('/models', { days })
   })
 
   if (isLoading) return <PageLoading title="Models" subtitle="Loading model usage" cards={3} />
@@ -24,8 +28,15 @@ export default function Models() {
   return (
     <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Models</h1>
-        <p className="text-gray-500 dark:text-gray-400">Usage breakdown by model (last 7 days)</p>
+        <div className="flex justify-between items-end gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Models</h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              Usage breakdown by model ({days === 1 ? 'last 24 hours' : `last ${days} days`})
+            </p>
+          </div>
+          <TimeRangeFilter days={days} onChange={setDays} />
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">

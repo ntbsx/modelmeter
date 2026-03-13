@@ -16,8 +16,7 @@ import type { DailyResponse, SummaryResponse } from '../types'
 import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
-
-const RANGE_OPTIONS = [7, 30, 90] as const
+import TimeRangeFilter from '../components/TimeRangeFilter'
 
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
   return (
@@ -30,10 +29,11 @@ function StatCard({ title, value, subtitle }: { title: string, value: string, su
 }
 
 export default function Overview() {
-  const [days, setDays] = useState<(typeof RANGE_OPTIONS)[number]>(7)
+  const [days, setDays] = useState<1 | 7 | 30 | 90>(7)
   const [showTokens, setShowTokens] = useState(true)
   const [showSessions, setShowSessions] = useState(true)
   const [showCost, setShowCost] = useState(true)
+  const timezoneOffsetMinutes = -new Date().getTimezoneOffset()
 
   const { theme } = useTheme()
   const isDark =
@@ -47,7 +47,7 @@ export default function Overview() {
 
   const { data: daily, isLoading: loadingDaily } = useQuery<DailyResponse>({
     queryKey: ['daily', days],
-    queryFn: () => fetchApi('/daily', { days })
+    queryFn: () => fetchApi('/daily', { days, timezone_offset_minutes: timezoneOffsetMinutes })
   })
 
   if (loadingSummary || loadingDaily) {
@@ -64,7 +64,8 @@ export default function Overview() {
   }
 
   const chartData = daily.daily.map((entry) => {
-      const parsed = new Date(entry.day)
+      const [year, month, day] = entry.day.split('-').map(Number)
+      const parsed = new Date(year, (month || 1) - 1, day || 1)
       return {
         date: parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
         tokens: entry.usage.total_tokens,
@@ -92,27 +93,11 @@ export default function Overview() {
       <div className="flex justify-between items-end mb-6 sm:mb-8">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Overview</h1>
-          <p className="text-gray-500 dark:text-gray-400">Last {days} days of OpenCode usage</p>
+          <p className="text-gray-500 dark:text-gray-400">
+            {days === 1 ? 'Last 24 hours' : `Last ${days} days`} of OpenCode usage
+          </p>
         </div>
-        <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-1 gap-1">
-          {RANGE_OPTIONS.map((option) => {
-            const active = option === days
-            return (
-              <button
-                key={option}
-                className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors ${
-                  active
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
-                onClick={() => setDays(option)}
-                type="button"
-              >
-                {option}d
-              </button>
-            )
-          })}
-        </div>
+        <TimeRangeFilter days={days} onChange={setDays} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

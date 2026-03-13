@@ -4,6 +4,7 @@ import base64
 import json
 import sqlite3
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
@@ -110,6 +111,64 @@ def _create_api_fixture(db_path: Path) -> None:
         )
 
 
+def _create_daily_boundary_fixture(db_path: Path) -> None:
+    boundary_ms = int(datetime(2026, 3, 13, 18, 30, tzinfo=UTC).timestamp() * 1000)
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            "CREATE TABLE session ("
+            "id TEXT PRIMARY KEY, "
+            "project_id TEXT, "
+            "title TEXT, "
+            "directory TEXT, "
+            "time_created INTEGER, "
+            "time_updated INTEGER, "
+            "time_archived INTEGER"
+            ")"
+        )
+        conn.execute("CREATE TABLE project (id TEXT PRIMARY KEY, worktree TEXT, name TEXT)")
+        conn.execute(
+            "CREATE TABLE message ("
+            "id TEXT PRIMARY KEY, "
+            "session_id TEXT, "
+            "time_created INTEGER, "
+            "time_updated INTEGER, "
+            "data TEXT"
+            ")"
+        )
+        conn.execute(
+            "CREATE TABLE part ("
+            "id TEXT PRIMARY KEY, "
+            "message_id TEXT, "
+            "session_id TEXT, "
+            "time_created INTEGER, "
+            "time_updated INTEGER, "
+            "data TEXT"
+            ")"
+        )
+        conn.execute(
+            "INSERT INTO session "
+            "(id, project_id, title, directory, time_created, time_updated, time_archived) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("s1", "p1", "Boundary Session", "/tmp/boundary", boundary_ms, boundary_ms, None),
+        )
+
+        payload = {
+            "role": "assistant",
+            "modelID": "openai/gpt-5",
+            "time": {"created": boundary_ms},
+            "tokens": {
+                "input": 10,
+                "output": 5,
+                "cache": {"read": 0, "write": 0},
+            },
+        }
+        conn.execute(
+            "INSERT INTO message "
+            "(id, session_id, time_created, time_updated, data) VALUES (?, ?, ?, ?, ?)",
+            ("m1", "s1", boundary_ms, boundary_ms, json.dumps(payload)),
+        )
+
+
 def test_health_endpoint() -> None:
     client = _new_client()
     response = client.get("/health")
@@ -202,6 +261,33 @@ def test_project_detail_not_found_returns_404(tmp_path: Path) -> None:
     )
 
     assert response.status_code == 404
+
+
+def test_daily_endpoint_uses_timezone_offset_for_day_buckets(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_daily_boundary_fixture(db_path)
+
+    client = _new_client()
+    utc_response = client.get(
+        "/api/daily",
+        params={"db_path": str(db_path), "days": 7, "token_source": "message"},
+    )
+    assert utc_response.status_code == 200
+    utc_payload = _get_json(utc_response)
+    assert utc_payload["daily"][0]["day"] == "2026-03-13"
+
+    local_response = client.get(
+        "/api/daily",
+        params={
+            "db_path": str(db_path),
+            "days": 7,
+            "token_source": "message",
+            "timezone_offset_minutes": 420,
+        },
+    )
+    assert local_response.status_code == 200
+    local_payload = _get_json(local_response)
+    assert local_payload["daily"][0]["day"] == "2026-03-14"
 
 
 def test_live_snapshot_endpoint(tmp_path: Path) -> None:

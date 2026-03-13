@@ -676,6 +676,7 @@ export interface operations {
         parameters: {
             query?: {
                 days?: number | null;
+                timezone_offset_minutes?: number;
                 token_source?: "auto" | "message" | "steps";
                 session_source?: "auto" | "activity" | "session";
                 db_path?: string | null;
