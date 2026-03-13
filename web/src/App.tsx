@@ -1,15 +1,17 @@
+import { Suspense, lazy } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Activity, BarChart2, FolderGit2, Cpu } from 'lucide-react'
-import Overview from './pages/Overview'
-import Models from './pages/Models'
-import Projects from './pages/Projects'
-import ProjectDetail from './pages/ProjectDetail'
-import Live from './pages/Live'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 
 const queryClient = new QueryClient()
+
+const Overview = lazy(() => import('./pages/Overview'))
+const Models = lazy(() => import('./pages/Models'))
+const Projects = lazy(() => import('./pages/Projects'))
+const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
+const Live = lazy(() => import('./pages/Live'))
 
 type HealthResponse = {
   status: string
@@ -126,19 +128,24 @@ function App() {
                   ModelMeter
                 </div>
                 <div className="flex items-center gap-3">
-                  <VersionBadge className="text-xs text-gray-400 dark:text-gray-500" />
                   <ThemeToggle />
                 </div>
               </header>
               <MobileNav />
               <main className="flex-1 bg-gray-50/20 dark:bg-gray-900/20 transition-colors duration-200">
-                <Routes>
-                  <Route path="/" element={<Overview />} />
-                  <Route path="/models" element={<Models />} />
-                  <Route path="/projects" element={<Projects />} />
-                  <Route path="/projects/:projectId" element={<ProjectDetail />} />
-                  <Route path="/live" element={<Live />} />
-                </Routes>
+                <Suspense
+                  fallback={
+                    <div className="px-4 py-6 sm:p-8 text-gray-500 dark:text-gray-400">Loading page...</div>
+                  }
+                >
+                  <Routes>
+                    <Route path="/" element={<Overview />} />
+                    <Route path="/models" element={<Models />} />
+                    <Route path="/projects" element={<Projects />} />
+                    <Route path="/projects/:projectId" element={<ProjectDetail />} />
+                    <Route path="/live" element={<Live />} />
+                  </Routes>
+                </Suspense>
               </main>
             </div>
           </div>
