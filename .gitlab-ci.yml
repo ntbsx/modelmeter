@@ -1,0 +1,39 @@
+image: python:3.12-slim
+
+variables:
+  UV_VERSION: "0.5.0"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
+
+cache:
+  paths:
+    - .cache/pip
+    - .cache/uv
+
+before_script:
+  - pip install uv==$UV_VERSION
+  - uv sync --frozen
+
+stages:
+  - test
+
+lint:
+  stage: test
+  script:
+    - uv run ruff format --check
+    - uv run ruff check
+
+typecheck:
+  stage: test
+  script:
+    - uv run pyright
+
+pytest:
+  stage: test
+  script:
+    - uv run pytest --cov=src/modelmeter --cov-report=xml
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml

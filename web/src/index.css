@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: var(--color-white);
+  --color-foreground: var(--color-gray-950);
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: system-ui, sans-serif;
+  }
+  
+  .dark body {
+    --color-background: var(--color-gray-950);
+    --color-foreground: var(--color-gray-50);
+  }
+}
