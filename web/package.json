@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "gen:types": "uv run python ../scripts/export_openapi.py ./openapi.json && openapi-typescript ./openapi.json -o ./src/generated/api.ts && uv run python ../scripts/write_openapi_hash.py ./openapi.json ./src/generated/openapi.sha256",
+    "check:types": "npm run gen:types && git diff --exit-code -- src/generated/api.ts src/generated/openapi.sha256"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
@@ -33,6 +35,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "openapi-typescript": "^7.13.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.0"

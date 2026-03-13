@@ -1,36 +1,67 @@
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Activity, Clock, Terminal, Box } from 'lucide-react'
-import { fetchApi } from '../lib/api'
+import { buildApiUrl, fetchApi } from '../lib/api'
 import { formatTokens, formatUsd, cn } from '../lib/utils'
-
-interface LiveSnapshot {
-  generated_at_ms: number
-  window_minutes: number
-  total_interactions: number
-  total_sessions: number
-  usage: { total_tokens: number; input_tokens: number; output_tokens: number }
-  cost_usd: number | null
-  active_session: {
-    session_id: string
-    title: string | null
-    is_active: boolean
-    last_updated_ms: number
-  } | null
-  top_models: Array<{ model_id: string; usage: { total_tokens: number }; cost_usd: number | null }>
-  top_tools: Array<{ tool_name: string; total_calls: number }>
-}
+import type { LiveSnapshotResponse } from '../types'
 
 export default function Live() {
-  const { data, isError } = useQuery<LiveSnapshot>({
+  const [streamData, setStreamData] = useState<LiveSnapshotResponse | null>(null)
+  const [streamMode, setStreamMode] = useState<'connecting' | 'streaming' | 'polling'>('connecting')
+
+  const { data: polledData, isError: pollingError } = useQuery<LiveSnapshotResponse>({
     queryKey: ['live'],
     queryFn: () => fetchApi('/live/snapshot', { window_minutes: 60 }),
-    refetchInterval: 3000 // Poll every 3s
+    refetchInterval: 3000,
+    enabled: streamMode === 'polling',
   })
 
-  if (isError) return <div className="p-8 text-red-500 dark:text-red-400">Failed to load live data.</div>
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
+      setStreamMode('polling')
+      return
+    }
+
+    const eventsUrl = buildApiUrl('/live/events', { window_minutes: 60, interval_seconds: 3 })
+    const source = new window.EventSource(eventsUrl)
+
+    const onSnapshot = (event: MessageEvent<string>) => {
+      try {
+        const parsed = JSON.parse(event.data) as LiveSnapshotResponse
+        setStreamData(parsed)
+        setStreamMode('streaming')
+      } catch {
+        source.close()
+        setStreamMode('polling')
+      }
+    }
+
+    const onError = () => {
+      source.close()
+      setStreamMode('polling')
+    }
+
+    source.addEventListener('live.snapshot', onSnapshot as EventListener)
+    source.addEventListener('live.error', onError)
+    source.onerror = onError
+
+    return () => {
+      source.removeEventListener('live.snapshot', onSnapshot as EventListener)
+      source.removeEventListener('live.error', onError)
+      source.close()
+    }
+  }, [])
+
+  const data = useMemo(() => streamData ?? polledData ?? null, [streamData, polledData])
+
+  if (streamMode === 'polling' && pollingError) {
+    return <div className="p-8 text-red-500 dark:text-red-400">Failed to load live data.</div>
+  }
   if (!data) return <div className="p-8 text-gray-500 dark:text-gray-400">Waiting for heartbeat...</div>
 
   const isActuallyActive = data.active_session?.is_active
+  const transportLabel =
+    streamMode === 'streaming' ? 'Real-time stream' : streamMode === 'polling' ? 'Polling fallback' : 'Connecting...'
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6">
@@ -43,7 +74,7 @@ export default function Live() {
             </span>
             Live Monitoring
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">Rolling 60-minute window</p>
+          <p className="text-gray-500 dark:text-gray-400">Rolling 60-minute window · {transportLabel}</p>
         </div>
       </div>
 

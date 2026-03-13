@@ -1,51 +1,11 @@
-export interface TokenUsage {
-  input_tokens: number
-  output_tokens: number
-  cache_read_tokens: number
-  cache_write_tokens: number
-  total_tokens: number
-}
+import type { components } from './generated/api'
 
-export interface SummaryResponse {
-  usage: TokenUsage
-  total_sessions: number
-  window_days: number | null
-  cost_usd: number | null
-  pricing_source: string | null
-}
-
-export interface DailyUsage {
-  day: string
-  usage: TokenUsage
-  total_sessions: number
-  cost_usd: number | null
-}
-
-export interface DailyResponse {
-  window_days: number | null
-  totals: TokenUsage
-  total_sessions: number
-  total_cost_usd: number | null
-  pricing_source: string | null
-  daily: DailyUsage[]
-}
-
-export interface ModelUsage {
-  model_id: string
-  usage: TokenUsage
-  total_sessions: number
-  total_interactions: number
-  cost_usd: number | null
-  has_pricing: boolean
-}
-
-export interface ModelsResponse {
-  window_days: number | null
-  totals: TokenUsage
-  total_sessions: number
-  total_cost_usd: number | null
-  pricing_source: string | null
-  priced_models: number
-  unpriced_models: number
-  models: ModelUsage[]
-}
+export type TokenUsage = components['schemas']['TokenUsage']
+export type SummaryResponse = components['schemas']['SummaryResponse']
+export type DailyUsage = components['schemas']['DailyUsage']
+export type DailyResponse = components['schemas']['DailyResponse']
+export type ModelUsage = components['schemas']['ModelUsage']
+export type ModelsResponse = components['schemas']['ModelsResponse']
+export type ProjectUsage = components['schemas']['ProjectUsage']
+export type ProjectsResponse = components['schemas']['ProjectsResponse']
+export type LiveSnapshotResponse = components['schemas']['LiveSnapshotResponse']

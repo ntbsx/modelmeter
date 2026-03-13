@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import os
 import time
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated, Literal
 
 import typer
+import uvicorn
 from rich.columns import Columns
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 from rich.table import Table
 
+from modelmeter.api.app import create_app
 from modelmeter.common.formatting import (
     format_pricing_source_human,
     format_tokens_human,
@@ -745,6 +748,37 @@ def live(
                 previous = snapshot
         except KeyboardInterrupt:
             return
+
+
+@app.command()
+def serve(
+    port: Annotated[
+        int,
+        typer.Option("--port", help="Port to listen on"),
+    ] = 8000,
+    host: Annotated[
+        str,
+        typer.Option("--host", help="Host to listen on"),
+    ] = "127.0.0.1",
+    cors: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--cors",
+            help="Additional browser origin to allow (repeatable).",
+        ),
+    ] = None,
+) -> None:
+    """Run the web dashboard server."""
+    server_password = os.getenv("MODELMETER_SERVER_PASSWORD")
+    server_username = os.getenv("MODELMETER_SERVER_USERNAME") or "modelmeter"
+    app_instance = create_app(
+        extra_cors_origins=cors,
+        server_username=server_username,
+        server_password=server_password,
+    )
+
+    typer.echo(f"Starting server at http://{host}:{port}")
+    uvicorn.run(app_instance, host=host, port=port, log_level="warning")
 
 
 def main() -> None:

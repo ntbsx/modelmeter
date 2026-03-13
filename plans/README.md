@@ -19,6 +19,7 @@ This folder contains feature-sliced plans for building ModelMeter (OpenCode usag
 - [x] `07-web-app-plan.md`
 - [x] `08-packaging-quality-observability.md`
 - [ ] `09-future-extensions.md`
+- [ ] `10-server-parity-contract-live-streaming.md`
 
 Use `00-roadmap-index.md` as the high-level map.
 
@@ -32,6 +33,7 @@ Use `00-roadmap-index.md` as the high-level map.
 - `07-web-app-plan` -> depends on `06`
 - `08-packaging-quality-observability` -> cross-cutting, starts early, finalizes late
 - `09-future-extensions` -> after `04`, `06`, and `07` baseline completion
+- `10-server-parity-contract-live-streaming` -> after `06` and `07`, before or alongside `09`
 
 ## Parallelization Strategy
 After `01` is complete:

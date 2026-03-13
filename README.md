@@ -15,6 +15,7 @@ uv tool install modelmeter
 ## Quick Start
 
 ```bash
+# Terminal Commands
 modelmeter doctor
 modelmeter summary --days 7
 modelmeter daily --days 7
@@ -25,6 +26,16 @@ modelmeter models --days 7
 modelmeter model openai/gpt-5.3-codex --days 7
 modelmeter projects --days 7
 modelmeter live --window-minutes 60
+
+# Web Dashboard
+modelmeter serve --port 8000
+
+# Allow additional web origins (repeatable)
+modelmeter serve --cors http://localhost:5173 --cors https://app.example.com
+
+# Optional basic auth for serve mode
+MODELMETER_SERVER_PASSWORD=your-password modelmeter serve
+MODELMETER_SERVER_USERNAME=custom-user MODELMETER_SERVER_PASSWORD=your-password modelmeter serve
 ```
 
 ## Pricing File
@@ -60,11 +71,20 @@ export MODELMETER_PRICING_CACHE_TTL_HOURS=24
 # Setup both python and node dependencies
 make setup
 
+# Build frontend before serving backend
+cd web && npm run build
+
 # Run quality checks
 make format
 make lint
 make typecheck
 make test
+
+# Regenerate web API types from FastAPI OpenAPI
+make gen-types
+
+# Validate generated API types are up to date
+npm run --prefix web check:types
 ```
 
 ### Web App (Local Dev)
@@ -77,3 +97,6 @@ make dev
 
 Open your browser to `http://localhost:5173`.
 OpenAPI docs are available at `http://127.0.0.1:8000/docs`.
+Server docs alias is also available at `http://127.0.0.1:8000/doc`.
+
+Live web monitoring uses server-sent events at `/api/live/events` and automatically falls back to polling if streaming is unavailable.

@@ -4,18 +4,31 @@
 
 @theme {
   --color-background: var(--color-white);
-  --color-foreground: var(--color-gray-950);
+  --color-foreground: var(--color-zinc-950);
 }
 
 @layer base {
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-family: system-ui, sans-serif;
+  :root {
+    --bg-main: #ffffff;
+    --bg-sidebar: #fcfcfc;
+    --text-main: #09090b;
+    --text-muted: #71717a;
+    --border-subtle: #e4e4e7;
+    --accent: #18181b;
   }
-  
-  .dark body {
-    --color-background: var(--color-gray-950);
-    --color-foreground: var(--color-gray-50);
+
+  .dark {
+    --bg-main: #09090b;
+    --bg-sidebar: #09090b;
+    --text-main: #fafafa;
+    --text-muted: #a1a1aa;
+    --border-subtle: #27272a;
+    --accent: #ffffff;
+  }
+
+  body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: ui-sans-serif, system-ui, sans-serif;
   }
 }

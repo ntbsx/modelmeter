@@ -1,4 +1,4 @@
-.PHONY: dev backend frontend setup test format lint typecheck
+.PHONY: dev backend frontend setup test format lint typecheck gen-types
 
 # Run both backend and frontend concurrently
 dev:
@@ -32,3 +32,6 @@ typecheck:
 
 test:
 	uv run pytest
+
+gen-types:
+	npm run --prefix web gen:types

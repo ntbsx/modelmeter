@@ -27,3 +27,4 @@ Build a cross-platform (macOS + Linux) OpenCode usage monitor with:
 - [x] 7. 07-web-app-plan.md
 - [x] 8. 08-packaging-quality-observability.md
 - [ ] 9. 09-future-extensions.md
+- [ ] 10. 10-server-parity-contract-live-streaming.md

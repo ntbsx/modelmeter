@@ -23,3 +23,11 @@ def test_format_pricing_source_humanized() -> None:
         )
         == "models.dev (cached)"
     )
+
+
+def test_serve_help_includes_cors_option() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["serve", "--help"])
+
+    assert result.exit_code == 0
+    assert "--cors" in result.stdout

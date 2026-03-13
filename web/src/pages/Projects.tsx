@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
+import type { ProjectsResponse } from '../types'
 
 export default function Projects() {
-  const { data, isLoading } = useQuery<any>({
+  const { data, isLoading } = useQuery<ProjectsResponse>({
     queryKey: ['projects'],
     queryFn: () => fetchApi('/projects', { days: 7 })
   })
@@ -30,7 +31,7 @@ export default function Projects() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data.projects.map((p: any) => (
+              {data.projects.map((p) => (
                 <tr key={p.project_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-sm" title={p.project_name}>
