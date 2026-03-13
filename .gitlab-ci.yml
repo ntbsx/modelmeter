@@ -24,6 +24,17 @@ version_check:
   script:
     - make version-check
 
+contract_policy:
+  stage: test
+  script:
+    - |
+      if [ -n "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" ]; then
+        git fetch origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+      elif [ -n "$CI_DEFAULT_BRANCH" ]; then
+        git fetch origin "$CI_DEFAULT_BRANCH"
+      fi
+    - make contract-policy-check
+
 lint:
   stage: test
   script:

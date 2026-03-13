@@ -44,6 +44,7 @@ Primary commands (Makefile):
 - `make version-stamp` stamp CalVer from current date and sync frontend version
 - `make version-sync` sync `web/package.json` version from `pyproject.toml`
 - `make version-check` fail on backend/frontend version mismatch
+- `make contract-policy-check` enforce OpenAPI/version artifact policy
 - `make release-check` run full release-quality checks
 
 Frontend scripts:

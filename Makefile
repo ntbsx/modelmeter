@@ -1,4 +1,4 @@
-.PHONY: dev backend frontend setup test format lint typecheck gen-types version-stamp version-sync version-check release-check package-build package-clean perf-check
+.PHONY: dev backend frontend setup test format lint typecheck gen-types version-stamp version-sync version-check contract-policy-check release-check package-build package-clean perf-check
 
 # Run both backend and frontend concurrently
 dev:
@@ -46,10 +46,14 @@ version-sync:
 version-check:
 	uv run python scripts/sync_product_version.py --check
 
+contract-policy-check:
+	uv run python scripts/check_contract_version_policy.py
+
 release-check:
 	uv run ruff format --check
 	make lint
 	make version-check
+	make contract-policy-check
 	npm run --prefix web lint
 	npm run --prefix web check:types
 	make typecheck

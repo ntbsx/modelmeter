@@ -132,6 +132,9 @@ make version-stamp
 # Check backend/frontend versions are aligned (non-zero exit on mismatch)
 make version-check
 
+# Enforce contract/version policy when OpenAPI changes
+make contract-policy-check
+
 # Full pre-release quality gate
 make release-check
 ```
