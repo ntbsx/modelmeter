@@ -4,6 +4,7 @@ import { Activity, BarChart2, FolderGit2, Cpu } from 'lucide-react'
 import Overview from './pages/Overview'
 import Models from './pages/Models'
 import Projects from './pages/Projects'
+import ProjectDetail from './pages/ProjectDetail'
 import Live from './pages/Live'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
@@ -89,7 +90,7 @@ function App() {
         <BrowserRouter>
           <div className="flex min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
             <Nav />
-            <div className="flex-1 min-w-0 flex flex-col min-h-screen">
+            <div className="flex-1 min-w-0 flex flex-col min-h-screen overflow-x-hidden">
               <header className="h-14 md:h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 flex items-center justify-between md:justify-end px-4 md:px-8 transition-colors duration-200">
                 <div className="md:hidden font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-2">
                   <Activity className="w-5 h-5" />
@@ -103,6 +104,7 @@ function App() {
                   <Route path="/" element={<Overview />} />
                   <Route path="/models" element={<Models />} />
                   <Route path="/projects" element={<Projects />} />
+                  <Route path="/projects/:projectId" element={<ProjectDetail />} />
                   <Route path="/live" element={<Live />} />
                 </Routes>
               </main>

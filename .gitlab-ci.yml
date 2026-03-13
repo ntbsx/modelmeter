@@ -18,6 +18,11 @@ before_script:
 stages:
   - test
 
+version_check:
+  stage: test
+  script:
+    - make version-check
+
 lint:
   stage: test
   script:

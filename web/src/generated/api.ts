@@ -123,6 +123,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Project Detail */
+        get: operations["project_detail_api_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/summary": {
         parameters: {
             query?: never;
@@ -426,6 +443,70 @@ export interface components {
             unpriced_models: number;
             /** Window Days */
             window_days?: number | null;
+        };
+        /**
+         * ProjectDetailResponse
+         * @description Single project detail response contract.
+         */
+        ProjectDetailResponse: {
+            /** Pricing Source */
+            pricing_source?: string | null;
+            /** Project Id */
+            project_id: string;
+            /** Project Name */
+            project_name: string;
+            /** Project Path */
+            project_path?: string | null;
+            /**
+             * Sessions
+             * @default []
+             */
+            sessions: components["schemas"]["ProjectSessionUsage"][];
+            /** Total Cost Usd */
+            total_cost_usd?: number | null;
+            /**
+             * Total Interactions
+             * @default 0
+             */
+            total_interactions: number;
+            /**
+             * Total Sessions
+             * @default 0
+             */
+            total_sessions: number;
+            usage: components["schemas"]["TokenUsage"];
+            /** Window Days */
+            window_days?: number | null;
+        };
+        /**
+         * ProjectSessionUsage
+         * @description Per-session usage row for a project detail view.
+         */
+        ProjectSessionUsage: {
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /** Directory */
+            directory?: string | null;
+            /**
+             * Has Pricing
+             * @default false
+             */
+            has_pricing: boolean;
+            /**
+             * Last Updated Ms
+             * @default 0
+             */
+            last_updated_ms: number;
+            /** Session Id */
+            session_id: string;
+            /** Title */
+            title?: string | null;
+            /**
+             * Total Interactions
+             * @default 0
+             */
+            total_interactions: number;
+            usage: components["schemas"]["TokenUsage"];
         };
         /**
          * ProjectUsage
@@ -809,6 +890,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    project_detail_api_projects__project_id__get: {
+        parameters: {
+            query?: {
+                days?: number | null;
+                db_path?: string | null;
+                pricing_file?: string | null;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectDetailResponse"];
                 };
             };
             /** @description Validation Error */

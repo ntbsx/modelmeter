@@ -15,6 +15,8 @@ from modelmeter.core.models import (
     ModelDetailResponse,
     ModelsResponse,
     ModelUsage,
+    ProjectDetailResponse,
+    ProjectSessionUsage,
     ProjectsResponse,
     ProjectUsage,
     SummaryResponse,
@@ -378,4 +380,87 @@ def get_projects(
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
         pricing_source=pricing_source,
         projects=usage_rows,
+    )
+
+
+def get_project_detail(
+    *,
+    settings: AppSettings,
+    project_id: str,
+    days: int | None = None,
+    db_path_override: Path | None = None,
+    pricing_file_override: Path | None = None,
+) -> ProjectDetailResponse:
+    """Return session-level usage details for one project."""
+    sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
+    repository = SQLiteUsageRepository(sqlite_db_path)
+
+    session_rows = repository.fetch_project_session_usage(project_id=project_id, days=days)
+    if not session_rows:
+        raise RuntimeError(f"No data found for project '{project_id}'.")
+
+    pricing_book, pricing_source = load_pricing_book(
+        settings=settings,
+        pricing_file_override=pricing_file_override,
+    )
+    session_model_rows = repository.fetch_project_session_model_usage(
+        project_id=project_id, days=days
+    )
+
+    session_cost_map: dict[str, float] = {}
+    total_cost_usd: float | None = 0.0 if pricing_book else None
+    for row in session_model_rows:
+        session_id = str(row["session_id"])
+        model_id = str(row["model_id"])
+        pricing = pricing_book.get(model_id)
+        if pricing is None:
+            continue
+
+        cost = calculate_usage_cost(_token_usage_from_row(row), pricing)
+        session_cost_map[session_id] = session_cost_map.get(session_id, 0.0) + cost
+        if total_cost_usd is not None:
+            total_cost_usd += cost
+
+    sessions: list[ProjectSessionUsage] = []
+    total_interactions = 0
+    aggregate_usage = TokenUsage()
+
+    first_row = session_rows[0]
+    project_name = str(first_row["project_name"])
+    project_path = str(first_row["project_path"]) if first_row["project_path"] is not None else None
+
+    for row in session_rows:
+        session_id = str(row["session_id"])
+        usage = _token_usage_from_row(row)
+        total_interactions += int(row["total_interactions"])
+        aggregate_usage.input_tokens += usage.input_tokens
+        aggregate_usage.output_tokens += usage.output_tokens
+        aggregate_usage.cache_read_tokens += usage.cache_read_tokens
+        aggregate_usage.cache_write_tokens += usage.cache_write_tokens
+
+        session_cost = session_cost_map.get(session_id)
+        sessions.append(
+            ProjectSessionUsage(
+                session_id=session_id,
+                title=str(row["title"]) if row["title"] is not None else None,
+                directory=str(row["directory"]) if row["directory"] is not None else None,
+                last_updated_ms=int(row["last_updated_ms"]),
+                usage=usage,
+                total_interactions=int(row["total_interactions"]),
+                cost_usd=round(session_cost, 8) if session_cost is not None else None,
+                has_pricing=session_cost is not None,
+            )
+        )
+
+    return ProjectDetailResponse(
+        project_id=project_id,
+        project_name=project_name,
+        project_path=project_path,
+        window_days=days,
+        usage=aggregate_usage,
+        total_sessions=len(sessions),
+        total_interactions=total_interactions,
+        total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
+        pricing_source=pricing_source,
+        sessions=sessions,
     )

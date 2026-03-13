@@ -111,7 +111,15 @@ make version-sync
 
 # Check backend/frontend versions are aligned (non-zero exit on mismatch)
 make version-check
+
+# Full pre-release quality gate
+make release-check
 ```
+
+Contract policy (no API path versioning yet):
+
+- Backward-compatible API contract changes require at least a minor version bump
+- Breaking API contract changes require a major product version bump
 
 ### Web App (Local Dev)
 

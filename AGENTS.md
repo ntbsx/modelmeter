@@ -43,6 +43,7 @@ Primary commands (Makefile):
 - `make gen-types` regenerate OpenAPI + TS generated types
 - `make version-sync` sync `web/package.json` version from `pyproject.toml`
 - `make version-check` fail on backend/frontend version mismatch
+- `make release-check` run full release-quality checks
 
 Frontend scripts:
 - `npm run --prefix web dev`
@@ -62,6 +63,9 @@ Note: no dedicated frontend unit test runner is configured right now.
 - Use:
   - `make version-sync` to align frontend version to backend version
   - `make version-check` to fail fast when versions diverge
+- Contract policy (no `/api/v1` namespace currently):
+  - backward-compatible API contract changes require at least a minor version bump
+  - breaking API contract changes require a major product version bump
 
 ## 6) Running a Single Test (Important)
 Use targeted pytest while iterating:

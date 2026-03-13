@@ -446,6 +446,93 @@ class SQLiteUsageRepository:
         with self._connect() as conn:
             return conn.execute(query, params).fetchall()
 
+    def fetch_project_session_usage(
+        self,
+        *,
+        project_id: str,
+        days: int | None = None,
+    ) -> list[sqlite3.Row]:
+        """Fetch usage grouped by session for one project."""
+        time_filter, params = self._time_filter(
+            days,
+            time_expr="json_extract(m.data, '$.time.created')",
+        )
+        query = f"""
+            SELECT
+                s.id AS session_id,
+                s.title AS title,
+                s.directory AS directory,
+                COALESCE(s.time_updated, s.time_created, 0) AS last_updated_ms,
+                COALESCE(p.name, p.worktree, s.project_id) AS project_name,
+                p.worktree AS project_path,
+                COUNT(*) AS total_interactions,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.input'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.output'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.output') ELSE 0 END), 0) AS output_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.read'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.cache.read') ELSE 0 END), 0) AS cache_read,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.write'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.cache.write') ELSE 0 END), 0) AS cache_write
+            FROM message m
+            JOIN session s ON s.id = m.session_id
+            LEFT JOIN project p ON p.id = s.project_id
+            WHERE json_valid(m.data) = 1
+              AND json_extract(m.data, '$.role') = 'assistant'
+              AND s.project_id = ?
+              {time_filter}
+            GROUP BY
+                session_id,
+                title,
+                directory,
+                last_updated_ms,
+                project_name,
+                project_path
+            ORDER BY last_updated_ms DESC
+        """
+
+        with self._connect() as conn:
+            return conn.execute(query, [project_id, *params]).fetchall()
+
+    def fetch_project_session_model_usage(
+        self,
+        *,
+        project_id: str,
+        days: int | None = None,
+    ) -> list[sqlite3.Row]:
+        """Fetch model usage grouped by session for one project."""
+        time_filter, params = self._time_filter(
+            days,
+            time_expr="json_extract(m.data, '$.time.created')",
+        )
+        query = f"""
+            SELECT
+                s.id AS session_id,
+                COALESCE(
+                    json_extract(m.data, '$.modelID'),
+                    json_extract(m.data, '$.model.modelID'),
+                    'unknown'
+                ) AS model_id,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.input'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.output'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.output') ELSE 0 END), 0) AS output_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.read'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.cache.read') ELSE 0 END), 0) AS cache_read,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.write'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.cache.write') ELSE 0 END), 0) AS cache_write
+            FROM message m
+            JOIN session s ON s.id = m.session_id
+            WHERE json_valid(m.data) = 1
+              AND json_extract(m.data, '$.role') = 'assistant'
+              AND s.project_id = ?
+              {time_filter}
+            GROUP BY session_id, model_id
+        """
+
+        with self._connect() as conn:
+            return conn.execute(query, [project_id, *params]).fetchall()
+
     def fetch_active_session(self) -> sqlite3.Row | None:
         """Fetch most recently updated non-archived session."""
         query = """

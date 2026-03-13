@@ -4,10 +4,15 @@ import { Activity, Clock, Terminal, Box } from 'lucide-react'
 import { buildApiUrl, fetchApi } from '../lib/api'
 import { formatTokens, formatUsd, cn } from '../lib/utils'
 import type { LiveSnapshotResponse } from '../types'
+import PageLoading from '../components/PageLoading'
 
 export default function Live() {
   const [streamData, setStreamData] = useState<LiveSnapshotResponse | null>(null)
-  const [streamMode, setStreamMode] = useState<'connecting' | 'streaming' | 'polling'>('connecting')
+  const [streamMode, setStreamMode] = useState<'connecting' | 'streaming' | 'polling'>(() =>
+    typeof window !== 'undefined' && typeof window.EventSource !== 'undefined'
+      ? 'connecting'
+      : 'polling'
+  )
 
   const { data: polledData, isError: pollingError } = useQuery<LiveSnapshotResponse>({
     queryKey: ['live'],
@@ -18,7 +23,6 @@ export default function Live() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
-      setStreamMode('polling')
       return
     }
 
@@ -57,14 +61,20 @@ export default function Live() {
   if (streamMode === 'polling' && pollingError) {
     return <div className="px-4 py-6 sm:p-8 text-red-500 dark:text-red-400">Failed to load live data.</div>
   }
-  if (!data) return <div className="px-4 py-6 sm:p-8 text-gray-500 dark:text-gray-400">Waiting for heartbeat...</div>
+  if (!data) {
+    const subtitle =
+      streamMode === 'connecting'
+        ? 'Connecting to real-time stream'
+        : 'Using polling fallback while waiting for first snapshot'
+    return <PageLoading title="Live Monitoring" subtitle={subtitle} cards={3} />
+  }
 
   const isActuallyActive = data.active_session?.is_active
   const transportLabel =
     streamMode === 'streaming' ? 'Real-time stream' : streamMode === 'polling' ? 'Polling fallback' : 'Connecting...'
 
   return (
-    <div className="px-4 py-6 sm:p-8 max-w-5xl mx-auto space-y-6">
+    <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto space-y-6 w-full min-w-0">
       <div className="flex items-center justify-between mb-4 sm:mb-8">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
@@ -114,18 +124,18 @@ export default function Live() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
           <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex items-center gap-2 font-medium text-gray-900 dark:text-gray-100">
             <Box className="w-4 h-4" /> Models
           </div>
           <div className="p-0">
             {data.top_models.map(m => (
-              <div key={m.model_id} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
-                <div className="font-medium text-sm text-gray-900 dark:text-gray-100 min-w-0 truncate">{m.model_id}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{formatTokens(m.usage.total_tokens)}</div>
-              </div>
-            ))}
+                <div key={m.model_id} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
+                  <div className="font-medium text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{m.model_id}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{formatTokens(m.usage.total_tokens)}</div>
+                </div>
+              ))}
             {data.top_models.length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No model activity</div>}
           </div>
         </div>
@@ -136,11 +146,11 @@ export default function Live() {
           </div>
           <div className="p-0">
             {data.top_tools.map(t => (
-              <div key={t.tool_name} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
-                <div className="font-medium text-sm text-gray-900 dark:text-gray-100 min-w-0 truncate">{t.tool_name}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{t.total_calls} calls</div>
-              </div>
-            ))}
+                <div key={t.tool_name} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
+                  <div className="font-medium text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{t.tool_name}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{t.total_calls} calls</div>
+                </div>
+              ))}
             {data.top_tools.length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No tool activity</div>}
           </div>
         </div>

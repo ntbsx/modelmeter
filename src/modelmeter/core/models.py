@@ -118,6 +118,34 @@ class ProjectsResponse(BaseModel):
     projects: list[ProjectUsage] = []
 
 
+class ProjectSessionUsage(BaseModel):
+    """Per-session usage row for a project detail view."""
+
+    session_id: str
+    title: str | None = None
+    directory: str | None = None
+    last_updated_ms: int = Field(default=0, ge=0)
+    usage: TokenUsage
+    total_interactions: int = Field(default=0, ge=0)
+    cost_usd: float | None = None
+    has_pricing: bool = False
+
+
+class ProjectDetailResponse(BaseModel):
+    """Single project detail response contract."""
+
+    project_id: str
+    project_name: str
+    project_path: str | None = None
+    window_days: int | None = Field(default=None, ge=1)
+    usage: TokenUsage
+    total_sessions: int = Field(default=0, ge=0)
+    total_interactions: int = Field(default=0, ge=0)
+    total_cost_usd: float | None = None
+    pricing_source: str | None = None
+    sessions: list[ProjectSessionUsage] = []
+
+
 class LiveModelUsage(BaseModel):
     """Live model usage row."""
 

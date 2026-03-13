@@ -1,9 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { DailyResponse, SummaryResponse } from '../types'
 import { useTheme } from '../components/ThemeProvider'
+import PageLoading from '../components/PageLoading'
 
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
   return (
@@ -17,7 +27,9 @@ function StatCard({ title, value, subtitle }: { title: string, value: string, su
 
 export default function Overview() {
   const { theme } = useTheme()
-  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const isDark =
+    theme === 'dark' ||
+    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const { data: summary, isLoading: loadingSummary } = useQuery<SummaryResponse>({
     queryKey: ['summary'],
@@ -29,13 +41,20 @@ export default function Overview() {
     queryFn: () => fetchApi('/daily', { days: 7 })
   })
 
-  if (loadingSummary || loadingDaily) return <div className="px-4 py-6 sm:p-8 text-gray-500 dark:text-gray-400">Loading...</div>
+  if (loadingSummary || loadingDaily) {
+    return <PageLoading title="Overview" subtitle="Loading usage metrics" cards={4} />
+  }
 
-  const chartData = daily?.daily.map(d => ({
-    date: d.day.slice(5), // MM-DD
-    tokens: d.usage.total_tokens,
-    cost: d.cost_usd || 0
-  })) || []
+  const chartData =
+    daily?.daily.map((entry) => {
+      const parsed = new Date(entry.day)
+      return {
+        date: parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        tokens: entry.usage.total_tokens,
+        cost: entry.cost_usd || 0,
+        sessions: entry.total_sessions,
+      }
+    }) || []
 
   const axisColor = isDark ? '#9ca3af' : '#6b7280'
   const gridColor = isDark ? '#374151' : '#f3f4f6'
@@ -44,7 +63,10 @@ export default function Overview() {
     borderColor: isDark ? '#374151' : '#e5e7eb',
     color: isDark ? '#f9fafb' : '#111827',
   }
-  const cursorColor = isDark ? '#374151' : '#f3f4f6'
+  const avgDailyTokens =
+    chartData.length > 0
+      ? Math.round(chartData.reduce((sum, point) => sum + point.tokens, 0) / chartData.length)
+      : 0
 
   return (
     <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto">
@@ -75,58 +97,91 @@ export default function Overview() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
-        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-          <h3 className="text-lg font-bold mb-6 text-gray-900 dark:text-white">Token Volume</h3>
-          <div className="h-64 sm:h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: axisColor}} />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: axisColor}}
-                  tickFormatter={(val: any) => formatTokens(Number(val))}
-                />
-                <Tooltip 
-                  formatter={(val: any) => [formatTokens(Number(val)), 'Tokens']}
-                  cursor={{fill: cursorColor}}
-                  contentStyle={tooltipContentStyle}
-                />
-                <Bar dataKey="tokens" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Usage Trend</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Tokens, sessions, and spend across the same 7-day window
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Avg Daily Tokens
+            </div>
+            <div className="font-semibold text-gray-900 dark:text-gray-100">
+              {formatTokens(avgDailyTokens)}
+            </div>
           </div>
         </div>
-
-        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-          <h3 className="text-lg font-bold mb-6 text-gray-900 dark:text-white">Cost Spend</h3>
-          <div className="h-64 sm:h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fill: axisColor}} />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{fill: axisColor}}
-                  tickFormatter={(val: any) => '$' + Number(val).toFixed(2)}
-                />
-                <Tooltip 
-                  formatter={(val: any) => [formatUsd(Number(val)), 'Cost']}
-                  contentStyle={tooltipContentStyle}
-                />
-                <Area type="monotone" dataKey="cost" stroke="#10b981" fillOpacity={1} fill="url(#colorCost)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+        <div className="h-[22rem] sm:h-96">
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: axisColor }} />
+              <YAxis
+                yAxisId="left"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: axisColor }}
+                tickFormatter={(value: number | string) => formatTokens(Number(value))}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                axisLine={false}
+                tickLine={false}
+                tick={{ fill: axisColor }}
+                tickFormatter={(value: number | string) => formatUsd(Number(value))}
+              />
+              <Tooltip
+                contentStyle={tooltipContentStyle}
+                formatter={(
+                  value: number | string | readonly (number | string)[] | undefined,
+                  name: string | number | undefined
+                ) => {
+                  const baseValue = Array.isArray(value) ? value[0] : value
+                  const numericValue = Number(baseValue ?? 0)
+                  const seriesName = String(name ?? '')
+                  if (seriesName === 'Cost') {
+                    return [formatUsd(numericValue), 'Cost']
+                  }
+                  if (seriesName === 'Sessions') {
+                    return [numericValue.toLocaleString(), 'Sessions']
+                  }
+                  return [formatTokens(numericValue), 'Tokens']
+                }}
+              />
+              <Bar
+                yAxisId="left"
+                dataKey="sessions"
+                name="Sessions"
+                fill={isDark ? '#334155' : '#cbd5e1'}
+                radius={[4, 4, 0, 0]}
+                maxBarSize={28}
+              />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="tokens"
+                name="Tokens"
+                stroke={isDark ? '#60a5fa' : '#2563eb'}
+                strokeWidth={2.5}
+                dot={{ r: 3, strokeWidth: 0, fill: isDark ? '#93c5fd' : '#3b82f6' }}
+                activeDot={{ r: 5 }}
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="cost"
+                name="Cost"
+                stroke={isDark ? '#34d399' : '#059669'}
+                strokeWidth={2}
+                dot={false}
+                strokeDasharray="5 3"
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </div>

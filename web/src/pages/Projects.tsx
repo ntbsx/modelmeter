@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { ProjectsResponse } from '../types'
+import PageLoading from '../components/PageLoading'
 
 export default function Projects() {
   const { data, isLoading } = useQuery<ProjectsResponse>({
@@ -9,7 +11,7 @@ export default function Projects() {
     queryFn: () => fetchApi('/projects', { days: 7 })
   })
 
-  if (isLoading) return <div className="px-4 py-6 sm:p-8 text-gray-500 dark:text-gray-400">Loading...</div>
+  if (isLoading) return <PageLoading title="Projects" subtitle="Loading project usage" cards={3} />
   if (!data) return <div className="px-4 py-6 sm:p-8 text-red-500 dark:text-red-400">Failed to load projects.</div>
 
   return (
@@ -27,6 +29,7 @@ export default function Projects() {
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium whitespace-nowrap">Project</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Sessions</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Total Tokens</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Interactions</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Cost</th>
               </tr>
             </thead>
@@ -34,21 +37,26 @@ export default function Projects() {
               {data.projects.map((p) => (
                 <tr key={p.project_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
-                    <div className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[12rem] sm:max-w-sm" title={p.project_name}>
+                    <Link
+                      className="font-medium text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 truncate max-w-[12rem] sm:max-w-sm block"
+                      title={p.project_name}
+                      to={`/projects/${encodeURIComponent(p.project_id)}`}
+                    >
                       {p.project_name.split('/').pop() || p.project_name}
-                    </div>
+                    </Link>
                     <div className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[12rem] sm:max-w-sm mt-0.5" title={p.project_path || p.project_id}>
                       {p.project_path || p.project_id}
                     </div>
                   </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{p.total_sessions}</td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">{formatTokens(p.usage.total_tokens)}</td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{p.total_interactions}</td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">{p.cost_usd ? formatUsd(p.cost_usd) : '-'}</td>
                 </tr>
               ))}
               {data.projects.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">No project usage found in this period.</td>
+                  <td colSpan={5} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">No project usage found in this period.</td>
                 </tr>
               )}
             </tbody>

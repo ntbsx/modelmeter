@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { ModelsResponse } from '../types'
+import PageLoading from '../components/PageLoading'
 
 export default function Models() {
   const { data, isLoading } = useQuery<ModelsResponse>({
@@ -9,7 +10,7 @@ export default function Models() {
     queryFn: () => fetchApi('/models', { days: 7 })
   })
 
-  if (isLoading) return <div className="px-4 py-6 sm:p-8 text-gray-500 dark:text-gray-400">Loading...</div>
+  if (isLoading) return <PageLoading title="Models" subtitle="Loading model usage" cards={3} />
   if (!data) return <div className="px-4 py-6 sm:p-8 text-red-500 dark:text-red-400">Failed to load models.</div>
 
   return (

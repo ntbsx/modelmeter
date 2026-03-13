@@ -21,6 +21,7 @@ from modelmeter.core.analytics import (
     get_daily,
     get_model_detail,
     get_models,
+    get_project_detail,
     get_projects,
     get_summary,
 )
@@ -31,6 +32,7 @@ from modelmeter.core.models import (
     LiveSnapshotResponse,
     ModelDetailResponse,
     ModelsResponse,
+    ProjectDetailResponse,
     ProjectsResponse,
     SummaryResponse,
 )
@@ -56,6 +58,8 @@ def _optional_path(value: str | None) -> Path | None:
 def _raise_http_error(exc: RuntimeError) -> NoReturn:
     message = str(exc)
     if message.startswith("No data found for model"):
+        raise HTTPException(status_code=404, detail=message)
+    if message.startswith("No data found for project"):
         raise HTTPException(status_code=404, detail=message)
     if "SQLite data source is unavailable or incompatible" in message:
         raise HTTPException(status_code=503, detail=message)
@@ -234,6 +238,24 @@ def create_app(
                 settings=settings,
                 days=days,
                 limit=limit,
+                db_path_override=_optional_path(db_path),
+                pricing_file_override=_optional_path(pricing_file),
+            )
+        except RuntimeError as exc:
+            _raise_http_error(exc)
+
+    @app.get("/api/projects/{project_id}", response_model=ProjectDetailResponse)
+    def project_detail(
+        project_id: str,
+        days: int | None = Query(default=7, ge=1),
+        db_path: str | None = Query(default=None),
+        pricing_file: str | None = Query(default=None),
+    ) -> ProjectDetailResponse:
+        try:
+            return get_project_detail(
+                settings=settings,
+                project_id=project_id,
+                days=days,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
             )

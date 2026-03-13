@@ -18,7 +18,7 @@ This folder contains feature-sliced plans for building ModelMeter (OpenCode usag
 - [x] `06-api-foundation-for-web.md`
 - [x] `07-web-app-plan.md`
 - [x] `08-packaging-quality-observability.md`
-- [ ] `09-future-extensions.md`
+- [x] `09-future-extensions.md`
 - [x] `10-server-parity-contract-live-streaming.md`
 
 Use `00-roadmap-index.md` as the high-level map.

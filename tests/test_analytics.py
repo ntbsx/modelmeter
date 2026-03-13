@@ -13,6 +13,7 @@ from modelmeter.core.analytics import (
     get_daily,
     get_model_detail,
     get_models,
+    get_project_detail,
     get_projects,
     get_summary,
 )
@@ -24,7 +25,15 @@ def _create_usage_fixture(db_path: Path) -> None:
 
     with sqlite3.connect(db_path) as conn:
         conn.execute(
-            "CREATE TABLE session (id TEXT PRIMARY KEY, project_id TEXT, time_created INTEGER)"
+            "CREATE TABLE session ("
+            "id TEXT PRIMARY KEY, "
+            "project_id TEXT, "
+            "title TEXT, "
+            "directory TEXT, "
+            "time_created INTEGER, "
+            "time_updated INTEGER, "
+            "time_archived INTEGER"
+            ")"
         )
         conn.execute("CREATE TABLE project (id TEXT PRIMARY KEY, worktree TEXT, name TEXT)")
         conn.execute("CREATE TABLE message (id TEXT PRIMARY KEY, session_id TEXT, data TEXT)")
@@ -40,12 +49,24 @@ def _create_usage_fixture(db_path: Path) -> None:
         )
 
         conn.execute(
-            "INSERT INTO session (id, project_id, time_created) VALUES (?, ?, ?)",
-            ("s1", "p1", now_ms),
+            "INSERT INTO session "
+            "(id, project_id, title, directory, time_created, time_updated, time_archived) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("s1", "p1", "Session One", "/tmp/project-one", now_ms, now_ms, None),
         )
         conn.execute(
-            "INSERT INTO session (id, project_id, time_created) VALUES (?, ?, ?)",
-            ("s2", "p1", yesterday_ms),
+            "INSERT INTO session "
+            "(id, project_id, title, directory, time_created, time_updated, time_archived) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                "s2",
+                "p1",
+                "Session Two",
+                "/tmp/project-one",
+                yesterday_ms,
+                yesterday_ms,
+                None,
+            ),
         )
         conn.execute(
             "INSERT INTO project (id, worktree, name) VALUES (?, ?, ?)",
@@ -405,3 +426,42 @@ def test_projects_command_json_output(tmp_path: Path) -> None:
     payload = json.loads(result.stdout)
     assert len(payload["projects"]) == 1
     assert payload["projects"][0]["project_id"] == "p1"
+
+
+def test_get_project_detail_returns_sessions_sorted_by_last_updated(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    pricing_path = tmp_path / "models.json"
+    _create_usage_fixture(db_path)
+    _create_pricing_fixture(pricing_path)
+
+    result = get_project_detail(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        project_id="p1",
+        days=7,
+        db_path_override=db_path,
+        pricing_file_override=pricing_path,
+    )
+
+    assert result.project_id == "p1"
+    assert result.total_sessions == 2
+    assert result.sessions[0].session_id == "s1"
+    assert result.sessions[1].session_id == "s2"
+    assert result.total_interactions == 2
+    assert result.total_cost_usd == 0.0000335
+
+
+def test_get_project_detail_raises_when_project_is_missing(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_usage_fixture(db_path)
+
+    try:
+        get_project_detail(
+            settings=AppSettings(opencode_data_dir=tmp_path),
+            project_id="missing",
+            days=7,
+            db_path_override=db_path,
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "No data found for project 'missing'."
+    else:
+        raise AssertionError("Expected RuntimeError for missing project")

@@ -169,6 +169,37 @@ def test_model_detail_not_found_returns_404(tmp_path: Path) -> None:
     assert response.status_code == 404
 
 
+def test_project_detail_endpoint_returns_sessions(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client()
+    response = client.get(
+        "/api/projects/p1",
+        params={"db_path": str(db_path), "days": 7},
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["project_id"] == "p1"
+    assert payload["total_sessions"] == 1
+    assert len(payload["sessions"]) == 1
+    assert payload["sessions"][0]["session_id"] == "s1"
+
+
+def test_project_detail_not_found_returns_404(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client()
+    response = client.get(
+        "/api/projects/unknown-project",
+        params={"db_path": str(db_path), "days": 7},
+    )
+
+    assert response.status_code == 404
+
+
 def test_live_snapshot_endpoint(tmp_path: Path) -> None:
     db_path = tmp_path / "opencode.db"
     _create_api_fixture(db_path)
