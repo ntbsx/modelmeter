@@ -57,23 +57,23 @@ export MODELMETER_PRICING_CACHE_TTL_HOURS=24
 ## Development
 
 ```bash
-uv sync
-uv run ruff format
-uv run ruff check
-uv run pyright
-uv run pytest
+# Setup both python and node dependencies
+make setup
+
+# Run quality checks
+make format
+make lint
+make typecheck
+make test
 ```
 
 ### Web App (Local Dev)
 
-```bash
-# Start backend API (Terminal 1)
-uv run uvicorn modelmeter.api.app:app --reload
+You can run both the API backend and the React frontend simultaneously with one command:
 
-# Start frontend dev server (Terminal 2)
-cd web
-npm install
-npm run dev
+```bash
+make dev
 ```
 
-OpenAPI docs will be available at `http://127.0.0.1:8000/docs`.
+Open your browser to `http://localhost:5173`.
+OpenAPI docs are available at `http://127.0.0.1:8000/docs`.
