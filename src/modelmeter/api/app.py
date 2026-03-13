@@ -135,7 +135,7 @@ def create_app(
 
     @app.get("/health")
     def health() -> dict[str, str]:
-        return {"status": "ok"}
+        return {"status": "ok", "app_version": settings.app_runtime_version}
 
     @app.get("/doc", include_in_schema=False)
     def doc_alias() -> RedirectResponse:

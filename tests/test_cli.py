@@ -34,3 +34,11 @@ def test_serve_help_includes_cors_option() -> None:
     assert "--log-level" in result.stdout
     assert "--access-log" in result.stdout
     assert "--no-access-log" in result.stdout
+
+
+def test_version_flag_prints_runtime_version() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["--version"])
+
+    assert result.exit_code == 0
+    assert result.stdout.strip()

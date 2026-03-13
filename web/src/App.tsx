@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom'
 import { Activity, BarChart2, FolderGit2, Cpu } from 'lucide-react'
 import Overview from './pages/Overview'
@@ -8,8 +8,29 @@ import ProjectDetail from './pages/ProjectDetail'
 import Live from './pages/Live'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
+import { fetchApi } from './lib/api'
 
 const queryClient = new QueryClient()
+
+type HealthResponse = {
+  status: string
+  app_version?: string
+}
+
+function VersionBadge({ className }: { className: string }) {
+  const { data } = useQuery<HealthResponse>({
+    queryKey: ['health-version'],
+    queryFn: () => fetchApi('/health'),
+    staleTime: 60_000,
+    retry: false,
+  })
+
+  if (!data?.app_version) {
+    return null
+  }
+
+  return <span className={className}>v{data.app_version}</span>
+}
 
 const links = [
   { to: '/', icon: BarChart2, label: 'Overview' },
@@ -46,6 +67,9 @@ function Nav() {
             </Link>
           )
         })}
+      </div>
+      <div className="px-4 pt-4 text-xs text-gray-400 dark:text-gray-500 border-t border-gray-200 dark:border-gray-800">
+        <VersionBadge className="text-xs text-gray-400 dark:text-gray-500" />
       </div>
     </nav>
   )
@@ -96,7 +120,10 @@ function App() {
                   <Activity className="w-5 h-5" />
                   ModelMeter
                 </div>
-                <ThemeToggle />
+                <div className="flex items-center gap-3">
+                  <VersionBadge className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline" />
+                  <ThemeToggle />
+                </div>
               </header>
               <MobileNav />
               <main className="flex-1 bg-gray-50/20 dark:bg-gray-900/20 transition-colors duration-200">

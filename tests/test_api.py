@@ -115,7 +115,10 @@ def test_health_endpoint() -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert _get_json(response) == {"status": "ok"}
+    payload = _get_json(response)
+    assert payload["status"] == "ok"
+    assert isinstance(payload["app_version"], str)
+    assert payload["app_version"]
 
 
 def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
@@ -293,4 +296,6 @@ def test_health_is_public_even_when_auth_enabled() -> None:
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert _get_json(response) == {"status": "ok"}
+    payload = _get_json(response)
+    assert payload["status"] == "ok"
+    assert isinstance(payload["app_version"], str)

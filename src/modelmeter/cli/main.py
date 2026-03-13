@@ -49,8 +49,25 @@ app = typer.Typer(
 )
 
 
+def _print_version_and_exit(value: bool) -> None:
+    if not value:
+        return
+    typer.echo(AppSettings().app_runtime_version)
+    raise typer.Exit()
+
+
 @app.callback()
-def callback() -> None:
+def callback(
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            callback=_print_version_and_exit,
+            is_eager=True,
+            help="Print runtime version and exit.",
+        ),
+    ] = False,
+) -> None:
     """ModelMeter command group."""
 
 
