@@ -8,7 +8,6 @@ import ProjectDetail from './pages/ProjectDetail'
 import Live from './pages/Live'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
-import { fetchApi } from './lib/api'
 
 const queryClient = new QueryClient()
 
@@ -20,7 +19,13 @@ type HealthResponse = {
 function VersionBadge({ className }: { className: string }) {
   const { data } = useQuery<HealthResponse>({
     queryKey: ['health-version'],
-    queryFn: () => fetchApi('/health'),
+    queryFn: async () => {
+      const response = await fetch('/health')
+      if (!response.ok) {
+        throw new Error(response.statusText)
+      }
+      return response.json() as Promise<HealthResponse>
+    },
     staleTime: 60_000,
     retry: false,
   })
@@ -121,7 +126,7 @@ function App() {
                   ModelMeter
                 </div>
                 <div className="flex items-center gap-3">
-                  <VersionBadge className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline" />
+                  <VersionBadge className="text-xs text-gray-400 dark:text-gray-500" />
                   <ThemeToggle />
                 </div>
               </header>
