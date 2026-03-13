@@ -31,3 +31,6 @@ def test_serve_help_includes_cors_option() -> None:
 
     assert result.exit_code == 0
     assert "--cors" in result.stdout
+    assert "--log-level" in result.stdout
+    assert "--access-log" in result.stdout
+    assert "--no-access-log" in result.stdout

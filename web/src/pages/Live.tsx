@@ -55,19 +55,19 @@ export default function Live() {
   const data = useMemo(() => streamData ?? polledData ?? null, [streamData, polledData])
 
   if (streamMode === 'polling' && pollingError) {
-    return <div className="p-8 text-red-500 dark:text-red-400">Failed to load live data.</div>
+    return <div className="px-4 py-6 sm:p-8 text-red-500 dark:text-red-400">Failed to load live data.</div>
   }
-  if (!data) return <div className="p-8 text-gray-500 dark:text-gray-400">Waiting for heartbeat...</div>
+  if (!data) return <div className="px-4 py-6 sm:p-8 text-gray-500 dark:text-gray-400">Waiting for heartbeat...</div>
 
   const isActuallyActive = data.active_session?.is_active
   const transportLabel =
     streamMode === 'streaming' ? 'Real-time stream' : streamMode === 'polling' ? 'Polling fallback' : 'Connecting...'
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between mb-8">
+    <div className="px-4 py-6 sm:p-8 max-w-5xl mx-auto space-y-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
             <span className="relative flex h-3 w-3">
               {isActuallyActive && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
               <span className={cn("relative inline-flex rounded-full h-3 w-3", isActuallyActive ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600")}></span>
@@ -80,7 +80,7 @@ export default function Live() {
 
       {data.active_session && (
         <div className={cn(
-          "p-6 rounded-xl border transition-colors",
+          "p-4 sm:p-6 rounded-xl border transition-colors",
           isActuallyActive 
             ? "bg-blue-50/50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/50" 
             : "bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800"
@@ -89,7 +89,7 @@ export default function Live() {
             <Activity className="w-4 h-4" />
             {isActuallyActive ? 'Active Session' : 'Last Session'}
           </div>
-          <div className="text-xl font-bold text-gray-900 dark:text-white truncate">
+          <div className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate">
             {data.active_session.title || data.active_session.session_id}
           </div>
           <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
@@ -100,17 +100,17 @@ export default function Live() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
           <div className="text-sm text-gray-500 dark:text-gray-400">Tokens</div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{formatTokens(data.usage.total_tokens)}</div>
+          <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{formatTokens(data.usage.total_tokens)}</div>
         </div>
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
           <div className="text-sm text-gray-500 dark:text-gray-400">Cost</div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{data.cost_usd ? formatUsd(data.cost_usd) : 'N/A'}</div>
+          <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{data.cost_usd ? formatUsd(data.cost_usd) : 'N/A'}</div>
         </div>
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
           <div className="text-sm text-gray-500 dark:text-gray-400">Interactions</div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{data.total_interactions}</div>
+          <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{data.total_interactions}</div>
         </div>
       </div>
 
@@ -121,9 +121,9 @@ export default function Live() {
           </div>
           <div className="p-0">
             {data.top_models.map(m => (
-              <div key={m.model_id} className="flex justify-between items-center px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
-                <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{m.model_id}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">{formatTokens(m.usage.total_tokens)}</div>
+              <div key={m.model_id} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
+                <div className="font-medium text-sm text-gray-900 dark:text-gray-100 min-w-0 truncate">{m.model_id}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{formatTokens(m.usage.total_tokens)}</div>
               </div>
             ))}
             {data.top_models.length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No model activity</div>}
@@ -136,9 +136,9 @@ export default function Live() {
           </div>
           <div className="p-0">
             {data.top_tools.map(t => (
-              <div key={t.tool_name} className="flex justify-between items-center px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
-                <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{t.tool_name}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 font-mono">{t.total_calls} calls</div>
+              <div key={t.tool_name} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
+                <div className="font-medium text-sm text-gray-900 dark:text-gray-100 min-w-0 truncate">{t.tool_name}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{t.total_calls} calls</div>
               </div>
             ))}
             {data.top_tools.length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No tool activity</div>}

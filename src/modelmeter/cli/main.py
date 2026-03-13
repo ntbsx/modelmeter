@@ -760,6 +760,14 @@ def serve(
         str,
         typer.Option("--host", help="Host to listen on"),
     ] = "127.0.0.1",
+    log_level: Annotated[
+        Literal["debug", "info", "warning", "error", "critical"],
+        typer.Option("--log-level", help="Server log verbosity."),
+    ] = "info",
+    access_log: Annotated[
+        bool,
+        typer.Option("--access-log/--no-access-log", help="Enable request access logs."),
+    ] = True,
     cors: Annotated[
         list[str] | None,
         typer.Option(
@@ -778,7 +786,13 @@ def serve(
     )
 
     typer.echo(f"Starting server at http://{host}:{port}")
-    uvicorn.run(app_instance, host=host, port=port, log_level="warning")
+    uvicorn.run(
+        app_instance,
+        host=host,
+        port=port,
+        log_level=log_level,
+        access_log=access_log,
+    )
 
 
 def main() -> None:

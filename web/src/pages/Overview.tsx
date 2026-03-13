@@ -7,9 +7,9 @@ import { useTheme } from '../components/ThemeProvider'
 
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
   return (
-    <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+    <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
       <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{title}</div>
-      <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
+      <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
       {subtitle && <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{subtitle}</div>}
     </div>
   )
@@ -29,7 +29,7 @@ export default function Overview() {
     queryFn: () => fetchApi('/daily', { days: 7 })
   })
 
-  if (loadingSummary || loadingDaily) return <div className="p-8 text-gray-500 dark:text-gray-400">Loading...</div>
+  if (loadingSummary || loadingDaily) return <div className="px-4 py-6 sm:p-8 text-gray-500 dark:text-gray-400">Loading...</div>
 
   const chartData = daily?.daily.map(d => ({
     date: d.day.slice(5), // MM-DD
@@ -47,10 +47,10 @@ export default function Overview() {
   const cursorColor = isDark ? '#374151' : '#f3f4f6'
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-end mb-8">
+    <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto">
+      <div className="flex justify-between items-end mb-6 sm:mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Overview</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Overview</h1>
           <p className="text-gray-500 dark:text-gray-400">Last 7 days of OpenCode usage</p>
         </div>
       </div>
@@ -75,10 +75,10 @@ export default function Overview() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
           <h3 className="text-lg font-bold mb-6 text-gray-900 dark:text-white">Token Volume</h3>
-          <div className="h-72">
+          <div className="h-64 sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
@@ -100,9 +100,9 @@ export default function Overview() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
+        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
           <h3 className="text-lg font-bold mb-6 text-gray-900 dark:text-white">Cost Spend</h3>
-          <div className="h-72">
+          <div className="h-64 sm:h-72">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>

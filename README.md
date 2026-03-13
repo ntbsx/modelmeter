@@ -30,6 +30,10 @@ modelmeter live --window-minutes 60
 # Web Dashboard
 modelmeter serve --port 8000
 
+# Logging controls
+modelmeter serve --log-level debug
+modelmeter serve --no-access-log
+
 # Allow additional web origins (repeatable)
 modelmeter serve --cors http://localhost:5173 --cors https://app.example.com
 
