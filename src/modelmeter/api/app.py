@@ -317,7 +317,7 @@ def create_app(
     if web_dist.exists():
         app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
 
-        @app.get("/{full_path:path}")
+        @app.get("/{full_path:path}", include_in_schema=False)
         async def serve_spa(full_path: str):
             index_path = web_dist / "index.html"
             if index_path.exists():
