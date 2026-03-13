@@ -5,6 +5,7 @@ import { buildApiUrl, fetchApi } from '../lib/api'
 import { formatTokens, formatUsd, cn } from '../lib/utils'
 import type { LiveSnapshotResponse } from '../types'
 import PageLoading from '../components/PageLoading'
+import { PageErrorState } from '../components/PageState'
 
 export default function Live() {
   const [streamData, setStreamData] = useState<LiveSnapshotResponse | null>(null)
@@ -59,7 +60,12 @@ export default function Live() {
   const data = useMemo(() => streamData ?? polledData ?? null, [streamData, polledData])
 
   if (streamMode === 'polling' && pollingError) {
-    return <div className="px-4 py-6 sm:p-8 text-red-500 dark:text-red-400">Failed to load live data.</div>
+    return (
+      <PageErrorState
+        title="Unable to load live monitoring"
+        description="Live polling fallback failed. Check server availability and try again."
+      />
+    )
   }
   if (!data) {
     const subtitle =

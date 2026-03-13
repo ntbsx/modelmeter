@@ -4,6 +4,7 @@ import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { ProjectsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
+import { PageErrorState } from '../components/PageState'
 
 export default function Projects() {
   const { data, isLoading } = useQuery<ProjectsResponse>({
@@ -12,7 +13,14 @@ export default function Projects() {
   })
 
   if (isLoading) return <PageLoading title="Projects" subtitle="Loading project usage" cards={3} />
-  if (!data) return <div className="px-4 py-6 sm:p-8 text-red-500 dark:text-red-400">Failed to load projects.</div>
+  if (!data) {
+    return (
+      <PageErrorState
+        title="Unable to load projects"
+        description="We could not fetch project usage right now. Try refreshing the page."
+      />
+    )
+  }
 
   return (
     <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto">

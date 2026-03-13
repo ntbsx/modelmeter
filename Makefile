@@ -1,4 +1,4 @@
-.PHONY: dev backend frontend setup test format lint typecheck gen-types version-stamp version-sync version-check release-check package-build package-clean
+.PHONY: dev backend frontend setup test format lint typecheck gen-types version-stamp version-sync version-check release-check package-build package-clean perf-check
 
 # Run both backend and frontend concurrently
 dev:
@@ -62,3 +62,6 @@ package-build:
 
 package-clean:
 	rm -rf src/modelmeter/web_dist dist
+
+perf-check:
+	uv run python scripts/perf_baseline.py

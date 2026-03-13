@@ -3,6 +3,7 @@ import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { ModelsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
+import { PageErrorState } from '../components/PageState'
 
 export default function Models() {
   const { data, isLoading } = useQuery<ModelsResponse>({
@@ -11,7 +12,14 @@ export default function Models() {
   })
 
   if (isLoading) return <PageLoading title="Models" subtitle="Loading model usage" cards={3} />
-  if (!data) return <div className="px-4 py-6 sm:p-8 text-red-500 dark:text-red-400">Failed to load models.</div>
+  if (!data) {
+    return (
+      <PageErrorState
+        title="Unable to load models"
+        description="We could not fetch model usage right now. Try refreshing the page."
+      />
+    )
+  }
 
   return (
     <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto">

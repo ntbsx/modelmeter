@@ -14,6 +14,7 @@ import { formatTokens, formatUsd } from '../lib/utils'
 import type { DailyResponse, SummaryResponse } from '../types'
 import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
+import { PageErrorState } from '../components/PageState'
 
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
   return (
@@ -45,8 +46,17 @@ export default function Overview() {
     return <PageLoading title="Overview" subtitle="Loading usage metrics" cards={4} />
   }
 
+  if (!summary || !daily) {
+    return (
+      <PageErrorState
+        title="Unable to load overview"
+        description="We could not load summary metrics right now. Try refreshing the page."
+      />
+    )
+  }
+
   const chartData =
-    daily?.daily.map((entry) => {
+    daily.daily.map((entry) => {
       const parsed = new Date(entry.day)
       return {
         date: parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
@@ -54,7 +64,7 @@ export default function Overview() {
         cost: entry.cost_usd || 0,
         sessions: entry.total_sessions,
       }
-    }) || []
+    })
 
   const axisColor = isDark ? '#9ca3af' : '#6b7280'
   const gridColor = isDark ? '#374151' : '#f3f4f6'
@@ -80,20 +90,20 @@ export default function Overview() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <StatCard 
           title="Total Cost" 
-          value={summary?.cost_usd ? formatUsd(summary.cost_usd) : 'N/A'}
-          subtitle={summary?.pricing_source ? "via models.dev" : "No pricing data"}
+          value={summary.cost_usd ? formatUsd(summary.cost_usd) : 'N/A'}
+          subtitle={summary.pricing_source ? "via models.dev" : "No pricing data"}
         />
         <StatCard 
           title="Total Tokens" 
-          value={formatTokens(summary?.usage.total_tokens || 0)} 
+          value={formatTokens(summary.usage.total_tokens)} 
         />
         <StatCard 
           title="Cache Read" 
-          value={formatTokens(summary?.usage.cache_read_tokens || 0)} 
+          value={formatTokens(summary.usage.cache_read_tokens)} 
         />
         <StatCard 
           title="Sessions" 
-          value={summary?.total_sessions.toString() || '0'} 
+          value={summary.total_sessions.toString()} 
         />
       </div>
 

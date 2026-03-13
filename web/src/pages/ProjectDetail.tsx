@@ -5,6 +5,7 @@ import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { ProjectDetailResponse } from '../types'
 import PageLoading from '../components/PageLoading'
+import { PageEmptyState, PageErrorState } from '../components/PageState'
 
 export default function ProjectDetail() {
   const { projectId } = useParams()
@@ -17,7 +18,21 @@ export default function ProjectDetail() {
   })
 
   if (!decodedProjectId) {
-    return <div className="px-4 py-6 sm:p-8 text-red-500 dark:text-red-400">Invalid project ID.</div>
+    return (
+      <PageErrorState
+        title="Invalid project ID"
+        description="The requested project identifier is not valid."
+        action={
+          <Link
+            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            to="/projects"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Projects
+          </Link>
+        }
+      />
+    )
   }
 
   if (isLoading) {
@@ -26,21 +41,38 @@ export default function ProjectDetail() {
 
   if (error) {
     return (
-      <div className="px-4 py-6 sm:p-8 space-y-4">
-        <Link
-          className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-          to="/projects"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Projects
-        </Link>
-        <div className="text-red-500 dark:text-red-400">Failed to load project details.</div>
-      </div>
+      <PageErrorState
+        title="Unable to load project details"
+        description="We could not fetch sessions for this project. Please refresh and try again."
+        action={
+          <Link
+            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            to="/projects"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Projects
+          </Link>
+        }
+      />
     )
   }
 
   if (!data) {
-    return <div className="px-4 py-6 sm:p-8 text-gray-500 dark:text-gray-400">Project not found.</div>
+    return (
+      <PageEmptyState
+        title="Project not found"
+        description="No usage data was found for this project in the selected window."
+        action={
+          <Link
+            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            to="/projects"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Projects
+          </Link>
+        }
+      />
+    )
   }
 
   return (
