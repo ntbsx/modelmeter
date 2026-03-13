@@ -20,17 +20,16 @@ def _find_pyproject_path() -> Path | None:
 
 @lru_cache
 def get_product_version() -> str:
-    """Return the product version from installed metadata or project config."""
-    try:
-        return metadata_version("modelmeter")
-    except PackageNotFoundError:
-        pyproject_path = _find_pyproject_path()
-        if pyproject_path is None:
-            return "0.0.0"
-
+    """Return product version with deterministic local-repo preference."""
+    pyproject_path = _find_pyproject_path()
+    if pyproject_path is not None:
         pyproject = tomllib.loads(pyproject_path.read_text())
         project = pyproject.get("project", {})
         value = project.get("version")
         if isinstance(value, str):
             return value
+
+    try:
+        return metadata_version("modelmeter")
+    except PackageNotFoundError:
         return "0.0.0"
