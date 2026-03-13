@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Clock, Folder } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
@@ -10,6 +11,10 @@ import { PageEmptyState, PageErrorState } from '../components/PageState'
 export default function ProjectDetail() {
   const { projectId } = useParams()
   const decodedProjectId = decodeURIComponent(projectId ?? '')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [sortBy, setSortBy] = useState<'last_updated' | 'tokens' | 'cost' | 'interactions'>(
+    'last_updated'
+  )
 
   const { data, isLoading, error } = useQuery<ProjectDetailResponse>({
     queryKey: ['project-detail', decodedProjectId],
@@ -75,6 +80,33 @@ export default function ProjectDetail() {
     )
   }
 
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+  const visibleSessions = data.sessions
+    .filter((session) => {
+      if (normalizedSearch.length === 0) {
+        return true
+      }
+
+      const haystack = [session.session_id, session.title ?? '', session.directory ?? '']
+        .join(' ')
+        .toLowerCase()
+
+      return haystack.includes(normalizedSearch)
+    })
+    .sort((a, b) => {
+      if (sortBy === 'tokens') {
+        return b.usage.total_tokens - a.usage.total_tokens
+      }
+      if (sortBy === 'cost') {
+        return (b.cost_usd ?? 0) - (a.cost_usd ?? 0)
+      }
+      if (sortBy === 'interactions') {
+        return b.total_interactions - a.total_interactions
+      }
+
+      return b.last_updated_ms - a.last_updated_ms
+    })
+
   return (
     <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto space-y-6 w-full min-w-0">
       <div className="space-y-3">
@@ -120,6 +152,29 @@ export default function ProjectDetail() {
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <input
+            className="w-full sm:max-w-md rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/40"
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search sessions by title, id, or directory"
+            type="search"
+            value={searchTerm}
+          />
+          <select
+            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none"
+            onChange={(event) =>
+              setSortBy(
+                event.target.value as 'last_updated' | 'tokens' | 'cost' | 'interactions'
+              )
+            }
+            value={sortBy}
+          >
+            <option value="last_updated">Sort: Last Updated</option>
+            <option value="tokens">Sort: Tokens</option>
+            <option value="cost">Sort: Cost</option>
+            <option value="interactions">Sort: Interactions</option>
+          </select>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm min-w-[720px]">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
@@ -133,7 +188,7 @@ export default function ProjectDetail() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data.sessions.map((session) => (
+              {visibleSessions.map((session) => (
                 <tr key={session.session_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <div
@@ -168,10 +223,10 @@ export default function ProjectDetail() {
                   </td>
                 </tr>
               ))}
-              {data.sessions.length === 0 && (
+              {visibleSessions.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    No session activity found in this period.
+                    No sessions match this filter.
                   </td>
                 </tr>
               )}

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   Bar,
@@ -16,6 +17,8 @@ import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 
+const RANGE_OPTIONS = [7, 30, 90] as const
+
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
   return (
     <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
@@ -27,19 +30,24 @@ function StatCard({ title, value, subtitle }: { title: string, value: string, su
 }
 
 export default function Overview() {
+  const [days, setDays] = useState<(typeof RANGE_OPTIONS)[number]>(7)
+  const [showTokens, setShowTokens] = useState(true)
+  const [showSessions, setShowSessions] = useState(true)
+  const [showCost, setShowCost] = useState(true)
+
   const { theme } = useTheme()
   const isDark =
     theme === 'dark' ||
     (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const { data: summary, isLoading: loadingSummary } = useQuery<SummaryResponse>({
-    queryKey: ['summary'],
-    queryFn: () => fetchApi('/summary', { days: 7 })
+    queryKey: ['summary', days],
+    queryFn: () => fetchApi('/summary', { days })
   })
 
   const { data: daily, isLoading: loadingDaily } = useQuery<DailyResponse>({
-    queryKey: ['daily'],
-    queryFn: () => fetchApi('/daily', { days: 7 })
+    queryKey: ['daily', days],
+    queryFn: () => fetchApi('/daily', { days })
   })
 
   if (loadingSummary || loadingDaily) {
@@ -55,8 +63,7 @@ export default function Overview() {
     )
   }
 
-  const chartData =
-    daily.daily.map((entry) => {
+  const chartData = daily.daily.map((entry) => {
       const parsed = new Date(entry.day)
       return {
         date: parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
@@ -65,6 +72,8 @@ export default function Overview() {
         sessions: entry.total_sessions,
       }
     })
+
+  const leftAxisTicks = showTokens || showSessions
 
   const axisColor = isDark ? '#9ca3af' : '#6b7280'
   const gridColor = isDark ? '#374151' : '#f3f4f6'
@@ -83,7 +92,26 @@ export default function Overview() {
       <div className="flex justify-between items-end mb-6 sm:mb-8">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Overview</h1>
-          <p className="text-gray-500 dark:text-gray-400">Last 7 days of OpenCode usage</p>
+          <p className="text-gray-500 dark:text-gray-400">Last {days} days of OpenCode usage</p>
+        </div>
+        <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-1 gap-1">
+          {RANGE_OPTIONS.map((option) => {
+            const active = option === days
+            return (
+              <button
+                key={option}
+                className={`px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors ${
+                  active
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+                onClick={() => setDays(option)}
+                type="button"
+              >
+                {option}d
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -112,15 +140,52 @@ export default function Overview() {
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Usage Trend</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Tokens, sessions, and spend across the same 7-day window
+              Tokens, sessions, and spend across the selected window
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              Avg Daily Tokens
+          <div className="flex flex-col items-end gap-2">
+            <div className="text-right">
+              <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                Avg Daily Tokens
+              </div>
+              <div className="font-semibold text-gray-900 dark:text-gray-100">
+                {formatTokens(avgDailyTokens)}
+              </div>
             </div>
-            <div className="font-semibold text-gray-900 dark:text-gray-100">
-              {formatTokens(avgDailyTokens)}
+            <div className="flex flex-wrap justify-end gap-2 text-xs">
+              <button
+                className={`px-2.5 py-1 rounded-md border ${
+                  showSessions
+                    ? 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
+                    : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-500'
+                }`}
+                onClick={() => setShowSessions((value) => !value)}
+                type="button"
+              >
+                Sessions
+              </button>
+              <button
+                className={`px-2.5 py-1 rounded-md border ${
+                  showTokens
+                    ? 'border-blue-300 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                    : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-500'
+                }`}
+                onClick={() => setShowTokens((value) => !value)}
+                type="button"
+              >
+                Tokens
+              </button>
+              <button
+                className={`px-2.5 py-1 rounded-md border ${
+                  showCost
+                    ? 'border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                    : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-500'
+                }`}
+                onClick={() => setShowCost((value) => !value)}
+                type="button"
+              >
+                Cost
+              </button>
             </div>
           </div>
         </div>
@@ -134,6 +199,7 @@ export default function Overview() {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: axisColor }}
+                hide={!leftAxisTicks}
                 tickFormatter={(value: number | string) => formatTokens(Number(value))}
               />
               <YAxis
@@ -142,6 +208,7 @@ export default function Overview() {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: axisColor }}
+                hide={!showCost}
                 tickFormatter={(value: number | string) => formatUsd(Number(value))}
               />
               <Tooltip
@@ -162,34 +229,40 @@ export default function Overview() {
                   return [formatTokens(numericValue), 'Tokens']
                 }}
               />
-              <Bar
-                yAxisId="left"
-                dataKey="sessions"
-                name="Sessions"
-                fill={isDark ? '#334155' : '#cbd5e1'}
-                radius={[4, 4, 0, 0]}
-                maxBarSize={28}
-              />
-              <Line
-                yAxisId="left"
-                type="monotone"
-                dataKey="tokens"
-                name="Tokens"
-                stroke={isDark ? '#60a5fa' : '#2563eb'}
-                strokeWidth={2.5}
-                dot={{ r: 3, strokeWidth: 0, fill: isDark ? '#93c5fd' : '#3b82f6' }}
-                activeDot={{ r: 5 }}
-              />
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="cost"
-                name="Cost"
-                stroke={isDark ? '#34d399' : '#059669'}
-                strokeWidth={2}
-                dot={false}
-                strokeDasharray="5 3"
-              />
+              {showSessions ? (
+                <Bar
+                  yAxisId="left"
+                  dataKey="sessions"
+                  name="Sessions"
+                  fill={isDark ? '#334155' : '#cbd5e1'}
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={28}
+                />
+              ) : null}
+              {showTokens ? (
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="tokens"
+                  name="Tokens"
+                  stroke={isDark ? '#60a5fa' : '#2563eb'}
+                  strokeWidth={2.5}
+                  dot={{ r: 3, strokeWidth: 0, fill: isDark ? '#93c5fd' : '#3b82f6' }}
+                  activeDot={{ r: 5 }}
+                />
+              ) : null}
+              {showCost ? (
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="cost"
+                  name="Cost"
+                  stroke={isDark ? '#34d399' : '#059669'}
+                  strokeWidth={2}
+                  dot={false}
+                  strokeDasharray="5 3"
+                />
+              ) : null}
             </ComposedChart>
           </ResponsiveContainer>
         </div>

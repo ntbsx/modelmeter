@@ -105,6 +105,9 @@ make version-check
 
 # Validate generated API types are up to date
 npm run --prefix web check:types
+
+# Quick bundle/API latency baseline
+make perf-check
 ```
 
 ## Versioning

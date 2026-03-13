@@ -335,12 +335,12 @@ def create_app(
         )
 
     # Mount built React app if available.
-    # Prefer packaged assets for installed wheels.
-    # Fall back to local repo build for development.
+    # Prefer local repo build for development.
+    # Fall back to packaged assets for installed wheels.
     packaged_web_dist = Path(__file__).resolve().parent.parent / "web_dist"
     local_web_dist = Path(__file__).resolve().parent.parent.parent.parent / "web" / "dist"
 
-    web_dist = packaged_web_dist if packaged_web_dist.exists() else local_web_dist
+    web_dist = local_web_dist if local_web_dist.exists() else packaged_web_dist
     if web_dist.exists():
         app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
 
