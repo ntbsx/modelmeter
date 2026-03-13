@@ -85,3 +85,57 @@ release_artifacts:
       - dist/*.whl
       - dist/*.tar.gz
     expire_in: 14 days
+
+release_publish:
+  stage: release
+  needs:
+    - job: release_artifacts
+      artifacts: true
+  before_script: []
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d{4}\.\d{1,2}\.\d{1,2}$/'
+  script:
+    - apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+    - VERSION="${CI_COMMIT_TAG#v}"
+    - WHEEL_FILE="modelmeter-${VERSION}-py3-none-any.whl"
+    - SDIST_FILE="modelmeter-${VERSION}.tar.gz"
+    - WHEEL_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/modelmeter/${CI_COMMIT_TAG}/${WHEEL_FILE}"
+    - SDIST_URL="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/modelmeter/${CI_COMMIT_TAG}/${SDIST_FILE}"
+    - curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "dist/${WHEEL_FILE}" "${WHEEL_URL}"
+    - curl --fail --header "JOB-TOKEN: ${CI_JOB_TOKEN}" --upload-file "dist/${SDIST_FILE}" "${SDIST_URL}"
+    - |
+      RELEASE_PAYLOAD="$(cat <<EOF
+      {
+        \"name\": \"ModelMeter ${CI_COMMIT_TAG}\",
+        \"tag_name\": \"${CI_COMMIT_TAG}\",
+        \"description\": \"Automated release for ${CI_COMMIT_TAG}\",
+        \"assets\": {
+          \"links\": [
+            {\"name\": \"modelmeter-wheel\", \"url\": \"${WHEEL_URL}\"},
+            {\"name\": \"modelmeter-sdist\", \"url\": \"${SDIST_URL}\"}
+          ]
+        }
+      }
+      EOF
+      )"
+      STATUS_CODE=$(curl --silent --output /tmp/release.json --write-out "%{http_code}" \
+        --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        --header "Content-Type: application/json" \
+        --data "${RELEASE_PAYLOAD}" \
+        --request POST \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases")
+      if [ "${STATUS_CODE}" = "201" ]; then
+        echo "Release created for ${CI_COMMIT_TAG}."
+      elif [ "${STATUS_CODE}" = "409" ]; then
+        echo "Release already exists, updating metadata and ensuring asset links exist."
+        curl --fail \
+          --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+          --header "Content-Type: application/json" \
+          --data "${RELEASE_PAYLOAD}" \
+          --request PUT \
+          "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases/${CI_COMMIT_TAG}"
+      else
+        echo "Release API request failed with status ${STATUS_CODE}"
+        cat /tmp/release.json
+        exit 1
+      fi

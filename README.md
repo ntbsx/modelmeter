@@ -23,6 +23,7 @@ curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh |
 ```
 
 The installed package includes the built web UI, so `modelmeter serve` works without cloning the repo.
+The installer prefers wheel assets published on the GitLab release page and falls back to source archives.
 
 ## Quick Start
 

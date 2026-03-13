@@ -68,14 +68,43 @@ print(tag.lstrip("v"))
 '
 }
 
+resolve_wheel_url() {
+  local tag="$1"
+  curl -fsSL "${GITLAB_API}/releases/${tag}" | python3 -c '
+import json
+import sys
+
+release = json.load(sys.stdin)
+assets = release.get("assets", {})
+links = assets.get("links", [])
+
+for link in links:
+    url = str(link.get("url", "")).strip()
+    if url.endswith(".whl"):
+        print(url)
+        raise SystemExit(0)
+
+raise SystemExit("No wheel release asset found for tag")
+'
+}
+
 if [[ -z "$VERSION" ]]; then
   VERSION="$(resolve_latest_version)"
 fi
 
 TAG="v${VERSION}"
 ARCHIVE_URL="https://gitlab.com/${PROJECT_PATH}/-/archive/${TAG}/modelmeter-${TAG}.tar.gz"
+WHEEL_URL=""
 
-echo "Installing ModelMeter ${VERSION} from ${ARCHIVE_URL}"
+if WHEEL_URL="$(resolve_wheel_url "${TAG}" 2>/dev/null)"; then
+  INSTALL_SPEC="${WHEEL_URL}"
+  echo "Installing ModelMeter ${VERSION} from release wheel asset"
+else
+  INSTALL_SPEC="${ARCHIVE_URL}"
+  echo "Wheel asset not found for ${TAG}; falling back to source archive"
+fi
+
+echo "Install source: ${INSTALL_SPEC}"
 
 install_with_pipx() {
   if ! command -v pipx >/dev/null 2>&1; then
@@ -83,14 +112,14 @@ install_with_pipx() {
   fi
 
   if pipx list --short | grep -qx modelmeter; then
-    pipx reinstall --spec "$ARCHIVE_URL" modelmeter
+    pipx reinstall --spec "$INSTALL_SPEC" modelmeter
   else
-    pipx install "$ARCHIVE_URL"
+    pipx install "$INSTALL_SPEC"
   fi
 }
 
 install_with_pip() {
-  python3 -m pip install --user --upgrade "$ARCHIVE_URL"
+  python3 -m pip install --user --upgrade "$INSTALL_SPEC"
 }
 
 case "$METHOD" in
