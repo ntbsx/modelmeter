@@ -12,6 +12,18 @@ pipx install modelmeter
 uv tool install modelmeter
 ```
 
+Install from GitLab release archive via bash script (public project):
+
+```bash
+# Latest release
+curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash
+
+# Pinned release
+curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --version 2026.3.13
+```
+
+The installed package includes the built web UI, so `modelmeter serve` works without cloning the repo.
+
 ## Quick Start
 
 ```bash

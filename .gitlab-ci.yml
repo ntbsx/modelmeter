@@ -11,12 +11,13 @@ cache:
     - .cache/uv
 
 before_script:
-  - apt-get update && apt-get install -y --no-install-recommends libatomic1 && rm -rf /var/lib/apt/lists/*
+  - apt-get update && apt-get install -y --no-install-recommends libatomic1 make && rm -rf /var/lib/apt/lists/*
   - pip install uv==$UV_VERSION
   - uv sync --frozen --all-groups
 
 stages:
   - test
+  - release
 
 version_check:
   stage: test
@@ -28,6 +29,22 @@ lint:
   script:
     - uv run ruff format --check
     - uv run ruff check
+
+frontend_lint:
+  image: node:22
+  stage: test
+  before_script: []
+  script:
+    - npm ci --prefix web
+    - npm run --prefix web lint
+
+package_smoke:
+  stage: test
+  script:
+    - apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
+    - npm ci --prefix web
+    - make package-build
+    - uv run python -c "import zipfile, pathlib; wheels=sorted(pathlib.Path('dist').glob('*.whl')); assert wheels, 'No wheel built'; z=zipfile.ZipFile(wheels[-1]); assert any(n.endswith('modelmeter/web_dist/index.html') for n in z.namelist()), 'Bundled web_dist/index.html missing in wheel'"
 
 typecheck:
   stage: test
@@ -43,3 +60,17 @@ pytest:
       coverage_report:
         coverage_format: cobertura
         path: coverage.xml
+
+release_artifacts:
+  stage: release
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d{4}\.\d{1,2}\.\d{1,2}$/'
+  script:
+    - apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
+    - npm ci --prefix web
+    - make package-build
+  artifacts:
+    paths:
+      - dist/*.whl
+      - dist/*.tar.gz
+    expire_in: 14 days

@@ -1,3 +1,4 @@
 include README.md
 include LICENSE
 recursive-include src/modelmeter/py.typed
+recursive-include src/modelmeter/web_dist *

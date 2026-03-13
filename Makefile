@@ -1,4 +1,4 @@
-.PHONY: dev backend frontend setup test format lint typecheck gen-types version-stamp version-sync version-check release-check
+.PHONY: dev backend frontend setup test format lint typecheck gen-types version-stamp version-sync version-check release-check package-build package-clean
 
 # Run both backend and frontend concurrently
 dev:
@@ -50,6 +50,15 @@ release-check:
 	uv run ruff format --check
 	make lint
 	make version-check
+	npm run --prefix web lint
 	npm run --prefix web check:types
 	make typecheck
 	make test
+
+package-build:
+	npm run --prefix web build
+	uv run python scripts/prepare_web_dist.py
+	uv build
+
+package-clean:
+	rm -rf src/modelmeter/web_dist dist

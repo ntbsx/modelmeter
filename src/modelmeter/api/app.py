@@ -334,8 +334,13 @@ def create_app(
             },
         )
 
-    # Mount built React app if available
-    web_dist = Path(__file__).parent.parent.parent.parent / "web" / "dist"
+    # Mount built React app if available.
+    # Prefer packaged assets for installed wheels.
+    # Fall back to local repo build for development.
+    packaged_web_dist = Path(__file__).resolve().parent.parent / "web_dist"
+    local_web_dist = Path(__file__).resolve().parent.parent.parent.parent / "web" / "dist"
+
+    web_dist = packaged_web_dist if packaged_web_dist.exists() else local_web_dist
     if web_dist.exists():
         app.mount("/assets", StaticFiles(directory=web_dist / "assets"), name="assets")
 
@@ -345,7 +350,8 @@ def create_app(
             if index_path.exists():
                 return HTMLResponse(index_path.read_text())
             return HTMLResponse(
-                "UI build not found. Run 'npm run build' in web/ directory.", status_code=404
+                "UI build not found. Run 'npm run --prefix web build' and package assets.",
+                status_code=404,
             )
 
     return app

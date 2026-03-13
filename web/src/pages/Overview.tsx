@@ -12,7 +12,7 @@ import {
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { DailyResponse, SummaryResponse } from '../types'
-import { useTheme } from '../components/ThemeProvider'
+import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
 
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
