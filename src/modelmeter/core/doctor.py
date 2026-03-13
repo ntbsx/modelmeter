@@ -105,7 +105,7 @@ def generate_doctor_report(
 
     return DoctorReport(
         app_name=settings.app_name,
-        app_version=settings.app_version,
+        app_version=settings.app_runtime_version,
         opencode_data_dir=str(settings.opencode_data_dir),
         selected_source=selected_source,
         sqlite=sqlite_diag,

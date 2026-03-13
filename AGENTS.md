@@ -41,6 +41,7 @@ Primary commands (Makefile):
 - `make typecheck` run `pyright` (strict)
 - `make test` run all pytest tests
 - `make gen-types` regenerate OpenAPI + TS generated types
+- `make version-stamp` stamp CalVer from current date and sync frontend version
 - `make version-sync` sync `web/package.json` version from `pyproject.toml`
 - `make version-check` fail on backend/frontend version mismatch
 - `make release-check` run full release-quality checks
@@ -56,16 +57,18 @@ Frontend scripts:
 Note: no dedicated frontend unit test runner is configured right now.
 
 ## 5) Product Versioning (Single Version)
-- ModelMeter uses a single SemVer product version across backend, CLI, and frontend.
+- ModelMeter uses a single CalVer product version across backend, CLI, and frontend.
 - Canonical source of truth: `pyproject.toml` in `[project].version`.
+- Canonical format: `YYYY.M.D` (example: `2026.3.13`).
 - Frontend version in `web/package.json` must match backend version.
-- Runtime backend version is derived from package metadata/project config, not a separate hardcoded constant.
+- Runtime display version appends git short hash when available (`YYYY.M.D+<shortsha>`).
+- OpenAPI schema version remains canonical CalVer (no hash) to avoid snapshot churn.
 - Use:
+  - `make version-stamp` to stamp the current-date CalVer and sync frontend version
   - `make version-sync` to align frontend version to backend version
   - `make version-check` to fail fast when versions diverge
 - Contract policy (no `/api/v1` namespace currently):
-  - backward-compatible API contract changes require at least a minor version bump
-  - breaking API contract changes require a major product version bump
+  - update canonical CalVer when preparing a release that changes API contracts
 
 ## 6) Running a Single Test (Important)
 Use targeted pytest while iterating:

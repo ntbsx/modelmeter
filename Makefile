@@ -1,4 +1,4 @@
-.PHONY: dev backend frontend setup test format lint typecheck gen-types version-sync version-check release-check
+.PHONY: dev backend frontend setup test format lint typecheck gen-types version-stamp version-sync version-check release-check
 
 # Run both backend and frontend concurrently
 dev:
@@ -35,6 +35,10 @@ test:
 
 gen-types:
 	npm run --prefix web gen:types
+
+version-stamp:
+	uv run python scripts/stamp_calver.py
+	make version-sync
 
 version-sync:
 	uv run python scripts/sync_product_version.py

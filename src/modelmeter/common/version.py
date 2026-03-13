@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import os
+import re
+import subprocess
 import tomllib
 from functools import lru_cache
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as metadata_version
 from pathlib import Path
+
+CALVER_PATTERN = re.compile(r"^\d{4}\.(0?[1-9]|1[0-2])\.(0?[1-9]|[12][0-9]|3[01])$")
 
 
 def _find_pyproject_path() -> Path | None:
@@ -19,8 +24,8 @@ def _find_pyproject_path() -> Path | None:
 
 
 @lru_cache
-def get_product_version() -> str:
-    """Return product version with deterministic local-repo preference."""
+def get_base_version() -> str:
+    """Return canonical product version from project config or package metadata."""
     pyproject_path = _find_pyproject_path()
     if pyproject_path is not None:
         pyproject = tomllib.loads(pyproject_path.read_text())
@@ -33,3 +38,51 @@ def get_product_version() -> str:
         return metadata_version("modelmeter")
     except PackageNotFoundError:
         return "0.0.0"
+
+
+@lru_cache
+def get_git_short_sha(length: int = 7) -> str | None:
+    """Return a short git commit hash when available."""
+    env_sha = os.getenv("MODELMETER_GIT_SHA", "").strip()
+    if env_sha:
+        return env_sha[:length]
+
+    pyproject_path = _find_pyproject_path()
+    if pyproject_path is None:
+        return None
+
+    repo_root = pyproject_path.parent
+    git_dir = repo_root / ".git"
+    if not git_dir.exists():
+        return None
+
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", f"--short={length}", "HEAD"],
+            cwd=repo_root,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+
+    value = result.stdout.strip()
+    if value:
+        return value
+    return None
+
+
+@lru_cache
+def get_product_version() -> str:
+    """Return display/runtime version as CalVer with optional short git hash."""
+    base_version = get_base_version()
+    short_sha = get_git_short_sha()
+    if short_sha is None:
+        return base_version
+    return f"{base_version}+{short_sha}"
+
+
+def is_calver(value: str) -> bool:
+    """Return True when value matches the canonical CalVer format."""
+    return CALVER_PATTERN.match(value) is not None

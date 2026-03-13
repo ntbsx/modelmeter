@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from modelmeter.common.version import get_product_version
+from modelmeter.common.version import get_base_version, get_product_version
 
 
 class AppSettings(BaseSettings):
@@ -26,4 +26,8 @@ class AppSettings(BaseSettings):
 
     @property
     def app_version(self) -> str:
+        return get_base_version()
+
+    @property
+    def app_runtime_version(self) -> str:
         return get_product_version()

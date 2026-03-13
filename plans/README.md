@@ -20,6 +20,11 @@ This folder contains feature-sliced plans for building ModelMeter (OpenCode usag
 - [x] `08-packaging-quality-observability.md`
 - [x] `09-future-extensions.md`
 - [x] `10-server-parity-contract-live-streaming.md`
+- [ ] `11-frontend-product-polish-and-reliability.md`
+- [ ] `12-release-ops-and-collaboration-hardening.md`
+- [ ] `13-performance-and-scalability.md`
+- [ ] `14-release-artifact-packaging-and-installer.md`
+- [ ] `15-calver-and-git-hash-versioning.md`
 
 Use `00-roadmap-index.md` as the high-level map.
 

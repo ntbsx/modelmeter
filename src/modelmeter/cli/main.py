@@ -59,7 +59,7 @@ def info() -> None:
     """Print current app/runtime settings."""
     settings = AppSettings()
     console = Console()
-    console.print(f"[bold]ModelMeter[/bold] v{settings.app_version}")
+    console.print(f"[bold]ModelMeter[/bold] v{settings.app_runtime_version}")
     console.print(f"Data directory: {settings.opencode_data_dir}")
 
 

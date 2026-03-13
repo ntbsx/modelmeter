@@ -4,6 +4,9 @@ import argparse
 import json
 import tomllib
 from pathlib import Path
+from typing import cast
+
+from modelmeter.common.version import is_calver
 
 
 def _project_root() -> Path:
@@ -12,20 +15,28 @@ def _project_root() -> Path:
 
 def _read_backend_version(root: Path) -> str:
     pyproject_path = root / "pyproject.toml"
-    pyproject = tomllib.loads(pyproject_path.read_text())
-    project = pyproject.get("project", {})
+    pyproject = cast(dict[str, object], tomllib.loads(pyproject_path.read_text()))
+    project_data = pyproject.get("project", {})
+    if not isinstance(project_data, dict):
+        raise RuntimeError("[project] section must be a TOML object")
+    project = cast(dict[str, object], project_data)
     value = project.get("version")
     if not isinstance(value, str) or not value.strip():
         raise RuntimeError("Could not read [project].version from pyproject.toml")
+    if not is_calver(value):
+        raise RuntimeError(
+            "[project].version must be CalVer in the format YYYY.M.D (example: 2026.3.13)",
+        )
     return value
 
 
 def _read_web_package_json(root: Path) -> tuple[Path, dict[str, object]]:
     package_path = root / "web" / "package.json"
-    package_data = json.loads(package_path.read_text())
+    package_data: object = json.loads(package_path.read_text())
     if not isinstance(package_data, dict):
         raise RuntimeError("web/package.json must contain a JSON object")
-    return package_path, package_data
+    typed_package_data = cast(dict[str, object], package_data)
+    return package_path, typed_package_data
 
 
 def _write_package_json(path: Path, data: dict[str, object]) -> None:

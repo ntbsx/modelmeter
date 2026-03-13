@@ -100,14 +100,19 @@ npm run --prefix web check:types
 ModelMeter uses a **single product version** for backend, CLI, and frontend.
 
 - Canonical source: `pyproject.toml` (`[project].version`)
+- Canonical format: CalVer `YYYY.M.D` (example: `2026.3.13`)
 - Frontend version in `web/package.json` must match backend version
-- Runtime backend version is resolved from package metadata/project config (no separate hardcoded version)
+- Runtime display version appends git short hash when available (`YYYY.M.D+<shortsha>`)
+- OpenAPI schema version stays on canonical CalVer (without hash) for snapshot stability
 
 Common version commands:
 
 ```bash
 # Sync frontend version to backend version
 make version-sync
+
+# Stamp canonical CalVer from today and sync frontend
+make version-stamp
 
 # Check backend/frontend versions are aligned (non-zero exit on mismatch)
 make version-check
@@ -118,8 +123,7 @@ make release-check
 
 Contract policy (no API path versioning yet):
 
-- Backward-compatible API contract changes require at least a minor version bump
-- Breaking API contract changes require a major product version bump
+- API contract changes require updating canonical CalVer when preparing a release
 
 ### Web App (Local Dev)
 
