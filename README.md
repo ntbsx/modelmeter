@@ -144,6 +144,8 @@ Contract policy (no API path versioning yet):
 
 - API contract changes require updating canonical CalVer when preparing a release
 
+Release workflow reference: `docs/release-runbook.md`
+
 ### Web App (Local Dev)
 
 You can run both the API backend and the React frontend simultaneously with one command:

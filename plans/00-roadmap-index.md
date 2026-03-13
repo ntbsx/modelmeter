@@ -28,8 +28,8 @@ Build a cross-platform (macOS + Linux) OpenCode usage monitor with:
 - [x] 8. 08-packaging-quality-observability.md
 - [x] 9. 09-future-extensions.md
 - [x] 10. 10-server-parity-contract-live-streaming.md
-- [ ] 11. 11-frontend-product-polish-and-reliability.md
-- [ ] 12. 12-release-ops-and-collaboration-hardening.md
+- [x] 11. 11-frontend-product-polish-and-reliability.md
+- [x] 12. 12-release-ops-and-collaboration-hardening.md
 - [ ] 13. 13-performance-and-scalability.md
-- [ ] 14. 14-release-artifact-packaging-and-installer.md
-- [ ] 15. 15-calver-and-git-hash-versioning.md
+- [x] 14. 14-release-artifact-packaging-and-installer.md
+- [x] 15. 15-calver-and-git-hash-versioning.md

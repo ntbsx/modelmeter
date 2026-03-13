@@ -182,9 +182,9 @@ Improve frontend quality and usability after core feature delivery by focusing o
 - Release checklist captures frontend quality requirements.
 
 ## Completion Checklist
-- [ ] Workstream A complete
-- [ ] Workstream B complete
-- [ ] Workstream C complete
-- [ ] Workstream D complete
-- [ ] Workstream E complete
-- [ ] Workstream F complete
+- [x] Workstream A complete
+- [x] Workstream B complete
+- [x] Workstream C complete
+- [x] Workstream D complete
+- [x] Workstream E complete
+- [x] Workstream F complete

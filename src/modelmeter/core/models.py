@@ -140,6 +140,9 @@ class ProjectDetailResponse(BaseModel):
     window_days: int | None = Field(default=None, ge=1)
     usage: TokenUsage
     total_sessions: int = Field(default=0, ge=0)
+    sessions_offset: int = Field(default=0, ge=0)
+    sessions_limit: int | None = Field(default=None, ge=1)
+    sessions_returned: int = Field(default=0, ge=0)
     total_interactions: int = Field(default=0, ge=0)
     total_cost_usd: float | None = None
     pricing_source: str | None = None

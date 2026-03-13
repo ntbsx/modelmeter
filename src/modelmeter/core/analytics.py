@@ -388,6 +388,8 @@ def get_project_detail(
     settings: AppSettings,
     project_id: str,
     days: int | None = None,
+    session_offset: int = 0,
+    session_limit: int | None = None,
     db_path_override: Path | None = None,
     pricing_file_override: Path | None = None,
 ) -> ProjectDetailResponse:
@@ -424,6 +426,7 @@ def get_project_detail(
     sessions: list[ProjectSessionUsage] = []
     total_interactions = 0
     aggregate_usage = TokenUsage()
+    total_sessions = len(session_rows)
 
     first_row = session_rows[0]
     project_name = str(first_row["project_name"])
@@ -452,15 +455,22 @@ def get_project_detail(
             )
         )
 
+    sliced_sessions = sessions[session_offset:]
+    if session_limit is not None:
+        sliced_sessions = sliced_sessions[:session_limit]
+
     return ProjectDetailResponse(
         project_id=project_id,
         project_name=project_name,
         project_path=project_path,
         window_days=days,
         usage=aggregate_usage,
-        total_sessions=len(sessions),
+        total_sessions=total_sessions,
+        sessions_offset=session_offset,
+        sessions_limit=session_limit,
+        sessions_returned=len(sliced_sessions),
         total_interactions=total_interactions,
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
         pricing_source=pricing_source,
-        sessions=sessions,
+        sessions=sliced_sessions,
     )

@@ -444,10 +444,35 @@ def test_get_project_detail_returns_sessions_sorted_by_last_updated(tmp_path: Pa
 
     assert result.project_id == "p1"
     assert result.total_sessions == 2
+    assert result.sessions_returned == 2
     assert result.sessions[0].session_id == "s1"
     assert result.sessions[1].session_id == "s2"
     assert result.total_interactions == 2
     assert result.total_cost_usd == 0.0000335
+
+
+def test_get_project_detail_applies_session_pagination(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    pricing_path = tmp_path / "models.json"
+    _create_usage_fixture(db_path)
+    _create_pricing_fixture(pricing_path)
+
+    result = get_project_detail(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        project_id="p1",
+        days=7,
+        session_offset=1,
+        session_limit=1,
+        db_path_override=db_path,
+        pricing_file_override=pricing_path,
+    )
+
+    assert result.total_sessions == 2
+    assert result.sessions_offset == 1
+    assert result.sessions_limit == 1
+    assert result.sessions_returned == 1
+    assert len(result.sessions) == 1
+    assert result.sessions[0].session_id == "s2"
 
 
 def test_get_project_detail_raises_when_project_is_missing(tmp_path: Path) -> None:

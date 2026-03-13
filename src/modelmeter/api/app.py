@@ -248,6 +248,8 @@ def create_app(
     def project_detail(
         project_id: str,
         days: int | None = Query(default=7, ge=1),
+        session_offset: int = Query(default=0, ge=0),
+        session_limit: int | None = Query(default=None, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
     ) -> ProjectDetailResponse:
@@ -256,6 +258,8 @@ def create_app(
                 settings=settings,
                 project_id=project_id,
                 days=days,
+                session_offset=session_offset,
+                session_limit=session_limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
             )

@@ -462,6 +462,18 @@ export interface components {
              * @default []
              */
             sessions: components["schemas"]["ProjectSessionUsage"][];
+            /** Sessions Limit */
+            sessions_limit?: number | null;
+            /**
+             * Sessions Offset
+             * @default 0
+             */
+            sessions_offset: number;
+            /**
+             * Sessions Returned
+             * @default 0
+             */
+            sessions_returned: number;
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -907,6 +919,8 @@ export interface operations {
         parameters: {
             query?: {
                 days?: number | null;
+                session_offset?: number;
+                session_limit?: number | null;
                 db_path?: string | null;
                 pricing_file?: string | null;
             };

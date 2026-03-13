@@ -186,6 +186,7 @@ def test_project_detail_endpoint_returns_sessions(tmp_path: Path) -> None:
     payload = _get_json(response)
     assert payload["project_id"] == "p1"
     assert payload["total_sessions"] == 1
+    assert payload["sessions_returned"] == 1
     assert len(payload["sessions"]) == 1
     assert payload["sessions"][0]["session_id"] == "s1"
 

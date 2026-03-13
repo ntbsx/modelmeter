@@ -131,8 +131,8 @@ Package ModelMeter so installed artifacts include the web app, and provide a pub
 - README reflects the final install workflow.
 
 ## Completion Checklist
-- [ ] Workstream A complete
-- [ ] Workstream B complete
-- [ ] Workstream C complete
-- [ ] Workstream D complete
-- [ ] Workstream E complete
+- [x] Workstream A complete
+- [x] Workstream B complete
+- [x] Workstream C complete
+- [x] Workstream D complete
+- [x] Workstream E complete

@@ -621,6 +621,30 @@
             "title": "Sessions",
             "type": "array"
           },
+          "sessions_limit": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sessions Limit"
+          },
+          "sessions_offset": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Sessions Offset",
+            "type": "integer"
+          },
+          "sessions_returned": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Sessions Returned",
+            "type": "integer"
+          },
           "total_cost_usd": {
             "anyOf": [
               {
@@ -1773,6 +1797,34 @@
               ],
               "default": 7,
               "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "session_offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Session Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "session_limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session Limit"
             }
           },
           {
