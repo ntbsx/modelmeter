@@ -264,6 +264,7 @@ def create_app(
 
     @app.get("/api/live/events")
     async def live_events(
+        request: Request,
         window_minutes: int = Query(default=60, ge=1),
         token_source: Literal["auto", "message", "steps"] = Query(default="auto"),
         models_limit: int = Query(default=5, ge=1),
@@ -274,27 +275,33 @@ def create_app(
         pricing_file: str | None = Query(default=None),
     ) -> StreamingResponse:
         async def event_generator():
-            while True:
-                try:
-                    snapshot = get_live_snapshot(
-                        settings=settings,
-                        window_minutes=window_minutes,
-                        token_source=token_source,
-                        models_limit=models_limit,
-                        tools_limit=tools_limit,
-                        db_path_override=_optional_path(db_path),
-                        pricing_file_override=_optional_path(pricing_file),
-                    )
-                    payload = json.dumps(snapshot.model_dump(mode="json"))
-                    yield f"event: live.snapshot\ndata: {payload}\n\n"
-                except RuntimeError as exc:
-                    payload = json.dumps({"detail": str(exc)})
-                    yield f"event: live.error\ndata: {payload}\n\n"
+            try:
+                while True:
+                    if await request.is_disconnected():
+                        break
 
-                if once:
-                    break
+                    try:
+                        snapshot = get_live_snapshot(
+                            settings=settings,
+                            window_minutes=window_minutes,
+                            token_source=token_source,
+                            models_limit=models_limit,
+                            tools_limit=tools_limit,
+                            db_path_override=_optional_path(db_path),
+                            pricing_file_override=_optional_path(pricing_file),
+                        )
+                        payload = json.dumps(snapshot.model_dump(mode="json"))
+                        yield f"event: live.snapshot\ndata: {payload}\n\n"
+                    except RuntimeError as exc:
+                        payload = json.dumps({"detail": str(exc)})
+                        yield f"event: live.error\ndata: {payload}\n\n"
 
-                await asyncio.sleep(interval_seconds)
+                    if once:
+                        break
+
+                    await asyncio.sleep(interval_seconds)
+            except asyncio.CancelledError:
+                return
 
         return StreamingResponse(
             event_generator(),

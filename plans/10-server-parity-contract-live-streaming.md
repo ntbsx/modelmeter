@@ -144,3 +144,9 @@ This plan prioritizes reliability and compatibility while minimizing regressions
 - `uv run pytest -q` passes.
 - `npm run --prefix web build` passes.
 - `modelmeter serve` supports OpenCode-style ergonomics for local server usage.
+
+## Completion Checklist
+- [x] Workstream A complete (server parity: CORS/auth/docs alias)
+- [x] Workstream B complete (OpenAPI-generated TS contract and checks)
+- [x] Workstream C complete (SSE live + polling fallback)
+- [x] Lint/typecheck/tests/build pass for merged changes
