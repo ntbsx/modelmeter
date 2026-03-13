@@ -28,10 +28,10 @@ lint:
 	uv run ruff check
 
 typecheck:
-	uv run pyright
+	uv run python -m pyright
 
 test:
-	uv run pytest
+	uv run python -m pytest
 
 gen-types:
 	npm run --prefix web gen:types

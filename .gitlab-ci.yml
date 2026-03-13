@@ -1,7 +1,7 @@
 image: python:3.12-slim
 
 variables:
-  UV_VERSION: "0.5.0"
+  UV_VERSION: "0.8.17"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
   UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
 
@@ -12,7 +12,7 @@ cache:
 
 before_script:
   - pip install uv==$UV_VERSION
-  - uv sync --frozen
+  - uv sync --frozen --all-groups
 
 stages:
   - test
@@ -26,12 +26,12 @@ lint:
 typecheck:
   stage: test
   script:
-    - uv run pyright
+    - uv run python -m pyright
 
 pytest:
   stage: test
   script:
-    - uv run pytest --cov=src/modelmeter --cov-report=xml
+    - uv run python -m pytest --cov=src/modelmeter --cov-report=xml
   artifacts:
     reports:
       coverage_report:
