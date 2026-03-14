@@ -52,6 +52,10 @@ CLI commands commonly exercised during update work:
 - `uv run modelmeter update check --json`
 - `uv run modelmeter update apply --dry-run`
 
+Release distribution and update checks:
+- Installer script is hosted on GitHub raw (`https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh`)
+- Default update metadata endpoint is GitHub Releases API (`https://api.github.com/repos/ntbsx/modelmeter/releases/latest`)
+
 Frontend scripts:
 - `npm run --prefix web dev`
 - `npm run --prefix web build`

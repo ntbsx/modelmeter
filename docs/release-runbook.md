@@ -61,7 +61,7 @@ git push --tags
 Run install from release metadata:
 
 ```bash
-curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --version <YYYY.M.D>
+curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --version <YYYY.M.D>
 modelmeter --version
 ```
 
