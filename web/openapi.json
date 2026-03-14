@@ -2184,7 +2184,14 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": {
-                    "type": "string"
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
                   },
                   "title": "Response Health Health Get",
                   "type": "object"

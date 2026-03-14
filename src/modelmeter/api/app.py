@@ -52,9 +52,7 @@ LOCAL_CORS_ORIGINS = [
     "http://127.0.0.1:5173",
 ]
 
-AUTH_EXEMPT_PATHS = {
-    "/health",
-}
+AUTH_PROTECTED_PREFIXES = ("/api",)
 
 
 def _optional_path(value: str | None) -> Path | None:
@@ -122,7 +120,8 @@ def create_app(
     async def maybe_require_basic_auth(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if not auth_enabled or request.url.path in AUTH_EXEMPT_PATHS:
+        is_protected_path = request.url.path.startswith(AUTH_PROTECTED_PREFIXES)
+        if not auth_enabled or not is_protected_path:
             return await call_next(request)
 
         decoded = _decode_basic_auth_header(request.headers.get("Authorization"))
@@ -135,15 +134,21 @@ def create_app(
 
         if not is_authorized:
             return Response(
+                content=json.dumps({"detail": "Invalid credentials"}),
                 status_code=401,
+                media_type="application/json",
                 headers={"WWW-Authenticate": 'Basic realm="ModelMeter"'},
             )
 
         return await call_next(request)
 
     @app.get("/health")
-    def health() -> dict[str, str]:
-        return {"status": "ok", "app_version": settings.app_runtime_version}
+    def health() -> dict[str, str | bool]:
+        return {
+            "status": "ok",
+            "app_version": settings.app_runtime_version,
+            "auth_required": auth_enabled,
+        }
 
     @app.get("/doc", include_in_schema=False)
     def doc_alias() -> RedirectResponse:

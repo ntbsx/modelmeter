@@ -182,6 +182,17 @@ def test_health_endpoint() -> None:
     assert payload["status"] == "ok"
     assert isinstance(payload["app_version"], str)
     assert payload["app_version"]
+    assert payload["auth_required"] is False
+
+
+def test_health_reports_auth_required_when_password_set() -> None:
+    client = _new_client(server_password="secret")
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["status"] == "ok"
+    assert payload["auth_required"] is True
 
 
 def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
@@ -411,6 +422,8 @@ def test_auth_enabled_requires_credentials(tmp_path: Path) -> None:
 
     assert response.status_code == 401
     assert response.headers["www-authenticate"] == 'Basic realm="ModelMeter"'
+    payload = _get_json(response)
+    assert payload["detail"] == "Invalid credentials"
 
 
 def test_auth_enabled_rejects_invalid_credentials(tmp_path: Path) -> None:
@@ -451,3 +464,13 @@ def test_health_is_public_even_when_auth_enabled() -> None:
     payload = _get_json(response)
     assert payload["status"] == "ok"
     assert isinstance(payload["app_version"], str)
+
+
+def test_spa_routes_are_not_blocked_when_auth_enabled() -> None:
+    client = _new_client(server_password="secret")
+
+    root_response = client.get("/")
+    login_response = client.get("/login")
+
+    assert root_response.status_code != 401
+    assert login_response.status_code != 401
