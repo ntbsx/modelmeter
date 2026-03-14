@@ -1113,6 +1113,75 @@
         "title": "TokenUsage",
         "type": "object"
       },
+      "UpdateCheckResponse": {
+        "description": "Update check response contract.",
+        "properties": {
+          "checked_at_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Checked At Ms",
+            "type": "integer"
+          },
+          "current_version": {
+            "title": "Current Version",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "latest_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Version"
+          },
+          "release_tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Tag"
+          },
+          "release_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Release Url"
+          },
+          "update_available": {
+            "default": false,
+            "title": "Update Available",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "current_version"
+        ],
+        "title": "UpdateCheckResponse",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -1157,7 +1226,7 @@
   },
   "info": {
     "title": "ModelMeter",
-    "version": "2026.3.16"
+    "version": "2026.3.17"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -2086,6 +2155,24 @@
           }
         },
         "summary": "Summary"
+      }
+    },
+    "/api/update/check": {
+      "get": {
+        "operationId": "update_check_api_update_check_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateCheckResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Update Check"
       }
     },
     "/health": {

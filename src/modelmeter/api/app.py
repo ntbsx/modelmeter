@@ -41,7 +41,9 @@ from modelmeter.core.models import (
     ProjectDetailResponse,
     ProjectsResponse,
     SummaryResponse,
+    UpdateCheckResponse,
 )
+from modelmeter.core.updater import check_for_updates
 
 LOCAL_CORS_ORIGINS = [
     "http://localhost:3000",
@@ -155,6 +157,10 @@ def create_app(
             settings=settings,
             db_path_override=_optional_path(db_path),
         )
+
+    @app.get("/api/update/check", response_model=UpdateCheckResponse)
+    def update_check() -> UpdateCheckResponse:
+        return check_for_updates(settings=settings)
 
     @app.get("/api/summary", response_model=SummaryResponse)
     def summary(
