@@ -176,6 +176,20 @@ def _create_provider_fixture(db_path: Path) -> None:
         conn.execute("CREATE TABLE project (id TEXT PRIMARY KEY, worktree TEXT, name TEXT)")
         conn.execute("CREATE TABLE message (id TEXT PRIMARY KEY, session_id TEXT, data TEXT)")
         conn.execute(
+            "CREATE TABLE part ("
+            "id TEXT PRIMARY KEY, "
+            "message_id TEXT, "
+            "session_id TEXT, "
+            "time_created INTEGER, "
+            "time_updated INTEGER, "
+            "data TEXT"
+            ")"
+        )
+        conn.execute(
+            "INSERT INTO project (id, worktree, name) VALUES (?, ?, ?)",
+            ("p1", "/tmp/providers", "providers"),
+        )
+        conn.execute(
             "INSERT INTO session "
             "(id, project_id, title, directory, time_created, time_updated, time_archived) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",

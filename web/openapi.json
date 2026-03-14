@@ -943,6 +943,143 @@
         "title": "ProjectsResponse",
         "type": "object"
       },
+      "ProviderUsage": {
+        "description": "Per-provider usage aggregate.",
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "has_pricing": {
+            "default": false,
+            "title": "Has Pricing",
+            "type": "boolean"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": [
+          "provider",
+          "usage"
+        ],
+        "title": "ProviderUsage",
+        "type": "object"
+      },
+      "ProvidersResponse": {
+        "description": "Top providers usage response contract.",
+        "properties": {
+          "pricing_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Source"
+          },
+          "providers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProviderUsage"
+            },
+            "title": "Providers",
+            "type": "array"
+          },
+          "providers_limit": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providers Limit"
+          },
+          "providers_offset": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Providers Offset",
+            "type": "integer"
+          },
+          "providers_returned": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Providers Returned",
+            "type": "integer"
+          },
+          "total_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Usd"
+          },
+          "total_providers": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Providers",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "window_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
+          }
+        },
+        "required": [
+          "totals"
+        ],
+        "title": "ProvidersResponse",
+        "type": "object"
+      },
       "SQLiteDiagnostics": {
         "description": "SQLite data source diagnostics.",
         "properties": {
@@ -1976,6 +2113,108 @@
           }
         },
         "summary": "Project Detail"
+      }
+    },
+    "/api/providers": {
+      "get": {
+        "operationId": "providers_api_providers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 7,
+              "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Providers"
       }
     },
     "/api/summary": {
