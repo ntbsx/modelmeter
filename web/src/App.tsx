@@ -51,15 +51,19 @@ const links = [
   { to: '/live', icon: Activity, label: 'Live' },
 ]
 
-function LogoutButton() {
+function LogoutButton({ compact = false }: { compact?: boolean }) {
   const { authRequired, logout } = useAuth()
 
   if (!authRequired) return null
 
+  const className = compact
+    ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 transition-colors'
+    : 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 transition-colors w-full'
+
   return (
     <button
       onClick={logout}
-      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 transition-colors w-full"
+      className={className}
       title="Sign out"
     >
       <LogOut className="w-4 h-4" />
@@ -164,6 +168,9 @@ function AuthGate() {
             ModelMeter
           </div>
           <div className="flex items-center gap-3">
+            <div className="md:hidden">
+              <LogoutButton compact />
+            </div>
             <ThemeToggle />
           </div>
         </header>

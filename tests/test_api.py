@@ -464,3 +464,13 @@ def test_health_is_public_even_when_auth_enabled() -> None:
     payload = _get_json(response)
     assert payload["status"] == "ok"
     assert isinstance(payload["app_version"], str)
+
+
+def test_spa_routes_are_not_blocked_when_auth_enabled() -> None:
+    client = _new_client(server_password="secret")
+
+    root_response = client.get("/")
+    login_response = client.get("/login")
+
+    assert root_response.status_code != 401
+    assert login_response.status_code != 401

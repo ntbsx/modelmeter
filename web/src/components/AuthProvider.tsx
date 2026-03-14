@@ -9,14 +9,27 @@ type HealthResponse = {
   auth_required?: boolean
 }
 
-async function probeHealth(): Promise<boolean> {
+type ProbeHealthResult =
+  | { status: 'ok'; authRequired: boolean }
+  | { status: 'error' }
+
+function encodeBasicToken(username: string, password: string): string {
+  const bytes = new TextEncoder().encode(`${username}:${password}`)
+  let binary = ''
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+  return btoa(binary)
+}
+
+async function probeHealth(): Promise<ProbeHealthResult> {
   try {
     const response = await fetch('/health')
-    if (!response.ok) return false
+    if (!response.ok) return { status: 'error' }
     const data: HealthResponse = await response.json()
-    return data.auth_required === true
+    return { status: 'ok', authRequired: data.auth_required === true }
   } catch {
-    return false
+    return { status: 'error' }
   }
 }
 
@@ -40,11 +53,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false
 
     async function init() {
-      const required = await probeHealth()
+      const probe = await probeHealth()
 
       if (cancelled) return
 
-      if (!required) {
+      if (probe.status === 'ok' && !probe.authRequired) {
         setAuthRequired(false)
         setIsAuthenticated(true)
         return
@@ -74,8 +87,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (username: string, password: string): Promise<string | null> => {
-    const token = btoa(`${username}:${password}`)
     try {
+      const token = encodeBasicToken(username, password)
       const response = await fetch('/api/doctor', {
         headers: { Authorization: `Basic ${token}` },
       })
