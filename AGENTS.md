@@ -63,6 +63,10 @@ Frontend scripts:
 - `npm run --prefix web gen:types`
 - `npm run --prefix web check:types`
 
+CI workflows (GitHub Actions):
+- `.github/workflows/ci.yml` (PR/main checks)
+- `.github/workflows/release.yml` (tagged releases)
+
 ## 5) Product Versioning (Single Version)
 - ModelMeter uses a single CalVer product version across backend, CLI, and frontend.
 - Canonical source of truth: `pyproject.toml` in `[project].version`.
@@ -201,5 +205,5 @@ make format && make lint && make typecheck && make test
   2. `make release-check`
   3. Commit release metadata/version updates
   4. Create annotated tag from `pyproject.toml` version
-  5. Push commit and tag
+  5. Push commit and tag (triggers `.github/workflows/release.yml`)
 - Never tag first and bump versions later.

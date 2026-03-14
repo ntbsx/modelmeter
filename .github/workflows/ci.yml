@@ -1,0 +1,188 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  version_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Version check
+        run: make version-check
+
+  contract_policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Fetch comparison branch
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin "${{ github.event.pull_request.base.ref }}"
+          else
+            git fetch origin "${{ github.event.repository.default_branch }}"
+          fi
+      - name: Contract policy check
+        run: make contract-policy-check
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Ruff format check
+        run: uv run ruff format --check
+      - name: Ruff lint
+        run: uv run ruff check
+
+  frontend_lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci --prefix web
+      - name: Frontend lint
+        run: npm run --prefix web lint
+
+  package_smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-groups
+          npm ci --prefix web
+      - name: Build package
+        run: make package-build
+      - name: Verify wheel bundles web assets
+        run: |
+          uv run python -c "import zipfile, pathlib; wheels=sorted(pathlib.Path('dist').glob('*.whl')); assert wheels, 'No wheel built'; z=zipfile.ZipFile(wheels[-1]); assert any(n.endswith('modelmeter/web_dist/index.html') for n in z.namelist()), 'Bundled web_dist/index.html missing in wheel'"
+
+  perf_guardrail:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-groups
+          npm ci --prefix web
+      - name: Build frontend
+        run: npm run --prefix web build
+      - name: Performance guardrail
+        run: make perf-guardrail
+
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Pyright
+        run: uv run python -m pyright
+
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Pytest with coverage
+        run: uv run python -m pytest --cov=src/modelmeter --cov-report=xml
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml

@@ -152,6 +152,19 @@ make perf-check
 make perf-guardrail
 ```
 
+## CI and Releases
+
+This repository uses GitHub Actions workflows:
+
+- `.github/workflows/ci.yml` runs pull-request and `main` branch checks (lint, typecheck, tests, package smoke, and perf guardrail).
+- `.github/workflows/release.yml` runs on version tags (`vYYYY.M.D`) to validate version alignment, build release artifacts, run a package smoke test, and publish wheel/sdist assets to the GitHub release.
+
+Before opening a PR, run:
+
+```bash
+make release-check
+```
+
 ## Versioning
 
 ModelMeter uses a **single product version** for backend, CLI, and frontend.
