@@ -26,6 +26,12 @@ This folder contains feature-sliced plans for building ModelMeter (OpenCode usag
 - [x] `14-release-artifact-packaging-and-installer.md`
 - [x] `15-calver-and-git-hash-versioning.md`
 
+## Phase 4: Distributed Analytics and Lifecycle Automation
+- [ ] `phase-4-distributed-and-lifecycle/16-federation-core.md`
+- [ ] `phase-4-distributed-and-lifecycle/17-provider-analytics.md`
+- [ ] `phase-4-distributed-and-lifecycle/18-auto-update-and-release-awareness.md`
+- [ ] `phase-4-distributed-and-lifecycle/TRACKING.md`
+
 Use `00-roadmap-index.md` as the high-level map.
 
 ## Dependency Graph (What depends on what)
@@ -39,6 +45,9 @@ Use `00-roadmap-index.md` as the high-level map.
 - `08-packaging-quality-observability` -> cross-cutting, starts early, finalizes late
 - `09-future-extensions` -> after `04`, `06`, and `07` baseline completion
 - `10-server-parity-contract-live-streaming` -> after `06` and `07`, before or alongside `09`
+- `16-federation-core` -> depends on `03`, `04`, `06`, and `10`
+- `17-provider-analytics` -> depends on `03`, `06`, and `16`
+- `18-auto-update-and-release-awareness` -> depends on `14` and `15`
 
 ## Parallelization Strategy
 After `01` is complete:
@@ -57,6 +66,7 @@ To avoid rework, freeze these contracts before downstream work:
 2. Data-layer normalized record shape (`02`)
 3. CLI JSON output schema (`04`)
 4. API response schema parity with CLI JSON (`06`)
+5. Federated response metadata and source scoping (`16`)
 
 ## Definition of Done (Roadmap Level)
 - [x] CLI commands implemented with stable JSON output

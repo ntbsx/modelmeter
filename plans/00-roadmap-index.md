@@ -33,3 +33,9 @@ Build a cross-platform (macOS + Linux) OpenCode usage monitor with:
 - [x] 13. 13-performance-and-scalability.md
 - [x] 14. 14-release-artifact-packaging-and-installer.md
 - [x] 15. 15-calver-and-git-hash-versioning.md
+
+## Phase 4: Distributed Analytics and Lifecycle Automation
+- [ ] 16. phase-4-distributed-and-lifecycle/16-federation-core.md
+- [ ] 17. phase-4-distributed-and-lifecycle/17-provider-analytics.md
+- [ ] 18. phase-4-distributed-and-lifecycle/18-auto-update-and-release-awareness.md
+- [ ] T1. phase-4-distributed-and-lifecycle/TRACKING.md
