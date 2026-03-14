@@ -71,3 +71,20 @@ def test_apply_update_runs_install_command(monkeypatch: pytest.MonkeyPatch) -> N
 
     assert calls
     assert calls[0][-1].endswith("2026.3.20.whl")
+
+
+def test_apply_update_wraps_network_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    import urllib.error
+
+    def _failing_resolve(*, version: str, timeout_seconds: int) -> str:
+        raise urllib.error.URLError("Connection refused")
+
+    monkeypatch.setattr(updater_module, "_resolve_install_spec", _failing_resolve)
+
+    with pytest.raises(RuntimeError, match="Failed to resolve install source"):
+        apply_update(
+            settings=AppSettings(),
+            version="2026.3.20",
+            method="auto",
+            dry_run=False,
+        )

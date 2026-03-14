@@ -142,10 +142,13 @@ def apply_update(
             raise RuntimeError(check.error or "Unable to resolve latest release")
         target_version = check.latest_version
 
-    spec = _resolve_install_spec(
-        version=target_version,
-        timeout_seconds=settings.update_check_timeout_seconds,
-    )
+    try:
+        spec = _resolve_install_spec(
+            version=target_version,
+            timeout_seconds=settings.update_check_timeout_seconds,
+        )
+    except (urllib.error.URLError, ValueError, TimeoutError) as exc:
+        raise RuntimeError(f"Failed to resolve install source for {target_version}: {exc}") from exc
 
     if method == "pipx":
         command = ["pipx", "install", "--force", spec]
