@@ -59,8 +59,10 @@ describe('cn', () => {
   })
 
   it('handles conditional classes', () => {
-    expect(cn('base', true && 'active')).toBe('base active')
-    expect(cn('base', false && 'active')).toBe('base')
+    const shouldInclude = true
+    const shouldExclude = false
+    expect(cn('base', shouldInclude && 'active')).toBe('base active')
+    expect(cn('base', shouldExclude && 'active')).toBe('base')
   })
 
   it('merges tailwind classes correctly', () => {
