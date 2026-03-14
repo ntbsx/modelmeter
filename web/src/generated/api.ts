@@ -174,6 +174,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/update/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Update Check */
+        get: operations["update_check_api_update_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -767,6 +784,32 @@ export interface components {
              */
             readonly total_tokens: number;
         };
+        /**
+         * UpdateCheckResponse
+         * @description Update check response contract.
+         */
+        UpdateCheckResponse: {
+            /**
+             * Checked At Ms
+             * @default 0
+             */
+            checked_at_ms: number;
+            /** Current Version */
+            current_version: string;
+            /** Error */
+            error?: string | null;
+            /** Latest Version */
+            latest_version?: string | null;
+            /** Release Tag */
+            release_tag?: string | null;
+            /** Release Url */
+            release_url?: string | null;
+            /**
+             * Update Available
+             * @default false
+             */
+            update_available: boolean;
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -1138,6 +1181,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_check_api_update_check_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateCheckResponse"];
                 };
             };
         };

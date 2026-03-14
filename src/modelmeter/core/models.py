@@ -226,3 +226,15 @@ class LiveSnapshotResponse(BaseModel):
     active_session: LiveActiveSession | None = None
     top_models: list[LiveModelUsage] = []
     top_tools: list[LiveToolUsage] = []
+
+
+class UpdateCheckResponse(BaseModel):
+    """Update check response contract."""
+
+    current_version: str
+    latest_version: str | None = None
+    update_available: bool = False
+    release_tag: str | None = None
+    release_url: str | None = None
+    checked_at_ms: int = Field(default=0, ge=0)
+    error: str | None = None
