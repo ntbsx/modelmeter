@@ -9,6 +9,12 @@ The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.
 ### Added
 - Placeholder for upcoming changes.
 
+## [2026.3.16] - 2026-03-14
+
+### Fixed
+- Fixed GitLab release publishing job to send valid JSON payload to the Releases API.
+- Fixed release/version mismatch by aligning package versioning with the release tag flow.
+
 ## [2026.3.14] - 2026-03-14
 
 ### Added

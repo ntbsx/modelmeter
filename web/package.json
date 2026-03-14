@@ -1,7 +1,7 @@
 {
   "name": "modelmeter-web",
   "private": true,
-  "version": "2026.3.14",
+  "version": "2026.3.16",
   "type": "module",
   "scripts": {
     "dev": "vite",
