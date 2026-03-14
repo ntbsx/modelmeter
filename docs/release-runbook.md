@@ -31,23 +31,31 @@ make test
 make version-stamp
 ```
 
-2. Run release gate:
+2. Verify release tag/version alignment policy:
+
+- The git tag version (`vYYYY.M.D`) must match:
+  - `pyproject.toml` `[project].version`
+  - `web/package.json` `version`
+- Never cut a release tag first and bump versions later.
+
+3. Run release gate:
 
 ```bash
 make release-check
 ```
 
-3. Commit release changes and create annotated tag:
+4. Commit release changes and create annotated tag:
 
 ```bash
 git tag -a "v$(uv run python -c \"import tomllib, pathlib;print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])\")" -m "Release"
 git push --tags
 ```
 
-4. CI release jobs will:
+5. CI release jobs will:
 - build wheel/sdist with bundled web assets
 - publish package files to GitLab generic package registry
 - create/update GitLab release links for wheel/sdist assets
+- fail fast if tag/version mismatch is detected
 
 ## Install Verification (Post-Release)
 

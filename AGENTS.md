@@ -179,3 +179,15 @@ make format && make lint && make typecheck && make test
 - Respect generated-file boundaries.
 - Start with smallest relevant verification, then widen coverage.
 - Update docs when changing developer workflows.
+
+## 13) Release Safety Protocol
+- For any release request, ensure release tag/version alignment before tagging:
+  - `vYYYY.M.D` tag must equal `pyproject.toml` `[project].version`
+  - `web/package.json` `version` must match backend version
+- Preferred sequence:
+  1. `make version-stamp` (or `make version-sync` when date should not change)
+  2. `make release-check`
+  3. Commit release metadata/version updates
+  4. Create annotated tag from `pyproject.toml` version
+  5. Push commit and tag
+- Never tag first and bump versions later.

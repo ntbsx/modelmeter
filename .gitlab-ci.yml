@@ -85,6 +85,31 @@ release_artifacts:
   rules:
     - if: '$CI_COMMIT_TAG =~ /^v\d{4}\.\d{1,2}\.\d{1,2}$/'
   script:
+    - |
+      TAG_VERSION="${CI_COMMIT_TAG#v}"
+      PYPROJECT_VERSION=$(python - <<'PY'
+      import tomllib
+      from pathlib import Path
+      data = tomllib.loads(Path('pyproject.toml').read_text())
+      print(data['project']['version'])
+      PY
+      )
+      WEB_VERSION=$(python - <<'PY'
+      import json
+      from pathlib import Path
+      data = json.loads(Path('web/package.json').read_text())
+      print(data['version'])
+      PY
+      )
+
+      if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ] || [ "$TAG_VERSION" != "$WEB_VERSION" ]; then
+        echo "Release version mismatch detected"
+        echo "Tag version:        $TAG_VERSION"
+        echo "pyproject version:  $PYPROJECT_VERSION"
+        echo "web/package version:$WEB_VERSION"
+        echo "Fix versions (make version-sync/version-stamp) and retag before releasing."
+        exit 1
+      fi
     - apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
     - npm ci --prefix web
     - make package-build
