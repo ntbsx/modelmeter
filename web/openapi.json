@@ -1226,7 +1226,7 @@
   },
   "info": {
     "title": "ModelMeter",
-    "version": "2026.3.17"
+    "version": "2026.3.17rc2"
   },
   "openapi": "3.1.0",
   "paths": {
