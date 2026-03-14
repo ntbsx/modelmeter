@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import json
 import time
 from datetime import datetime
 from pathlib import Path
@@ -41,12 +42,22 @@ from modelmeter.core.models import (
     SummaryResponse,
     TokenUsage,
 )
+from modelmeter.core.sources import (
+    DataSourceConfig,
+    SourceAuth,
+    check_source_health,
+    load_source_registry,
+    remove_source,
+    upsert_source,
+)
 
 app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
     help="ModelMeter: OpenCode usage analytics for terminal and web.",
 )
+sources_app = typer.Typer(help="Manage multi-machine analytics sources.")
+app.add_typer(sources_app, name="sources")
 
 
 def _print_version_and_exit(value: bool) -> None:
@@ -69,6 +80,147 @@ def callback(
     ] = False,
 ) -> None:
     """ModelMeter command group."""
+
+
+@sources_app.command("list")
+def list_sources(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print sources as JSON."),
+    ] = False,
+) -> None:
+    """List configured analytics sources."""
+    settings = AppSettings()
+    registry = load_source_registry(settings=settings)
+
+    if json_output:
+        typer.echo(registry.model_dump_json(indent=2))
+        return
+
+    console = Console()
+    table = Table(title="Configured Sources")
+    table.add_column("Source ID")
+    table.add_column("Kind")
+    table.add_column("Label")
+    table.add_column("Target")
+    table.add_column("Enabled")
+
+    for source in registry.sources:
+        target = str(source.db_path) if source.kind == "sqlite" else str(source.base_url)
+        table.add_row(
+            source.source_id,
+            source.kind,
+            source.label or "",
+            target,
+            "yes" if source.enabled else "no",
+        )
+
+    if not registry.sources:
+        console.print("No sources configured.")
+        return
+
+    console.print(table)
+
+
+@sources_app.command("add-sqlite")
+def add_sqlite_source(
+    source_id: Annotated[str, typer.Argument(help="Unique source id.")],
+    db_path: Annotated[Path, typer.Argument(help="SQLite DB path for the source.")],
+    label: Annotated[
+        str | None,
+        typer.Option("--label", help="Display label for this source."),
+    ] = None,
+) -> None:
+    """Add or update a SQLite source."""
+    source = DataSourceConfig(source_id=source_id, label=label, kind="sqlite", db_path=db_path)
+    upsert_source(settings=AppSettings(), source=source)
+    typer.echo(f"Saved sqlite source '{source_id}'.")
+
+
+@sources_app.command("add-http")
+def add_http_source(
+    source_id: Annotated[str, typer.Argument(help="Unique source id.")],
+    base_url: Annotated[str, typer.Argument(help="Base URL for remote ModelMeter API.")],
+    label: Annotated[
+        str | None,
+        typer.Option("--label", help="Display label for this source."),
+    ] = None,
+    username: Annotated[
+        str | None,
+        typer.Option("--username", help="Basic auth username for source."),
+    ] = None,
+    password: Annotated[
+        str | None,
+        typer.Option("--password", help="Basic auth password for source."),
+    ] = None,
+) -> None:
+    """Add or update an HTTP source."""
+    auth: SourceAuth | None = None
+    if username is not None or password is not None:
+        if not username or not password:
+            typer.echo("Error: --username and --password must be provided together.")
+            raise typer.Exit(code=1)
+        auth = SourceAuth(username=username, password=password)
+
+    source = DataSourceConfig(
+        source_id=source_id,
+        label=label,
+        kind="http",
+        base_url=base_url,
+        auth=auth,
+    )
+    upsert_source(settings=AppSettings(), source=source)
+    typer.echo(f"Saved http source '{source_id}'.")
+
+
+@sources_app.command("remove")
+def remove_registered_source(
+    source_id: Annotated[str, typer.Argument(help="Source id to remove.")],
+) -> None:
+    """Remove a configured source."""
+    removed = remove_source(settings=AppSettings(), source_id=source_id)
+    if not removed:
+        typer.echo(f"No source found with id '{source_id}'.")
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Removed source '{source_id}'.")
+
+
+@sources_app.command("check")
+def check_sources(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print source checks as JSON."),
+    ] = False,
+) -> None:
+    """Check reachability for configured sources."""
+    settings = AppSettings()
+    registry = load_source_registry(settings=settings)
+    checks = [check_source_health(source=source, settings=settings) for source in registry.sources]
+
+    if json_output:
+        typer.echo(json.dumps([result.model_dump(mode="json") for result in checks], indent=2))
+        return
+
+    if not checks:
+        typer.echo("No sources configured.")
+        return
+
+    table = Table(title="Source Health")
+    table.add_column("Source ID")
+    table.add_column("Kind")
+    table.add_column("Reachable")
+    table.add_column("Detail")
+    table.add_column("Error")
+    for result in checks:
+        table.add_row(
+            result.source_id,
+            result.kind,
+            "yes" if result.is_reachable else "no",
+            result.detail or "",
+            result.error or "",
+        )
+    Console().print(table)
 
 
 @app.command()

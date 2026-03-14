@@ -1,4 +1,5 @@
 from typer.testing import CliRunner
+from pathlib import Path
 
 from modelmeter.cli.main import app
 from modelmeter.common.formatting import format_pricing_source_human, format_usd_human
@@ -42,3 +43,40 @@ def test_version_flag_prints_runtime_version() -> None:
 
     assert result.exit_code == 0
     assert result.stdout.strip()
+
+
+def test_sources_add_list_and_remove(tmp_path: Path) -> None:
+    runner = CliRunner()
+    registry_path = tmp_path / "sources.json"
+    env = {"MODELMETER_SOURCE_REGISTRY_FILE": str(registry_path)}
+
+    add_result = runner.invoke(
+        app,
+        ["sources", "add-sqlite", "local-main", str(tmp_path / "opencode.db")],
+        env=env,
+    )
+    assert add_result.exit_code == 0
+
+    list_result = runner.invoke(app, ["sources", "list", "--json"], env=env)
+    assert list_result.exit_code == 0
+    assert '"source_id": "local-main"' in list_result.stdout
+
+    remove_result = runner.invoke(app, ["sources", "remove", "local-main"], env=env)
+    assert remove_result.exit_code == 0
+
+
+def test_sources_check_reports_missing_sqlite_path(tmp_path: Path) -> None:
+    runner = CliRunner()
+    registry_path = tmp_path / "sources.json"
+    env = {"MODELMETER_SOURCE_REGISTRY_FILE": str(registry_path)}
+
+    runner.invoke(
+        app,
+        ["sources", "add-sqlite", "missing-db", str(tmp_path / "does-not-exist.db")],
+        env=env,
+    )
+
+    result = runner.invoke(app, ["sources", "check", "--json"], env=env)
+    assert result.exit_code == 0
+    assert '"source_id": "missing-db"' in result.stdout
+    assert '"is_reachable": false' in result.stdout

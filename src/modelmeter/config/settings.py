@@ -23,6 +23,10 @@ class AppSettings(BaseSettings):
     pricing_remote_url: str = "https://models.dev/api.json"
     pricing_remote_timeout_seconds: int = Field(default=8, ge=1, le=60)
     pricing_cache_ttl_hours: int = Field(default=24, ge=1, le=168)
+    source_registry_file: Path = Field(
+        default=Path.home() / ".config" / "modelmeter" / "sources.json"
+    )
+    source_http_timeout_seconds: int = Field(default=5, ge=1, le=60)
 
     @property
     def app_version(self) -> str:

@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
 from fastapi.testclient import TestClient
 
 from modelmeter.api.app import create_app
@@ -190,6 +191,51 @@ def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
     assert response.status_code == 200
     payload = _get_json(response)
     assert payload["selected_source"] == "sqlite"
+
+
+def test_sources_endpoint_returns_empty_registry_by_default() -> None:
+    client = _new_client()
+    response = client.get(
+        "/api/sources",
+        headers={"X-Ignore": "1"},
+        cookies={"ignore": "1"},
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["version"] == 1
+    assert payload["sources"] == []
+
+
+def test_sources_check_endpoint_reports_reachability(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "sources": [
+                    {
+                        "source_id": "local",
+                        "kind": "sqlite",
+                        "db_path": str(db_path),
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    client = _new_client()
+    response = client.get("/api/sources/check")
+
+    assert response.status_code == 200
+    payload = cast(list[dict[str, Any]], response.json())
+    assert payload[0]["source_id"] == "local"
+    assert payload[0]["is_reachable"] is True
 
 
 def test_summary_endpoint(tmp_path: Path) -> None:
