@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 import urllib.error
@@ -16,18 +17,28 @@ from modelmeter.core.models import UpdateCheckResponse
 PROJECT_PATH = "ntbsx/modelmeter"
 GITHUB_API = f"https://api.github.com/repos/{PROJECT_PATH}"
 GITHUB_WEB = f"https://github.com/{PROJECT_PATH}"
+RELEASE_VERSION_PATTERN = re.compile(
+    r"^(?P<year>\d{4})\.(?P<month>[1-9]|1[0-2])\.(?P<patch>\d+)(?:rc(?P<rc>\d+))?$"
+)
 
 
-def _calver_key(value: str) -> tuple[int, int, int]:
-    parts = value.split(".")
-    if len(parts) != 3:
+def _release_key(value: str) -> tuple[int, int, int, int, int]:
+    match = RELEASE_VERSION_PATTERN.fullmatch(value)
+    if match is None:
         raise ValueError(f"Invalid version '{value}'")
-    return int(parts[0]), int(parts[1]), int(parts[2])
+
+    year = int(match.group("year"))
+    month = int(match.group("month"))
+    patch = int(match.group("patch"))
+    rc_raw = match.group("rc")
+    if rc_raw is None:
+        return year, month, patch, 1, 0
+    return year, month, patch, 0, int(rc_raw)
 
 
 def _is_newer_version(current: str, candidate: str) -> bool:
     try:
-        return _calver_key(candidate) > _calver_key(current)
+        return _release_key(candidate) > _release_key(current)
     except ValueError:
         return False
 

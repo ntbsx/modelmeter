@@ -10,6 +10,7 @@ from modelmeter.common.version import (
     get_git_short_sha,
     get_product_version,
     is_calver,
+    is_release_version,
 )
 from modelmeter.config.settings import AppSettings
 
@@ -30,8 +31,14 @@ def test_runtime_product_version_matches_pyproject() -> None:
     expected = _pyproject_version(root)
 
     assert is_calver(expected)
+    assert is_release_version(expected)
     assert get_base_version() == expected
     assert AppSettings().app_version == expected
+
+
+def test_release_version_validator_accepts_pep440_rc() -> None:
+    assert is_release_version("2026.3.17rc2")
+    assert not is_calver("2026.3.17rc2")
 
 
 def test_runtime_product_version_includes_short_hash_when_available() -> None:

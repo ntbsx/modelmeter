@@ -6,7 +6,7 @@ import tomllib
 from pathlib import Path
 from typing import cast
 
-from modelmeter.common.version import is_calver
+from modelmeter.common.version import is_release_version
 
 
 def _project_root() -> Path:
@@ -23,9 +23,10 @@ def _read_backend_version(root: Path) -> str:
     value = project.get("version")
     if not isinstance(value, str) or not value.strip():
         raise RuntimeError("Could not read [project].version from pyproject.toml")
-    if not is_calver(value):
+    if not is_release_version(value):
         raise RuntimeError(
-            "[project].version must be CalVer in the format YYYY.M.D (example: 2026.3.13)",
+            "[project].version must use YYYY.M.x or YYYY.M.xrcN "
+            "(example: 2026.3.17 or 2026.3.17rc2)",
         )
     return value
 

@@ -36,19 +36,21 @@ jobs:
         id: release_meta
         run: |
           TAG_NAME="${GITHUB_REF_NAME}"
-          if [[ ! "${TAG_NAME}" =~ ^v([0-9]{4}\.[0-9]{1,2}\.[0-9]{1,2})(-rc\.[0-9]+)?$ ]]; then
+          if [[ ! "${TAG_NAME}" =~ ^v([0-9]{4}\.([1-9]|1[0-2])\.[0-9]+)(rc[0-9]+)?$ ]]; then
             echo "Invalid release tag format: ${TAG_NAME}"
-            echo "Expected stable: vYYYY.M.D or prerelease: vYYYY.M.D-rc.N"
+            echo "Expected stable: vYYYY.M.x or prerelease: vYYYY.M.xrcN"
             exit 1
           fi
 
+          TAG_VERSION="${BASH_REMATCH[1]}${BASH_REMATCH[3]}"
           BASE_VERSION="${BASH_REMATCH[1]}"
-          SUFFIX="${BASH_REMATCH[2]}"
+          SUFFIX="${BASH_REMATCH[3]}"
           if [[ -n "${SUFFIX}" ]]; then
             echo "prerelease=true" >> "${GITHUB_OUTPUT}"
           else
             echo "prerelease=false" >> "${GITHUB_OUTPUT}"
           fi
+          echo "tag_version=${TAG_VERSION}" >> "${GITHUB_OUTPUT}"
           echo "base_version=${BASE_VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Install dependencies
@@ -58,7 +60,9 @@ jobs:
 
       - name: Validate tag and project versions
         run: |
-          TAG_VERSION="${{ steps.release_meta.outputs.base_version }}"
+          TAG_VERSION="${{ steps.release_meta.outputs.tag_version }}"
+          BASE_VERSION="${{ steps.release_meta.outputs.base_version }}"
+          IS_PRERELEASE="${{ steps.release_meta.outputs.prerelease }}"
           PYPROJECT_VERSION=$(python - <<'PY'
           import tomllib
           from pathlib import Path
@@ -74,13 +78,43 @@ jobs:
           PY
           )
 
-          if [ "${TAG_VERSION}" != "${PYPROJECT_VERSION}" ] || [ "${TAG_VERSION}" != "${WEB_VERSION}" ]; then
+          if [ "${IS_PRERELEASE}" = "true" ]; then
+            EXPECTED_VERSION="${BASE_VERSION}"
+          else
+            EXPECTED_VERSION="${TAG_VERSION}"
+          fi
+
+          if [ "${EXPECTED_VERSION}" != "${PYPROJECT_VERSION}" ] || [ "${EXPECTED_VERSION}" != "${WEB_VERSION}" ]; then
             echo "Release version mismatch detected"
             echo "Tag version:         ${TAG_VERSION}"
+            echo "Expected version:    ${EXPECTED_VERSION}"
             echo "pyproject version:   ${PYPROJECT_VERSION}"
             echo "web/package version: ${WEB_VERSION}"
             exit 1
           fi
+
+      - name: Apply prerelease version in CI workspace
+        if: ${{ steps.release_meta.outputs.prerelease == 'true' }}
+        run: |
+          TAG_VERSION="${{ steps.release_meta.outputs.tag_version }}"
+          python - <<'PY'
+          import json
+          import tomllib
+          from pathlib import Path
+
+          tag_version = "${{ steps.release_meta.outputs.tag_version }}"
+
+          pyproject_path = Path("pyproject.toml")
+          pyproject_text = pyproject_path.read_text()
+          pyproject = tomllib.loads(pyproject_text)
+          current = pyproject["project"]["version"]
+          pyproject_path.write_text(pyproject_text.replace(f'version = "{current}"', f'version = "{tag_version}"', 1))
+
+          package_path = Path("web/package.json")
+          package = json.loads(package_path.read_text())
+          package["version"] = tag_version
+          package_path.write_text(f"{json.dumps(package, indent=2)}\n")
+          PY
 
       - name: Build package artifacts
         run: make package-build
