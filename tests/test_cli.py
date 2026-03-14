@@ -1,4 +1,5 @@
 from typer.testing import CliRunner
+import pytest
 
 from modelmeter.cli.main import app
 from modelmeter.common.formatting import format_pricing_source_human, format_usd_human
@@ -42,3 +43,32 @@ def test_version_flag_prints_runtime_version() -> None:
 
     assert result.exit_code == 0
     assert result.stdout.strip()
+
+
+def test_update_check_command_json_output(monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = CliRunner()
+
+    class _Result:
+        def model_dump_json(self, *, indent: int) -> str:
+            return '{"update_available": true, "latest_version": "2026.3.20"}'
+
+    monkeypatch.setattr("modelmeter.cli.main.check_for_updates", lambda *, settings: _Result())
+
+    result = runner.invoke(app, ["update", "check", "--json"])
+    assert result.exit_code == 0
+    assert '"update_available": true' in result.stdout
+
+
+def test_update_apply_dry_run_command(monkeypatch: pytest.MonkeyPatch) -> None:
+    runner = CliRunner()
+    monkeypatch.setattr(
+        "modelmeter.cli.main.apply_update",
+        lambda *, settings, version, method, dry_run: (
+            "https://example.com/modelmeter.whl",
+            ["python3", "-m", "pip", "install", "--user", "--upgrade", "https://example.com/modelmeter.whl"],
+        ),
+    )
+
+    result = runner.invoke(app, ["update", "apply", "--dry-run"])
+    assert result.exit_code == 0
+    assert "Dry run complete" in result.stdout

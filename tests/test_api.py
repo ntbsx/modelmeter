@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
 
+import pytest
 from fastapi.testclient import TestClient
 
 from modelmeter.api.app import create_app
@@ -190,6 +191,27 @@ def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
     assert response.status_code == 200
     payload = _get_json(response)
     assert payload["selected_source"] == "sqlite"
+
+
+def test_update_check_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "modelmeter.api.app.check_for_updates",
+        lambda *, settings: {
+            "current_version": "2026.3.1",
+            "latest_version": "2026.3.20",
+            "update_available": True,
+            "release_tag": "v2026.3.20",
+            "release_url": "https://gitlab.example/release",
+            "checked_at_ms": 1,
+            "error": None,
+        },
+    )
+    client = _new_client()
+    response = client.get("/api/update/check")
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["update_available"] is True
 
 
 def test_summary_endpoint(tmp_path: Path) -> None:
