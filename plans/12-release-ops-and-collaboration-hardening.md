@@ -48,7 +48,7 @@ Strengthen release and team workflows so changes ship reliably with clear audita
 ### Workstream B: Merge Request Template (Priority 2)
 
 #### Deliverables
-- Add `.gitlab/merge_request_templates/default.md` with required checklist:
+- Add `.github/pull_request_template.md` with required checklist:
   - version impact (patch/minor/major)
   - API contract changed? if yes, what changed
   - `make release-check` run result

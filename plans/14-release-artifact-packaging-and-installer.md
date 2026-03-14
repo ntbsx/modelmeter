@@ -1,10 +1,10 @@
 # Feature Plan: Release Artifact Packaging and Installer
 
 ## Objective
-Package ModelMeter so installed artifacts include the web app, and provide a public bash installer that installs from GitLab Release assets.
+Package ModelMeter so installed artifacts include the web app, and provide a public bash installer that installs from GitHub Release assets.
 
 ## Why This Matters
-- Current install paths are Python-package oriented, but release-distribution flow is not finalized for GitLab artifacts.
+- Current install paths are Python-package oriented, but release-distribution flow is not finalized for GitHub artifacts.
 - Users should be able to install and run `modelmeter serve` without cloning the repo or building frontend assets locally.
 - A stable public installer improves onboarding and release adoption.
 
@@ -13,7 +13,7 @@ Package ModelMeter so installed artifacts include the web app, and provide a pub
 ### In Scope
 - Bundle built frontend (`web/dist`) into Python wheel/sdist.
 - Serve packaged frontend assets at runtime in installed environments.
-- Add tag-driven GitLab release pipeline that publishes wheel/sdist artifacts.
+- Add tag-driven GitHub release pipeline that publishes wheel/sdist artifacts.
 - Add public bash installer at `scripts/install.sh` supporting latest and pinned versions.
 - Document install flow in `README.md`.
 
@@ -58,12 +58,12 @@ Package ModelMeter so installed artifacts include the web app, and provide a pub
 
 ---
 
-### Workstream C: GitLab Release Artifact Pipeline (Priority 3)
+### Workstream C: GitHub Release Artifact Pipeline (Priority 3)
 
 #### Deliverables
-- Add release jobs in `.gitlab-ci.yml` (tag-only):
+- Add release jobs in `.github/workflows/release.yml` (tag-only):
   - build artifacts (web + wheel/sdist)
-  - publish artifacts to GitLab Release assets
+  - publish artifacts to GitHub Release assets
 - Keep non-release CI flow unchanged for branch/MR pipelines.
 
 #### Acceptance Criteria
@@ -86,7 +86,7 @@ Package ModelMeter so installed artifacts include the web app, and provide a pub
   - post-install sanity check (`modelmeter info`)
 
 #### Acceptance Criteria
-- Installer works on public GitLab release assets without auth.
+- Installer works on public GitHub release assets without auth.
 - Latest and pinned installs both succeed.
 
 #### Validation
@@ -127,7 +127,7 @@ Package ModelMeter so installed artifacts include the web app, and provide a pub
 - Release wheel/sdist include bundled web assets.
 - `modelmeter serve` works directly from installed release artifact.
 - Public `scripts/install.sh` supports latest and pinned versions.
-- GitLab tag releases publish installable assets consistently.
+- GitHub tag releases publish installable assets consistently.
 - README reflects the final install workflow.
 
 ## Completion Checklist
