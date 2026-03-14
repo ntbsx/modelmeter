@@ -6,7 +6,7 @@ This runbook provides the standard workflow for feature delivery, release prep, 
 
 1. Sync with `main` and create a feature branch.
 2. Implement changes with focused commits.
-3. Run local checks before opening MR:
+3. Run local checks before opening PR:
 
 ```bash
 make version-check
@@ -21,7 +21,7 @@ make test
 - `web/openapi.json` updated
 - `web/src/generated/api.ts` updated
 - `web/src/generated/openapi.sha256` updated
-- canonical version intent documented in MR template
+- canonical version intent documented in PR description
 
 ## Release Preparation
 
@@ -51,10 +51,9 @@ git tag -a "v$(uv run python -c \"import tomllib, pathlib;print(tomllib.loads(pa
 git push --tags
 ```
 
-5. CI release jobs will:
+5. GitHub Actions release workflow (`.github/workflows/release.yml`) will:
 - build wheel/sdist with bundled web assets
-- publish package files to GitLab generic package registry
-- create/update GitLab release links for wheel/sdist assets
+- publish wheel/sdist assets to the GitHub release
 - fail fast if tag/version mismatch is detected
 
 ## Install Verification (Post-Release)
