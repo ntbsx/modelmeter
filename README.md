@@ -4,22 +4,26 @@ ModelMeter: OpenCode usage analytics for terminal and web.
 
 ## Installation
 
-You can install ModelMeter globally using `pipx` or `uv tool`:
+ModelMeter is currently distributed via GitLab releases (not PyPI yet).
 
-```bash
-pipx install modelmeter
-# OR
-uv tool install modelmeter
-```
-
-Install from GitLab release archive via bash script (public project):
+Install via the GitLab release installer script (public project):
 
 ```bash
 # Latest release
 curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash
 
 # Pinned release
-curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --version 2026.3.13
+curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --version 2026.3.16
+```
+
+Choose installation method explicitly if needed:
+
+```bash
+# Prefer pipx
+curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --method pipx
+
+# Use pip --user
+curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --method pip
 ```
 
 The installed package includes the built web UI, so `modelmeter serve` works without cloning the repo.
