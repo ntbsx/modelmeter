@@ -27,6 +27,11 @@ class AppSettings(BaseSettings):
         default=Path.home() / ".config" / "modelmeter" / "sources.json"
     )
     source_http_timeout_seconds: int = Field(default=5, ge=1, le=60)
+    update_check_enabled: bool = True
+    update_check_url: str = (
+        "https://gitlab.com/api/v4/projects/ntbsdev%2Fmodelmeter/releases/permalink/latest"
+    )
+    update_check_timeout_seconds: int = Field(default=8, ge=1, le=60)
 
     @property
     def app_version(self) -> str:

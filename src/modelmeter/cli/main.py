@@ -41,6 +41,7 @@ from modelmeter.core.models import (
     ProjectsResponse,
     SummaryResponse,
     TokenUsage,
+    UpdateCheckResponse,
 )
 from modelmeter.core.sources import (
     DataSourceConfig,
@@ -50,6 +51,7 @@ from modelmeter.core.sources import (
     remove_source,
     upsert_source,
 )
+from modelmeter.core.updater import apply_update, check_for_updates
 
 app = typer.Typer(
     add_completion=False,
@@ -58,6 +60,8 @@ app = typer.Typer(
 )
 sources_app = typer.Typer(help="Manage multi-machine analytics sources.")
 app.add_typer(sources_app, name="sources")
+update_app = typer.Typer(help="Check for and apply ModelMeter updates.")
+app.add_typer(update_app, name="update")
 
 
 def _print_version_and_exit(value: bool) -> None:
@@ -221,6 +225,73 @@ def check_sources(
             result.error or "",
         )
     Console().print(table)
+def _render_update_check(console: Console, result: UpdateCheckResponse) -> None:
+    console.print(f"Current version: {result.current_version}")
+    if result.error is not None:
+        console.print(f"Update check failed: {result.error}")
+        return
+
+    if result.latest_version is None:
+        console.print("Latest version: unknown")
+        return
+
+    console.print(f"Latest version: {result.latest_version}")
+    if result.update_available:
+        console.print("Update available: yes")
+        if result.release_url:
+            console.print(f"Release: {result.release_url}")
+    else:
+        console.print("Update available: no")
+
+
+@update_app.command("check")
+def update_check(
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print update check as JSON."),
+    ] = False,
+) -> None:
+    """Check for a newer ModelMeter release."""
+    result = check_for_updates(settings=AppSettings())
+    if json_output:
+        typer.echo(result.model_dump_json(indent=2))
+        return
+
+    _render_update_check(Console(), result)
+
+
+@update_app.command("apply")
+def update_apply(
+    version: Annotated[
+        str | None,
+        typer.Option("--version", help="Target version to install. Defaults to latest."),
+    ] = None,
+    method: Annotated[
+        Literal["auto", "pipx", "pip"],
+        typer.Option("--method", help="Install method to use."),
+    ] = "auto",
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Print resolved install command without running it."),
+    ] = False,
+) -> None:
+    """Apply a ModelMeter update."""
+    settings = AppSettings()
+    try:
+        spec, command = apply_update(
+            settings=settings,
+            version=version,
+            method=method,
+            dry_run=dry_run,
+        )
+    except RuntimeError as exc:
+        typer.echo(f"Error: {exc}")
+        raise typer.Exit(code=1) from None
+
+    typer.echo(f"Resolved install source: {spec}")
+    typer.echo(f"Install command: {' '.join(command)}")
+    if dry_run:
+        typer.echo("Dry run complete. No changes were made.")
 
 
 @app.command()

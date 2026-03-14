@@ -11,7 +11,10 @@ from typing import Any, cast
 import pytest
 from fastapi.testclient import TestClient
 
+import modelmeter.api.app as api_app_module
 from modelmeter.api.app import create_app
+from modelmeter.config.settings import AppSettings
+from modelmeter.core.models import UpdateCheckResponse
 
 
 def _new_client(**create_app_kwargs: Any) -> Any:
@@ -265,6 +268,26 @@ def test_sources_check_endpoint_reports_reachability(
     payload = cast(list[dict[str, Any]], response.json())
     assert payload[0]["source_id"] == "local"
     assert payload[0]["is_reachable"] is True
+
+def test_update_check_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _mock_update_check(*, settings: AppSettings) -> UpdateCheckResponse:
+        _ = settings
+        return UpdateCheckResponse(
+            current_version="2026.3.1",
+            latest_version="2026.3.20",
+            update_available=True,
+            release_tag="v2026.3.20",
+            release_url="https://gitlab.example/release",
+            checked_at_ms=1,
+        )
+
+    monkeypatch.setattr(api_app_module, "check_for_updates", _mock_update_check)
+    client = _new_client()
+    response = client.get("/api/update/check")
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["update_available"] is True
 
 
 def test_summary_endpoint(tmp_path: Path) -> None:

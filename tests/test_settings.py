@@ -11,3 +11,8 @@ def test_default_opencode_data_dir() -> None:
 def test_default_source_registry_file() -> None:
     settings = AppSettings()
     assert settings.source_registry_file == Path.home() / ".config" / "modelmeter" / "sources.json"
+
+def test_update_check_is_enabled_by_default() -> None:
+    settings = AppSettings()
+    assert settings.update_check_enabled is True
+    assert "gitlab.com/api/v4/projects" in settings.update_check_url

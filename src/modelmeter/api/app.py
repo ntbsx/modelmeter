@@ -41,6 +41,7 @@ from modelmeter.core.models import (
     ProjectDetailResponse,
     ProjectsResponse,
     SummaryResponse,
+    UpdateCheckResponse,
 )
 from modelmeter.core.sources import (
     SourceHealth,
@@ -49,6 +50,7 @@ from modelmeter.core.sources import (
     load_source_registry,
     to_public_registry,
 )
+from modelmeter.core.updater import check_for_updates
 
 LOCAL_CORS_ORIGINS = [
     "http://localhost:3000",
@@ -174,6 +176,10 @@ def create_app(
         return [
             check_source_health(source=source, settings=settings) for source in registry.sources
         ]
+
+    @app.get("/api/update/check", response_model=UpdateCheckResponse)
+    def update_check() -> UpdateCheckResponse:
+        return check_for_updates(settings=settings)
 
     @app.get("/api/summary", response_model=SummaryResponse)
     def summary(
