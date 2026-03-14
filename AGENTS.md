@@ -41,7 +41,7 @@ Primary commands (Makefile):
 - `make typecheck` run `pyright` (strict)
 - `make test` run all pytest tests
 - `make gen-types` regenerate OpenAPI + TS generated types
-- `make version-stamp` stamp CalVer from current date and sync frontend version
+- `make version-stamp` bump monthly patch CalVer and sync frontend version
 - `make version-sync` sync `web/package.json` version from `pyproject.toml`
 - `make version-check` fail on backend/frontend version mismatch
 - `make contract-policy-check` enforce OpenAPI/version artifact policy
@@ -74,12 +74,13 @@ CI workflows (GitHub Actions):
 ## 5) Product Versioning (Single Version)
 - ModelMeter uses a single CalVer product version across backend, CLI, and frontend.
 - Canonical source of truth: `pyproject.toml` in `[project].version`.
-- Canonical format: `YYYY.M.D` (example: `2026.3.13`).
+- Canonical stable format: `YYYY.M.x` (example: `2026.3.17`).
+- Canonical prerelease format: `YYYY.M.xrcN` (example: `2026.3.17rc2`).
 - Frontend version in `web/package.json` must match backend version.
-- Runtime display version appends git short hash when available (`YYYY.M.D+<shortsha>`).
+- Runtime display version appends git short hash when available (`YYYY.M.x+<shortsha>`).
 - OpenAPI schema version remains canonical CalVer (no hash) to avoid snapshot churn.
 - Use:
-  - `make version-stamp` to stamp the current-date CalVer and sync frontend version
+  - `make version-stamp` to bump the current-month patch CalVer and sync frontend version
   - `make version-sync` to align frontend version to backend version
   - `make version-check` to fail fast when versions diverge
 - Contract policy (no `/api/v1` namespace currently):
@@ -214,10 +215,10 @@ make format && make lint && make typecheck && make test
 
 ## 13) Release Safety Protocol
 - For any release request, ensure release tag/version alignment before tagging:
-  - `vYYYY.M.D` tag must equal `pyproject.toml` `[project].version`
+  - `vYYYY.M.x` (or prerelease `vYYYY.M.xrcN`) tag must equal `pyproject.toml` `[project].version`
   - `web/package.json` `version` must match backend version
 - Preferred sequence:
-  1. `make version-stamp` (or `make version-sync` when date should not change)
+  1. `make version-stamp` (or `make version-sync` when a version bump is not needed)
   2. `make release-check`
   3. Commit release metadata/version updates
   4. Create annotated tag from `pyproject.toml` version

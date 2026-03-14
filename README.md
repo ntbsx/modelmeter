@@ -171,7 +171,7 @@ make perf-guardrail
 This repository uses GitHub Actions workflows:
 
 - `.github/workflows/ci.yml` runs pull-request and `main` branch checks (lint, typecheck, tests, package smoke, and perf guardrail).
-- `.github/workflows/release.yml` runs on version tags (`vYYYY.M.D`) to validate version alignment, build release artifacts, run a package smoke test, and publish wheel/sdist assets to the GitHub release.
+- `.github/workflows/release.yml` runs on version tags (`vYYYY.M.x` for stable, `vYYYY.M.xrcN` for prereleases) to validate version alignment, build release artifacts, run a package smoke test, and publish wheel/sdist assets to the GitHub release.
 
 Before opening a PR, run:
 
@@ -184,9 +184,10 @@ make release-check
 ModelMeter uses a **single product version** for backend, CLI, and frontend.
 
 - Canonical source: `pyproject.toml` (`[project].version`)
-- Canonical format: CalVer `YYYY.M.D` (example: `2026.3.13`)
+- Canonical stable format: CalVer `YYYY.M.x` (example: `2026.3.17`)
+- Canonical prerelease format: `YYYY.M.xrcN` (example: `2026.3.17rc2`)
 - Frontend version in `web/package.json` must match backend version
-- Runtime display version appends git short hash when available (`YYYY.M.D+<shortsha>`)
+- Runtime display version appends git short hash when available (`YYYY.M.x+<shortsha>`)
 - OpenAPI schema version stays on canonical CalVer (without hash) for snapshot stability
 
 Common version commands:
@@ -195,7 +196,7 @@ Common version commands:
 # Sync frontend version to backend version
 make version-sync
 
-# Stamp canonical CalVer from today and sync frontend
+# Bump canonical monthly patch CalVer and sync frontend
 make version-stamp
 
 # Check backend/frontend versions are aligned (non-zero exit on mismatch)

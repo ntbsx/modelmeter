@@ -36,20 +36,20 @@ jobs:
         id: release_meta
         run: |
           TAG_NAME="${GITHUB_REF_NAME}"
-          if [[ ! "${TAG_NAME}" =~ ^v([0-9]{4}\.[0-9]{1,2}\.[0-9]{1,2})(-rc\.[0-9]+)?$ ]]; then
+          if [[ ! "${TAG_NAME}" =~ ^v([0-9]{4}\.([1-9]|1[0-2])\.[0-9]+)(rc[0-9]+)?$ ]]; then
             echo "Invalid release tag format: ${TAG_NAME}"
-            echo "Expected stable: vYYYY.M.D or prerelease: vYYYY.M.D-rc.N"
+            echo "Expected stable: vYYYY.M.x or prerelease: vYYYY.M.xrcN"
             exit 1
           fi
 
-          BASE_VERSION="${BASH_REMATCH[1]}"
-          SUFFIX="${BASH_REMATCH[2]}"
+          TAG_VERSION="${BASH_REMATCH[1]}${BASH_REMATCH[3]}"
+          SUFFIX="${BASH_REMATCH[3]}"
           if [[ -n "${SUFFIX}" ]]; then
             echo "prerelease=true" >> "${GITHUB_OUTPUT}"
           else
             echo "prerelease=false" >> "${GITHUB_OUTPUT}"
           fi
-          echo "base_version=${BASE_VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "tag_version=${TAG_VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Install dependencies
         run: |
@@ -58,7 +58,7 @@ jobs:
 
       - name: Validate tag and project versions
         run: |
-          TAG_VERSION="${{ steps.release_meta.outputs.base_version }}"
+          TAG_VERSION="${{ steps.release_meta.outputs.tag_version }}"
           PYPROJECT_VERSION=$(python - <<'PY'
           import tomllib
           from pathlib import Path
