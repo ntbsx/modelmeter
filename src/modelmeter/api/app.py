@@ -201,6 +201,7 @@ def create_app(
     @app.get("/api/models", response_model=ModelsResponse)
     def models(
         days: int | None = Query(default=7, ge=1),
+        offset: int = Query(default=0, ge=0),
         limit: int = Query(default=20, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
@@ -209,6 +210,7 @@ def create_app(
             return get_models(
                 settings=settings,
                 days=days,
+                offset=offset,
                 limit=limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
@@ -237,6 +239,7 @@ def create_app(
     @app.get("/api/projects", response_model=ProjectsResponse)
     def projects(
         days: int | None = Query(default=7, ge=1),
+        offset: int = Query(default=0, ge=0),
         limit: int = Query(default=20, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
@@ -245,6 +248,7 @@ def create_app(
             return get_projects(
                 settings=settings,
                 days=days,
+                offset=offset,
                 limit=limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),

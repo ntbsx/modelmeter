@@ -49,8 +49,20 @@ def main() -> int:
     root = _project_root()
     base_ref = _resolve_base_ref(args.base_ref)
 
-    changed_output = _run_git(["diff", "--name-only", f"{base_ref}...HEAD"], cwd=root)
-    changed_files = {line.strip() for line in changed_output.splitlines() if line.strip()}
+    in_ci = os.getenv("CI", "").strip().lower() == "true"
+    if in_ci:
+        changed_output = _run_git(["diff", "--name-only", f"{base_ref}...HEAD"], cwd=root)
+        changed_files = {line.strip() for line in changed_output.splitlines() if line.strip()}
+    else:
+        status_output = _run_git(["status", "--porcelain"], cwd=root)
+        changed_files = {
+            line[3:].strip()
+            for line in status_output.splitlines()
+            if len(line) > 3 and line[3:].strip()
+        }
+        if not changed_files:
+            changed_output = _run_git(["diff", "--name-only", f"{base_ref}...HEAD"], cwd=root)
+            changed_files = {line.strip() for line in changed_output.splitlines() if line.strip()}
 
     if "web/openapi.json" not in changed_files:
         print("Contract check: no OpenAPI contract changes detected.")

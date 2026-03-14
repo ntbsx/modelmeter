@@ -204,6 +204,7 @@ def get_models(
     days: int | None = None,
     db_path_override: Path | None = None,
     pricing_file_override: Path | None = None,
+    offset: int = 0,
     limit: int = 20,
 ) -> ModelsResponse:
     """Return top model usage aggregates."""
@@ -246,12 +247,19 @@ def get_models(
             )
         )
 
-    usage_rows.sort(key=lambda item: item.usage.total_tokens, reverse=True)
+    total_models = len(usage_rows)
+
+    if offset > 0:
+        usage_rows = usage_rows[offset:]
     if limit > 0:
         usage_rows = usage_rows[:limit]
 
     return ModelsResponse(
         window_days=days,
+        models_offset=offset,
+        models_limit=limit,
+        models_returned=len(usage_rows),
+        total_models=total_models,
         totals=_token_usage_from_row(summary_row),
         total_sessions=total_sessions,
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
@@ -333,6 +341,7 @@ def get_projects(
     days: int | None = None,
     db_path_override: Path | None = None,
     pricing_file_override: Path | None = None,
+    offset: int = 0,
     limit: int = 20,
 ) -> ProjectsResponse:
     """Return top project usage aggregates."""
@@ -379,12 +388,19 @@ def get_projects(
             )
         )
 
-    usage_rows.sort(key=lambda item: item.usage.total_tokens, reverse=True)
+    total_projects = len(usage_rows)
+
+    if offset > 0:
+        usage_rows = usage_rows[offset:]
     if limit > 0:
         usage_rows = usage_rows[:limit]
 
     return ProjectsResponse(
         window_days=days,
+        projects_offset=offset,
+        projects_limit=limit,
+        projects_returned=len(usage_rows),
+        total_projects=total_projects,
         totals=_token_usage_from_row(summary_row),
         total_sessions=total_sessions,
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,

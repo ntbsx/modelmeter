@@ -6,12 +6,16 @@ This document tracks lightweight performance signals to catch regressions early.
 
 - Frontend production bundle sizes from `web/dist/assets`
 - API in-process `/health` latency samples (30 requests)
+- API in-process `/api/live/snapshot` latency samples (30 requests, fixture DB)
 
 ## Command
 
 ```bash
 npm run --prefix web build
 uv run python scripts/perf_baseline.py
+
+# Enforce thresholds (non-zero exit on regression)
+make perf-guardrail
 ```
 
 ## Suggested Review Cadence
@@ -24,5 +28,6 @@ uv run python scripts/perf_baseline.py
 
 - Largest JS chunk: keep below 450 KB (non-gzipped) unless justified
 - `/health` avg in-process latency: keep below 20 ms on dev machine
+- `/api/live/snapshot` avg in-process latency: keep below 30 ms on dev machine
 
 Thresholds are heuristics and should be adjusted as the product grows.

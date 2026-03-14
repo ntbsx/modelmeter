@@ -57,6 +57,14 @@ package_smoke:
     - make package-build
     - uv run python -c "import zipfile, pathlib; wheels=sorted(pathlib.Path('dist').glob('*.whl')); assert wheels, 'No wheel built'; z=zipfile.ZipFile(wheels[-1]); assert any(n.endswith('modelmeter/web_dist/index.html') for n in z.namelist()), 'Bundled web_dist/index.html missing in wheel'"
 
+perf_guardrail:
+  stage: test
+  script:
+    - apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
+    - npm ci --prefix web
+    - npm run --prefix web build
+    - make perf-guardrail
+
 typecheck:
   stage: test
   script:

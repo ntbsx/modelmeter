@@ -216,6 +216,46 @@ def test_models_endpoint(tmp_path: Path) -> None:
     payload = _get_json(response)
     assert len(payload["models"]) == 1
     assert payload["models"][0]["model_id"] == "anthropic/claude-sonnet-4-5"
+    assert payload["total_models"] == 1
+    assert payload["models_offset"] == 0
+    assert payload["models_returned"] == 1
+
+
+def test_models_endpoint_offset_returns_empty_slice(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client()
+    response = client.get(
+        "/api/models",
+        params={"db_path": str(db_path), "days": 7, "offset": 1, "limit": 1},
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["total_models"] == 1
+    assert payload["models_offset"] == 1
+    assert payload["models_limit"] == 1
+    assert payload["models_returned"] == 0
+    assert payload["models"] == []
+
+
+def test_projects_endpoint_pagination_metadata(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client()
+    response = client.get(
+        "/api/projects",
+        params={"db_path": str(db_path), "days": 7, "offset": 0, "limit": 20},
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["total_projects"] == 1
+    assert payload["projects_offset"] == 0
+    assert payload["projects_returned"] == 1
+    assert len(payload["projects"]) == 1
 
 
 def test_model_detail_not_found_returns_404(tmp_path: Path) -> None:

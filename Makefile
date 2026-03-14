@@ -1,4 +1,4 @@
-.PHONY: dev backend frontend setup test format lint typecheck gen-types version-stamp version-sync version-check contract-policy-check release-check package-build package-clean perf-check
+.PHONY: dev backend frontend setup test format lint typecheck gen-types version-stamp version-sync version-check contract-policy-check release-check package-build package-clean perf-check perf-guardrail
 
 # Run both backend and frontend concurrently
 dev:
@@ -69,3 +69,6 @@ package-clean:
 
 perf-check:
 	uv run python scripts/perf_baseline.py
+
+perf-guardrail:
+	uv run python scripts/perf_baseline.py --fail-on-threshold

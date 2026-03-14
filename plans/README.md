@@ -22,7 +22,7 @@ This folder contains feature-sliced plans for building ModelMeter (OpenCode usag
 - [x] `10-server-parity-contract-live-streaming.md`
 - [x] `11-frontend-product-polish-and-reliability.md`
 - [x] `12-release-ops-and-collaboration-hardening.md`
-- [ ] `13-performance-and-scalability.md`
+- [x] `13-performance-and-scalability.md`
 - [x] `14-release-artifact-packaging-and-installer.md`
 - [x] `15-calver-and-git-hash-versioning.md`
 

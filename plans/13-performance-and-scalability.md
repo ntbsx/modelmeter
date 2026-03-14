@@ -129,8 +129,8 @@ Improve responsiveness and scalability across backend and frontend so the produc
 - Performance baselines exist and are part of release hygiene.
 
 ## Completion Checklist
-- [ ] Workstream A complete
-- [ ] Workstream B complete
-- [ ] Workstream C complete
-- [ ] Workstream D complete
-- [ ] Workstream E complete
+- [x] Workstream A complete
+- [x] Workstream B complete
+- [x] Workstream C complete
+- [x] Workstream D complete
+- [x] Workstream E complete

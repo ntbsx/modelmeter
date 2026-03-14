@@ -421,6 +421,18 @@ export interface components {
              * @default []
              */
             models: components["schemas"]["ModelUsage"][];
+            /** Models Limit */
+            models_limit?: number | null;
+            /**
+             * Models Offset
+             * @default 0
+             */
+            models_offset: number;
+            /**
+             * Models Returned
+             * @default 0
+             */
+            models_returned: number;
             /**
              * Priced Models
              * @default 0
@@ -430,6 +442,11 @@ export interface components {
             pricing_source?: string | null;
             /** Total Cost Usd */
             total_cost_usd?: number | null;
+            /**
+             * Total Models
+             * @default 0
+             */
+            total_models: number;
             /**
              * Total Sessions
              * @default 0
@@ -562,8 +579,25 @@ export interface components {
              * @default []
              */
             projects: components["schemas"]["ProjectUsage"][];
+            /** Projects Limit */
+            projects_limit?: number | null;
+            /**
+             * Projects Offset
+             * @default 0
+             */
+            projects_offset: number;
+            /**
+             * Projects Returned
+             * @default 0
+             */
+            projects_returned: number;
             /** Total Cost Usd */
             total_cost_usd?: number | null;
+            /**
+             * Total Projects
+             * @default 0
+             */
+            total_projects: number;
             /**
              * Total Sessions
              * @default 0
@@ -817,6 +851,7 @@ export interface operations {
         parameters: {
             query?: {
                 days?: number | null;
+                offset?: number;
                 limit?: number;
                 db_path?: string | null;
                 pricing_file?: string | null;
@@ -886,6 +921,7 @@ export interface operations {
         parameters: {
             query?: {
                 days?: number | null;
+                offset?: number;
                 limit?: number;
                 db_path?: string | null;
                 pricing_file?: string | null;

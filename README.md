@@ -109,6 +109,9 @@ npm run --prefix web check:types
 
 # Quick bundle/API latency baseline
 make perf-check
+
+# Enforce performance guardrail thresholds
+make perf-guardrail
 ```
 
 ## Versioning

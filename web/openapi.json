@@ -518,6 +518,30 @@
             "title": "Models",
             "type": "array"
           },
+          "models_limit": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Models Limit"
+          },
+          "models_offset": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Models Offset",
+            "type": "integer"
+          },
+          "models_returned": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Models Returned",
+            "type": "integer"
+          },
           "priced_models": {
             "default": 0,
             "minimum": 0.0,
@@ -545,6 +569,12 @@
               }
             ],
             "title": "Total Cost Usd"
+          },
+          "total_models": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Models",
+            "type": "integer"
           },
           "total_sessions": {
             "default": 0,
@@ -844,6 +874,30 @@
             "title": "Projects",
             "type": "array"
           },
+          "projects_limit": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projects Limit"
+          },
+          "projects_offset": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Projects Offset",
+            "type": "integer"
+          },
+          "projects_returned": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Projects Returned",
+            "type": "integer"
+          },
           "total_cost_usd": {
             "anyOf": [
               {
@@ -854,6 +908,12 @@
               }
             ],
             "title": "Total Cost Usd"
+          },
+          "total_projects": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Projects",
+            "type": "integer"
           },
           "total_sessions": {
             "default": 0,
@@ -1097,7 +1157,7 @@
   },
   "info": {
     "title": "ModelMeter",
-    "version": "2026.3.13"
+    "version": "2026.3.14"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -1533,6 +1593,17 @@
           },
           {
             "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
@@ -1709,6 +1780,17 @@
               ],
               "default": 7,
               "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
             }
           },
           {
