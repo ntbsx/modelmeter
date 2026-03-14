@@ -62,6 +62,20 @@ MODELMETER_SERVER_PASSWORD=your-password modelmeter serve
 MODELMETER_SERVER_USERNAME=custom-user MODELMETER_SERVER_PASSWORD=your-password modelmeter serve
 ```
 
+### Web Login Experience
+
+When `MODELMETER_SERVER_PASSWORD` is set, the web app uses a built-in login page instead of the browser's default Basic Auth modal.
+
+- The frontend checks `/health` first and reads `auth_required`.
+- If `auth_required` is `false`, the dashboard opens directly.
+- If `auth_required` is `true`, users are sent to `/login` and sign in with Basic Auth credentials.
+- Credentials are stored in browser `localStorage` (`modelmeter-auth`) until sign-out.
+
+API behavior for auth-enabled mode:
+
+- `/health` remains public and returns `status`, `app_version`, and `auth_required`.
+- Protected API routes return `401` with JSON body `{"detail": "Invalid credentials"}`.
+
 ## Self-Update
 
 ModelMeter can check for newer GitLab releases and prepare an install command:
@@ -152,6 +166,19 @@ make perf-check
 make perf-guardrail
 ```
 
+## CI and Releases
+
+This repository uses GitHub Actions workflows:
+
+- `.github/workflows/ci.yml` runs pull-request and `main` branch checks (lint, typecheck, tests, package smoke, and perf guardrail).
+- `.github/workflows/release.yml` runs on version tags (`vYYYY.M.D`) to validate version alignment, build release artifacts, run a package smoke test, and publish wheel/sdist assets to the GitHub release.
+
+Before opening a PR, run:
+
+```bash
+make release-check
+```
+
 ## Versioning
 
 ModelMeter uses a **single product version** for backend, CLI, and frontend.
@@ -200,6 +227,8 @@ OpenAPI docs are available at `http://127.0.0.1:8000/docs`.
 Server docs alias is also available at `http://127.0.0.1:8000/doc`.
 
 Live web monitoring uses server-sent events at `/api/live/events` and automatically falls back to polling if streaming is unavailable.
+
+When auth is enabled, SSE in browsers may fall back to polling because `EventSource` does not support custom Authorization headers.
 
 ## Web Dashboard Features
 
