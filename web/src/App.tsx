@@ -9,6 +9,7 @@ const queryClient = new QueryClient()
 
 const Overview = lazy(() => import('./pages/Overview'))
 const Models = lazy(() => import('./pages/Models'))
+const ModelDetail = lazy(() => import('./pages/ModelDetail'))
 const Projects = lazy(() => import('./pages/Projects'))
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
 const Live = lazy(() => import('./pages/Live'))
@@ -141,6 +142,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Overview />} />
                     <Route path="/models" element={<Models />} />
+                    <Route path="/models/:modelId" element={<ModelDetail />} />
                     <Route path="/projects" element={<Projects />} />
                     <Route path="/projects/:projectId" element={<ProjectDetail />} />
                     <Route path="/live" element={<Live />} />

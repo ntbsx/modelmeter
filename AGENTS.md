@@ -52,10 +52,11 @@ Frontend scripts:
 - `npm run --prefix web build`
 - `npm run --prefix web lint`
 - `npm run --prefix web preview`
+- `npm run --prefix web test` run Vitest tests
+- `npm run --prefix web test:watch` run Vitest in watch mode
+- `npm run --prefix web test:coverage` run Vitest with coverage
 - `npm run --prefix web gen:types`
 - `npm run --prefix web check:types`
-
-Note: no dedicated frontend unit test runner is configured right now.
 
 ## 5) Product Versioning (Single Version)
 - ModelMeter uses a single CalVer product version across backend, CLI, and frontend.

@@ -1,14 +1,15 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { ModelsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
-import TimeRangeFilter from '../components/TimeRangeFilter'
+import DateRangeFilter from '../components/DateRangeFilter'
 
 export default function Models() {
-  const [days, setDays] = useState<1 | 7 | 30 | 90>(7)
+  const [days, setDays] = useState(7)
 
   const { data, isLoading } = useQuery<ModelsResponse>({
     queryKey: ['models', days],
@@ -35,7 +36,7 @@ export default function Models() {
               Usage breakdown by model ({days === 1 ? 'last 24 hours' : `last ${days} days`})
             </p>
           </div>
-          <TimeRangeFilter days={days} onChange={setDays} />
+          <DateRangeFilter days={days} onChange={setDays} />
         </div>
       </div>
 
@@ -56,7 +57,14 @@ export default function Models() {
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {data.models.map((m) => (
                 <tr key={m.model_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-gray-900 dark:text-gray-100 whitespace-nowrap">{m.model_id}</td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium whitespace-nowrap">
+                    <Link
+                      to={`/models/${encodeURIComponent(m.model_id)}`}
+                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                    >
+                      {m.model_id}
+                    </Link>
+                  </td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{m.total_sessions}</td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{m.total_interactions}</td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{formatTokens(m.usage.input_tokens)}</td>

@@ -97,6 +97,11 @@ make lint
 make typecheck
 make test
 
+# Run frontend tests
+npm run --prefix web test
+npm run --prefix web test:watch
+npm run --prefix web test:coverage
+
 # Regenerate web API types from FastAPI OpenAPI
 make gen-types
 
@@ -162,3 +167,42 @@ OpenAPI docs are available at `http://127.0.0.1:8000/docs`.
 Server docs alias is also available at `http://127.0.0.1:8000/doc`.
 
 Live web monitoring uses server-sent events at `/api/live/events` and automatically falls back to polling if streaming is unavailable.
+
+## Web Dashboard Features
+
+The web dashboard provides visual analytics for OpenCode usage:
+
+- **Overview**: Summary stats and daily usage trend chart with tokens, sessions, and cost
+- **Models**: Usage breakdown by model with drill-down to model detail pages
+- **Projects**: Usage breakdown by project with session-level detail
+- **Live**: Real-time monitoring with active session info and rolling window stats
+
+All views support flexible time range filtering with presets (24h, 7d, 30d, 90d) or custom date ranges.
+
+## Testing
+
+Backend tests use pytest:
+
+```bash
+# Run all backend tests
+make test
+
+# Run specific test file
+uv run pytest tests/test_api.py
+
+# Run specific test
+uv run pytest tests/test_api.py::test_health_endpoint
+```
+
+Frontend tests use Vitest with React Testing Library:
+
+```bash
+# Run all frontend tests
+npm run --prefix web test
+
+# Run in watch mode
+npm run --prefix web test:watch
+
+# Run with coverage
+npm run --prefix web test:coverage
+```
