@@ -98,6 +98,32 @@ class ModelDetailResponse(BaseModel):
     daily: list[DailyUsage] = []
 
 
+class ProviderUsage(BaseModel):
+    """Per-provider usage aggregate."""
+
+    provider: str
+    usage: TokenUsage
+    total_sessions: int = Field(default=0, ge=0)
+    total_interactions: int = Field(default=0, ge=0)
+    cost_usd: float | None = None
+    has_pricing: bool = False
+
+
+class ProvidersResponse(BaseModel):
+    """Top providers usage response contract."""
+
+    window_days: int | None = Field(default=None, ge=1)
+    providers_offset: int = Field(default=0, ge=0)
+    providers_limit: int | None = Field(default=None, ge=1)
+    providers_returned: int = Field(default=0, ge=0)
+    total_providers: int = Field(default=0, ge=0)
+    totals: TokenUsage
+    total_sessions: int = Field(default=0, ge=0)
+    total_cost_usd: float | None = None
+    pricing_source: str | None = None
+    providers: list[ProviderUsage] = []
+
+
 class ProjectUsage(BaseModel):
     """Per-project usage aggregate."""
 

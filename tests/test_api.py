@@ -221,6 +221,19 @@ def test_models_endpoint(tmp_path: Path) -> None:
     assert payload["models_returned"] == 1
 
 
+def test_providers_endpoint(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client()
+    response = client.get("/api/providers", params={"db_path": str(db_path), "days": 7})
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["total_providers"] == 1
+    assert payload["providers"][0]["provider"] == "anthropic"
+
+
 def test_models_endpoint_offset_returns_empty_slice(tmp_path: Path) -> None:
     db_path = tmp_path / "opencode.db"
     _create_api_fixture(db_path)

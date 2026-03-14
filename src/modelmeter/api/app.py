@@ -27,6 +27,7 @@ from modelmeter.core.analytics import (
     get_daily,
     get_model_detail,
     get_models,
+    get_providers,
     get_project_detail,
     get_projects,
     get_summary,
@@ -40,6 +41,7 @@ from modelmeter.core.models import (
     ModelsResponse,
     ProjectDetailResponse,
     ProjectsResponse,
+    ProvidersResponse,
     SummaryResponse,
 )
 
@@ -208,6 +210,26 @@ def create_app(
     ) -> ModelsResponse:
         try:
             return get_models(
+                settings=settings,
+                days=days,
+                offset=offset,
+                limit=limit,
+                db_path_override=_optional_path(db_path),
+                pricing_file_override=_optional_path(pricing_file),
+            )
+        except RuntimeError as exc:
+            _raise_http_error(exc)
+
+    @app.get("/api/providers", response_model=ProvidersResponse)
+    def providers(
+        days: int | None = Query(default=7, ge=1),
+        offset: int = Query(default=0, ge=0),
+        limit: int = Query(default=20, ge=1),
+        db_path: str | None = Query(default=None),
+        pricing_file: str | None = Query(default=None),
+    ) -> ProvidersResponse:
+        try:
+            return get_providers(
                 settings=settings,
                 days=days,
                 offset=offset,

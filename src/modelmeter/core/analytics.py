@@ -19,10 +19,13 @@ from modelmeter.core.models import (
     ProjectSessionUsage,
     ProjectsResponse,
     ProjectUsage,
+    ProvidersResponse,
+    ProviderUsage,
     SummaryResponse,
     TokenUsage,
 )
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
+from modelmeter.core.providers import provider_from_model_id
 from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.data.storage import resolve_storage_paths
 
@@ -267,6 +270,96 @@ def get_models(
         priced_models=priced_models,
         unpriced_models=max(0, len(rows) - priced_models),
         models=usage_rows,
+    )
+
+
+def get_providers(
+    *,
+    settings: AppSettings,
+    days: int | None = None,
+    db_path_override: Path | None = None,
+    pricing_file_override: Path | None = None,
+    offset: int = 0,
+    limit: int = 20,
+) -> ProvidersResponse:
+    """Return usage aggregates grouped by provider."""
+    sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
+    repository = SQLiteUsageRepository(sqlite_db_path)
+    model_rows = repository.fetch_model_usage_detail(days=days)
+    summary_row = repository.fetch_summary(days=days)
+    total_sessions = repository.fetch_session_count(days=days)
+
+    pricing_book, pricing_source = load_pricing_book(
+        settings=settings,
+        pricing_file_override=pricing_file_override,
+    )
+
+    provider_map: dict[str, ProviderUsage] = {}
+    total_cost_usd: float | None = 0.0 if pricing_book else None
+
+    for row in model_rows:
+        model_id = str(row["model_id"])
+        provider = provider_from_model_id(model_id)
+        usage = _token_usage_from_row(row)
+
+        model_cost: float | None = None
+        pricing = pricing_book.get(model_id)
+        if pricing is not None:
+            model_cost = round(calculate_usage_cost(usage, pricing), 8)
+            if total_cost_usd is not None:
+                total_cost_usd += model_cost
+
+        existing = provider_map.get(provider)
+        if existing is None:
+            provider_map[provider] = ProviderUsage(
+                provider=provider,
+                usage=TokenUsage(
+                    input_tokens=usage.input_tokens,
+                    output_tokens=usage.output_tokens,
+                    cache_read_tokens=usage.cache_read_tokens,
+                    cache_write_tokens=usage.cache_write_tokens,
+                ),
+                total_sessions=int(row["total_sessions"]),
+                total_interactions=int(row["total_interactions"]),
+                cost_usd=model_cost,
+                has_pricing=model_cost is not None,
+            )
+            continue
+
+        existing.usage.input_tokens += usage.input_tokens
+        existing.usage.output_tokens += usage.output_tokens
+        existing.usage.cache_read_tokens += usage.cache_read_tokens
+        existing.usage.cache_write_tokens += usage.cache_write_tokens
+        existing.total_sessions += int(row["total_sessions"])
+        existing.total_interactions += int(row["total_interactions"])
+        if model_cost is not None:
+            existing.has_pricing = True
+            if existing.cost_usd is None:
+                existing.cost_usd = model_cost
+            else:
+                existing.cost_usd = round(existing.cost_usd + model_cost, 8)
+
+    provider_rows = sorted(
+        provider_map.values(), key=lambda item: item.usage.total_tokens, reverse=True
+    )
+    total_providers = len(provider_rows)
+
+    if offset > 0:
+        provider_rows = provider_rows[offset:]
+    if limit > 0:
+        provider_rows = provider_rows[:limit]
+
+    return ProvidersResponse(
+        window_days=days,
+        providers_offset=offset,
+        providers_limit=limit,
+        providers_returned=len(provider_rows),
+        total_providers=total_providers,
+        totals=_token_usage_from_row(summary_row),
+        total_sessions=total_sessions,
+        total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
+        pricing_source=pricing_source,
+        providers=provider_rows,
     )
 
 

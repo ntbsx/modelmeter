@@ -42,3 +42,11 @@ def test_version_flag_prints_runtime_version() -> None:
 
     assert result.exit_code == 0
     assert result.stdout.strip()
+
+
+def test_providers_help_command_runs() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["providers", "--help"])
+
+    assert result.exit_code == 0
+    assert "top provider usage" in result.stdout.lower()

@@ -27,6 +27,7 @@ from modelmeter.core.analytics import (
     get_daily,
     get_model_detail,
     get_models,
+    get_providers,
     get_projects,
     get_summary,
 )
@@ -37,6 +38,7 @@ from modelmeter.core.models import (
     LiveSnapshotResponse,
     ModelDetailResponse,
     ModelsResponse,
+    ProvidersResponse,
     ProjectsResponse,
     SummaryResponse,
     TokenUsage,
@@ -294,6 +296,44 @@ def _render_projects(console: Console, response: ProjectsResponse) -> None:
             format_tokens_human(project.usage.cache_write_tokens),
             format_tokens_human(project.usage.total_tokens),
             format_usd_human(project.cost_usd) if project.cost_usd is not None else "n/a",
+        )
+
+    console.print(table)
+
+
+def _render_providers(console: Console, response: ProvidersResponse) -> None:
+    window = f"last {response.window_days} day(s)" if response.window_days else "all time"
+    console.print(f"[bold]Providers[/bold] ({window})")
+    console.print(f"Sessions: {response.total_sessions}")
+    if response.total_cost_usd is None:
+        console.print("Cost: n/a (no pricing file found)")
+    else:
+        console.print(f"Cost: {format_usd_human(response.total_cost_usd)}")
+        if response.pricing_source:
+            console.print(f"Pricing source: {format_pricing_source_human(response.pricing_source)}")
+
+    table = Table(title="Provider Breakdown")
+    table.add_column("Provider")
+    table.add_column("Sessions", justify="right")
+    table.add_column("Msgs", justify="right")
+    table.add_column("Input", justify="right")
+    table.add_column("Output", justify="right")
+    table.add_column("Cache Read", justify="right")
+    table.add_column("Cache Write", justify="right")
+    table.add_column("Total", justify="right")
+    table.add_column("Cost", justify="right")
+
+    for provider in response.providers:
+        table.add_row(
+            provider.provider,
+            str(provider.total_sessions),
+            str(provider.total_interactions),
+            format_tokens_human(provider.usage.input_tokens),
+            format_tokens_human(provider.usage.output_tokens),
+            format_tokens_human(provider.usage.cache_read_tokens),
+            format_tokens_human(provider.usage.cache_write_tokens),
+            format_tokens_human(provider.usage.total_tokens),
+            format_usd_human(provider.cost_usd) if provider.cost_usd is not None else "n/a",
         )
 
     console.print(table)
@@ -685,6 +725,46 @@ def projects(
         return
 
     _render_projects(Console(), result)
+
+
+@app.command()
+def providers(
+    days: Annotated[
+        int | None,
+        typer.Option("--days", min=1, help="Limit aggregation to the last N days."),
+    ] = 7,
+    limit: Annotated[
+        int,
+        typer.Option("--limit", min=1, help="Show top N providers."),
+    ] = 20,
+    db_path: Annotated[
+        Path | None,
+        typer.Option("--db-path", help="Override OpenCode SQLite path."),
+    ] = None,
+    pricing_file: Annotated[
+        Path | None,
+        typer.Option("--pricing-file", help="Path to models pricing JSON file."),
+    ] = None,
+    json_output: Annotated[
+        bool,
+        typer.Option("--json", help="Print provider usage as JSON."),
+    ] = False,
+) -> None:
+    """Show top provider usage breakdown."""
+    settings = AppSettings()
+    result = get_providers(
+        settings=settings,
+        days=days,
+        db_path_override=db_path,
+        pricing_file_override=pricing_file,
+        limit=limit,
+    )
+
+    if json_output:
+        typer.echo(result.model_dump_json(indent=2))
+        return
+
+    _render_providers(Console(), result)
 
 
 @app.command()
