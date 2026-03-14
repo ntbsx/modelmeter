@@ -33,12 +33,23 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Validate tag format
+        id: release_meta
         run: |
           TAG_NAME="${GITHUB_REF_NAME}"
-          if [[ ! "${TAG_NAME}" =~ ^v[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,2}$ ]]; then
+          if [[ ! "${TAG_NAME}" =~ ^v([0-9]{4}\.[0-9]{1,2}\.[0-9]{1,2})(-rc\.[0-9]+)?$ ]]; then
             echo "Invalid release tag format: ${TAG_NAME}"
+            echo "Expected stable: vYYYY.M.D or prerelease: vYYYY.M.D-rc.N"
             exit 1
           fi
+
+          BASE_VERSION="${BASH_REMATCH[1]}"
+          SUFFIX="${BASH_REMATCH[2]}"
+          if [[ -n "${SUFFIX}" ]]; then
+            echo "prerelease=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "prerelease=false" >> "${GITHUB_OUTPUT}"
+          fi
+          echo "base_version=${BASE_VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Install dependencies
         run: |
@@ -47,7 +58,7 @@ jobs:
 
       - name: Validate tag and project versions
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          TAG_VERSION="${{ steps.release_meta.outputs.base_version }}"
           PYPROJECT_VERSION=$(python - <<'PY'
           import tomllib
           from pathlib import Path
@@ -96,6 +107,7 @@ jobs:
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
+          prerelease: ${{ steps.release_meta.outputs.prerelease }}
           files: |
             dist/*.whl
             dist/*.tar.gz

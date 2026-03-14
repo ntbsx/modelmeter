@@ -12,7 +12,12 @@ def test_check_for_updates_reports_available(monkeypatch: pytest.MonkeyPatch) ->
         *, settings: AppSettings
     ) -> tuple[str | None, str | None, str | None, str | None]:
         _ = settings
-        return "2026.3.20", "v2026.3.20", "https://gitlab.example/release", None
+        return (
+            "2026.3.20",
+            "v2026.3.20",
+            "https://github.com/ntbsx/modelmeter/releases/tag/v2026.3.20",
+            None,
+        )
 
     monkeypatch.setattr(updater_module, "get_base_version", lambda: "2026.3.1")
     monkeypatch.setattr(updater_module, "_resolve_latest_release", _mock_latest_release)

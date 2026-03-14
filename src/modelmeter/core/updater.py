@@ -13,9 +13,9 @@ from modelmeter.common.version import get_base_version
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.models import UpdateCheckResponse
 
-PROJECT_PATH = "ntbsdev/modelmeter"
-PROJECT_PATH_ENCODED = "ntbsdev%2Fmodelmeter"
-GITLAB_API = f"https://gitlab.com/api/v4/projects/{PROJECT_PATH_ENCODED}"
+PROJECT_PATH = "ntbsx/modelmeter"
+GITHUB_API = f"https://api.github.com/repos/{PROJECT_PATH}"
+GITHUB_WEB = f"https://github.com/{PROJECT_PATH}"
 
 
 def _calver_key(value: str) -> tuple[int, int, int]:
@@ -59,7 +59,7 @@ def _resolve_latest_release(
 
     tag = tag_name.strip()
     version = tag.lstrip("v")
-    web_url = payload.get("_links", {}).get("self")
+    web_url = payload.get("html_url")
     if not isinstance(web_url, str):
         web_url = payload.get("url") if isinstance(payload.get("url"), str) else None
     return version, tag, web_url, None
@@ -97,23 +97,19 @@ def check_for_updates(*, settings: AppSettings) -> UpdateCheckResponse:
 
 def _resolve_wheel_url(*, tag: str, timeout_seconds: int) -> str | None:
     payload = _fetch_json(
-        f"{GITLAB_API}/releases/{tag}",
+        f"{GITHUB_API}/releases/tags/{tag}",
         timeout_seconds=timeout_seconds,
     )
     assets_obj = payload.get("assets")
-    if not isinstance(assets_obj, dict):
+    if not isinstance(assets_obj, list):
         return None
-    assets = cast(dict[str, Any], assets_obj)
-    links_obj = assets.get("links")
-    if not isinstance(links_obj, list):
-        return None
-    links = cast(list[Any], links_obj)
 
-    for link_obj in links:
-        if not isinstance(link_obj, dict):
+    assets = cast(list[Any], assets_obj)
+    for asset_obj in assets:
+        if not isinstance(asset_obj, dict):
             continue
-        link = cast(dict[str, Any], link_obj)
-        url = link.get("url")
+        asset = cast(dict[str, Any], asset_obj)
+        url = asset.get("browser_download_url")
         if isinstance(url, str) and url.endswith(".whl"):
             return url
     return None
@@ -124,7 +120,7 @@ def _resolve_install_spec(*, version: str, timeout_seconds: int) -> str:
     wheel_url = _resolve_wheel_url(tag=tag, timeout_seconds=timeout_seconds)
     if wheel_url is not None:
         return wheel_url
-    return f"https://gitlab.com/{PROJECT_PATH}/-/archive/{tag}/modelmeter-{tag}.tar.gz"
+    return f"{GITHUB_WEB}/archive/refs/tags/{tag}.tar.gz"
 
 
 def _run_install_command(command: list[str]) -> None:

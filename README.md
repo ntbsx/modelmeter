@@ -4,30 +4,30 @@ ModelMeter: OpenCode usage analytics for terminal and web.
 
 ## Installation
 
-ModelMeter is currently distributed via GitLab releases (not PyPI yet).
+ModelMeter is currently distributed via GitHub Releases (not PyPI yet).
 
-Install via the GitLab release installer script (public project):
+Install via the GitHub release installer script (public project):
 
 ```bash
 # Latest release
-curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash
 
 # Pinned release
-curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --version 2026.3.16
+curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --version 2026.3.16
 ```
 
 Choose installation method explicitly if needed:
 
 ```bash
 # Prefer pipx
-curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --method pipx
+curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --method pipx
 
 # Use pip --user
-curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --method pip
+curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --method pip
 ```
 
 The installed package includes the built web UI, so `modelmeter serve` works without cloning the repo.
-The installer prefers wheel assets published on the GitLab release page and falls back to source archives.
+The installer prefers wheel assets published on the GitHub release page and falls back to source archives.
 
 ## Quick Start
 
@@ -78,7 +78,7 @@ API behavior for auth-enabled mode:
 
 ## Self-Update
 
-ModelMeter can check for newer GitLab releases and prepare an install command:
+ModelMeter can check for newer GitHub releases and prepare an install command:
 
 ```bash
 # Check latest release vs current local version
@@ -98,7 +98,7 @@ Update behavior can be configured with environment variables:
 
 ```bash
 export MODELMETER_UPDATE_CHECK_ENABLED=true
-export MODELMETER_UPDATE_CHECK_URL="https://gitlab.com/api/v4/projects/ntbsdev%2Fmodelmeter/releases/permalink/latest"
+export MODELMETER_UPDATE_CHECK_URL="https://api.github.com/repos/ntbsx/modelmeter/releases/latest"
 export MODELMETER_UPDATE_CHECK_TIMEOUT_SECONDS=8
 ```
 

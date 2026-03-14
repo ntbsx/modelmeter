@@ -215,7 +215,7 @@ def test_update_check_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
             latest_version="2026.3.20",
             update_available=True,
             release_tag="v2026.3.20",
-            release_url="https://gitlab.example/release",
+            release_url="https://github.com/ntbsx/modelmeter/releases/tag/v2026.3.20",
             checked_at_ms=1,
         )
 
