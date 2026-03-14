@@ -63,6 +63,10 @@ Frontend scripts:
 - `npm run --prefix web gen:types`
 - `npm run --prefix web check:types`
 
+CI workflows (GitHub Actions):
+- `.github/workflows/ci.yml` (PR/main checks)
+- `.github/workflows/release.yml` (tagged releases)
+
 ## 5) Product Versioning (Single Version)
 - ModelMeter uses a single CalVer product version across backend, CLI, and frontend.
 - Canonical source of truth: `pyproject.toml` in `[project].version`.
@@ -157,6 +161,18 @@ Comments/docstrings:
 - Prefer generated OpenAPI types over ad-hoc types.
 - If API contracts change, regenerate snapshot/types/hash together.
 
+## 9.1) Auth UX and API Contract Notes
+- Serve mode can enable HTTP Basic auth via `MODELMETER_SERVER_PASSWORD`.
+- `/health` is intentionally public (auth-exempt) and now includes:
+  - `status`
+  - `app_version`
+  - `auth_required` (boolean)
+- Web login behavior:
+  - if `auth_required` is `false`, skip login route
+  - if `auth_required` is `true`, use custom `/login` page and attach `Authorization: Basic ...` in API helper calls
+- On auth failures, protected endpoints return `401` with JSON detail (`{"detail": "Invalid credentials"}`).
+- Live SSE note: browser `EventSource` cannot set custom auth headers; client may fall back to polling when auth is enabled.
+
 ## 10) Testing Expectations
 - Backend behavior changes should update/add pytest coverage.
 - API schema changes must update OpenAPI artifacts and related tests.
@@ -201,5 +217,5 @@ make format && make lint && make typecheck && make test
   2. `make release-check`
   3. Commit release metadata/version updates
   4. Create annotated tag from `pyproject.toml` version
-  5. Push commit and tag
+  5. Push commit and tag (triggers `.github/workflows/release.yml`)
 - Never tag first and bump versions later.

@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Validate tag format
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          if [[ ! "${TAG_NAME}" =~ ^v[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,2}$ ]]; then
+            echo "Invalid release tag format: ${TAG_NAME}"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-groups
+          npm ci --prefix web
+
+      - name: Validate tag and project versions
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PYPROJECT_VERSION=$(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+          data = tomllib.loads(Path('pyproject.toml').read_text())
+          print(data['project']['version'])
+          PY
+          )
+          WEB_VERSION=$(python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('web/package.json').read_text())
+          print(data['version'])
+          PY
+          )
+
+          if [ "${TAG_VERSION}" != "${PYPROJECT_VERSION}" ] || [ "${TAG_VERSION}" != "${WEB_VERSION}" ]; then
+            echo "Release version mismatch detected"
+            echo "Tag version:         ${TAG_VERSION}"
+            echo "pyproject version:   ${PYPROJECT_VERSION}"
+            echo "web/package version: ${WEB_VERSION}"
+            exit 1
+          fi
+
+      - name: Build package artifacts
+        run: make package-build
+
+      - name: Smoke test packaged wheel
+        run: |
+          WHEEL_FILE=$(python - <<'PY'
+          import pathlib
+          wheels = sorted(pathlib.Path('dist').glob('*.whl'))
+          if not wheels:
+            raise SystemExit('No wheel built')
+          print(str(wheels[-1]))
+          PY
+          )
+          python3 -m pip install --user --upgrade "${WHEEL_FILE}"
+          export PATH="$HOME/.local/bin:$PATH"
+          modelmeter --version
+          modelmeter serve --host 127.0.0.1 --port 18080 --no-access-log >/tmp/modelmeter-serve.log 2>&1 &
+          SERVER_PID=$!
+          trap "kill ${SERVER_PID}" EXIT
+          sleep 3
+          curl --fail http://127.0.0.1:18080/health
+
+      - name: Publish GitHub release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz

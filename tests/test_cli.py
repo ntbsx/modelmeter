@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from typer.testing import CliRunner
 
@@ -6,6 +8,10 @@ from modelmeter.cli.main import app
 from modelmeter.common.formatting import format_pricing_source_human, format_usd_human
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.models import UpdateCheckResponse
+
+
+def _strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", text)
 
 
 def test_info_command_runs() -> None:
@@ -32,12 +38,13 @@ def test_format_pricing_source_humanized() -> None:
 def test_serve_help_includes_cors_option() -> None:
     runner = CliRunner()
     result = runner.invoke(app, ["serve", "--help"])
+    help_text = _strip_ansi(result.stdout)
 
     assert result.exit_code == 0
-    assert "--cors" in result.stdout
-    assert "--log-level" in result.stdout
-    assert "--access-log" in result.stdout
-    assert "--no-access-log" in result.stdout
+    assert "--cors" in help_text
+    assert "--log-level" in help_text
+    assert "--access-log" in help_text
+    assert "--no-access-log" in help_text
 
 
 def test_version_flag_prints_runtime_version() -> None:
