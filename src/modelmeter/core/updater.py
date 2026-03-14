@@ -100,16 +100,20 @@ def _resolve_wheel_url(*, tag: str, timeout_seconds: int) -> str | None:
         f"{GITLAB_API}/releases/{tag}",
         timeout_seconds=timeout_seconds,
     )
-    assets = payload.get("assets")
-    if not isinstance(assets, dict):
+    assets_obj = payload.get("assets")
+    if not isinstance(assets_obj, dict):
         return None
-    assets_map = cast(dict[str, Any], assets)
-    links = assets_map.get("links")
-    if not isinstance(links, list):
+    assets = cast(dict[str, Any], assets_obj)
+    links_obj = assets.get("links")
+    if not isinstance(links_obj, list):
         return None
+    links = cast(list[Any], links_obj)
 
-    for link_map in cast(list[dict[str, Any]], links):
-        url = link_map.get("url")
+    for link_obj in links:
+        if not isinstance(link_obj, dict):
+            continue
+        link = cast(dict[str, Any], link_obj)
+        url = link.get("url")
         if isinstance(url, str) and url.endswith(".whl"):
             return url
     return None
