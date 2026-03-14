@@ -319,7 +319,7 @@ def get_providers(
                     cache_read_tokens=usage.cache_read_tokens,
                     cache_write_tokens=usage.cache_write_tokens,
                 ),
-                total_sessions=int(row["total_sessions"]),
+                total_models=1,
                 total_interactions=int(row["total_interactions"]),
                 cost_usd=model_cost,
                 has_pricing=model_cost is not None,
@@ -330,7 +330,7 @@ def get_providers(
         existing.usage.output_tokens += usage.output_tokens
         existing.usage.cache_read_tokens += usage.cache_read_tokens
         existing.usage.cache_write_tokens += usage.cache_write_tokens
-        existing.total_sessions += int(row["total_sessions"])
+        existing.total_models += 1
         existing.total_interactions += int(row["total_interactions"])
         if model_cost is not None:
             existing.has_pricing = True

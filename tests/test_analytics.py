@@ -577,6 +577,8 @@ def test_get_providers_returns_provider_rows(tmp_path: Path) -> None:
     assert result.total_providers == 2
     providers = {row.provider for row in result.providers}
     assert providers == {"anthropic", "openai"}
+    for row in result.providers:
+        assert row.total_models == 1
 
 
 def test_providers_command_json_output(tmp_path: Path) -> None:

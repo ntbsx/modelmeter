@@ -103,7 +103,7 @@ class ProviderUsage(BaseModel):
 
     provider: str
     usage: TokenUsage
-    total_sessions: int = Field(default=0, ge=0)
+    total_models: int = Field(default=0, ge=0)
     total_interactions: int = Field(default=0, ge=0)
     cost_usd: float | None = None
     has_pricing: bool = False

@@ -644,10 +644,10 @@ export interface components {
              */
             total_interactions: number;
             /**
-             * Total Sessions
+             * Total Models
              * @default 0
              */
-            total_sessions: number;
+            total_models: number;
             usage: components["schemas"]["TokenUsage"];
         };
         /**

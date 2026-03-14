@@ -972,10 +972,10 @@
             "title": "Total Interactions",
             "type": "integer"
           },
-          "total_sessions": {
+          "total_models": {
             "default": 0,
             "minimum": 0.0,
-            "title": "Total Sessions",
+            "title": "Total Models",
             "type": "integer"
           },
           "usage": {

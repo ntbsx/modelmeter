@@ -314,7 +314,7 @@ def _render_providers(console: Console, response: ProvidersResponse) -> None:
 
     table = Table(title="Provider Breakdown")
     table.add_column("Provider")
-    table.add_column("Sessions", justify="right")
+    table.add_column("Models", justify="right")
     table.add_column("Msgs", justify="right")
     table.add_column("Input", justify="right")
     table.add_column("Output", justify="right")
@@ -326,7 +326,7 @@ def _render_providers(console: Console, response: ProvidersResponse) -> None:
     for provider in response.providers:
         table.add_row(
             provider.provider,
-            str(provider.total_sessions),
+            str(provider.total_models),
             str(provider.total_interactions),
             format_tokens_human(provider.usage.input_tokens),
             format_tokens_human(provider.usage.output_tokens),
