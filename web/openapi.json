@@ -98,6 +98,80 @@
         "title": "DailyUsage",
         "type": "object"
       },
+      "DataSourceConfig": {
+        "description": "Single configured analytics source.",
+        "properties": {
+          "auth": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceAuth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "db_path": {
+            "anyOf": [
+              {
+                "format": "path",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Db Path"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "sqlite",
+              "http"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "source_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "kind"
+        ],
+        "title": "DataSourceConfig",
+        "type": "object"
+      },
       "DoctorReport": {
         "description": "Top-level health diagnostics payload.",
         "properties": {
@@ -1018,6 +1092,94 @@
           "can_connect"
         ],
         "title": "SQLiteDiagnostics",
+        "type": "object"
+      },
+      "SourceAuth": {
+        "description": "Optional basic auth credentials for HTTP sources.",
+        "properties": {
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "SourceAuth",
+        "type": "object"
+      },
+      "SourceHealth": {
+        "description": "Health status for one source.",
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "is_reachable": {
+            "title": "Is Reachable",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "sqlite",
+              "http"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "kind",
+          "is_reachable"
+        ],
+        "title": "SourceHealth",
+        "type": "object"
+      },
+      "SourceRegistry": {
+        "description": "Registry file payload for configured sources.",
+        "properties": {
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/DataSourceConfig"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "title": "SourceRegistry",
         "type": "object"
       },
       "SummaryResponse": {
@@ -1976,6 +2138,46 @@
           }
         },
         "summary": "Project Detail"
+      }
+    },
+    "/api/sources": {
+      "get": {
+        "operationId": "sources_api_sources_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRegistry"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sources"
+      }
+    },
+    "/api/sources/check": {
+      "get": {
+        "operationId": "sources_check_api_sources_check_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SourceHealth"
+                  },
+                  "title": "Response Sources Check Api Sources Check Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sources Check"
       }
     },
     "/api/summary": {

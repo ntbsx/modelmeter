@@ -140,6 +140,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sources */
+        get: operations["sources_api_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sources/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sources Check */
+        get: operations["sources_check_api_sources_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/summary": {
         parameters: {
             query?: never;
@@ -219,6 +253,31 @@ export interface components {
              */
             total_sessions: number;
             usage: components["schemas"]["TokenUsage"];
+        };
+        /**
+         * DataSourceConfig
+         * @description Single configured analytics source.
+         */
+        DataSourceConfig: {
+            auth?: components["schemas"]["SourceAuth"] | null;
+            /** Base Url */
+            base_url?: string | null;
+            /** Db Path */
+            db_path?: string | null;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sqlite" | "http";
+            /** Label */
+            label?: string | null;
+            /** Source Id */
+            source_id: string;
         };
         /**
          * DoctorReport
@@ -636,6 +695,48 @@ export interface components {
             tables_present?: string[];
         };
         /**
+         * SourceAuth
+         * @description Optional basic auth credentials for HTTP sources.
+         */
+        SourceAuth: {
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
+        };
+        /**
+         * SourceHealth
+         * @description Health status for one source.
+         */
+        SourceHealth: {
+            /** Detail */
+            detail?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Is Reachable */
+            is_reachable: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sqlite" | "http";
+            /** Source Id */
+            source_id: string;
+        };
+        /**
+         * SourceRegistry
+         * @description Registry file payload for configured sources.
+         */
+        SourceRegistry: {
+            /** Sources */
+            sources?: components["schemas"]["DataSourceConfig"][];
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /**
          * SummaryResponse
          * @description Top-level summary response contract.
          */
@@ -985,6 +1086,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sources_api_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRegistry"];
+                };
+            };
+        };
+    };
+    sources_check_api_sources_check_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceHealth"][];
                 };
             };
         };
