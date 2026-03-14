@@ -47,6 +47,11 @@ Primary commands (Makefile):
 - `make contract-policy-check` enforce OpenAPI/version artifact policy
 - `make release-check` run full release-quality checks
 
+CLI commands commonly exercised during update work:
+- `uv run modelmeter update check`
+- `uv run modelmeter update check --json`
+- `uv run modelmeter update apply --dry-run`
+
 Frontend scripts:
 - `npm run --prefix web dev`
 - `npm run --prefix web build`
@@ -170,8 +175,15 @@ Comments/docstrings:
 - Run targeted tests first, then broader checks before final handoff.
 - Useful suites:
   - `tests/test_api.py`
+  - `tests/test_updater.py`
   - `tests/test_openapi_contract.py`
   - `tests/test_versioning.py`
+
+For update-related changes, run a focused suite first:
+
+```bash
+uv run pytest tests/test_updater.py tests/test_cli.py tests/test_api.py tests/test_settings.py
+```
 
 ## 11) Pre-commit Alignment
 Configured hooks in `.pre-commit-config.yaml`:

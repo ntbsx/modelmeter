@@ -34,6 +34,9 @@ The installer prefers wheel assets published on the GitLab release page and fall
 ```bash
 # Terminal Commands
 modelmeter doctor
+modelmeter update check
+modelmeter update check --json
+modelmeter update apply --dry-run
 modelmeter summary --days 7
 modelmeter daily --days 7
 modelmeter summary --days 7 --pricing-file ./models.json
@@ -72,6 +75,32 @@ API behavior for auth-enabled mode:
 
 - `/health` remains public and returns `status`, `app_version`, and `auth_required`.
 - Protected API routes return `401` with JSON body `{"detail": "Invalid credentials"}`.
+
+## Self-Update
+
+ModelMeter can check for newer GitLab releases and prepare an install command:
+
+```bash
+# Check latest release vs current local version
+modelmeter update check
+
+# Machine-friendly output
+modelmeter update check --json
+
+# Preview install command without changing anything
+modelmeter update apply --dry-run
+
+# Apply a specific version
+modelmeter update apply --version 2026.3.16
+```
+
+Update behavior can be configured with environment variables:
+
+```bash
+export MODELMETER_UPDATE_CHECK_ENABLED=true
+export MODELMETER_UPDATE_CHECK_URL="https://gitlab.com/api/v4/projects/ntbsdev%2Fmodelmeter/releases/permalink/latest"
+export MODELMETER_UPDATE_CHECK_TIMEOUT_SECONDS=8
+```
 
 ## Pricing File
 
