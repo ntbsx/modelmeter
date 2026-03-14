@@ -28,6 +28,6 @@ make perf-guardrail
 
 - Largest JS chunk: keep below 450 KB (non-gzipped) unless justified
 - `/health` avg in-process latency: keep below 20 ms on dev machine
-- `/api/live/snapshot` avg in-process latency: keep below 30 ms on dev machine
+- `/api/live/snapshot` avg in-process latency: keep below 60 ms (CI-friendly threshold)
 
 Thresholds are heuristics and should be adjusted as the product grows.

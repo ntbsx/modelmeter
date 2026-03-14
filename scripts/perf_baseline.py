@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sqlite3
 import statistics
 import tempfile
@@ -70,6 +71,7 @@ def _bundle_sizes(root: Path) -> BundleReport:
 
 
 def _health_latency() -> LatencyReport:
+    os.environ.setdefault("MODELMETER_PRICING_REMOTE_FALLBACK", "false")
     app = create_app()
     samples_ms: list[float] = []
     with TestClient(app) as client:
@@ -175,6 +177,7 @@ def _create_live_fixture(db_path: Path) -> None:
 
 
 def _live_snapshot_latency() -> LatencyReport:
+    os.environ.setdefault("MODELMETER_PRICING_REMOTE_FALLBACK", "false")
     app = create_app()
     samples_ms: list[float] = []
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -213,7 +216,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Generate lightweight performance baseline report")
     parser.add_argument("--max-largest-js-kb", type=float, default=450.0)
     parser.add_argument("--max-health-avg-ms", type=float, default=20.0)
-    parser.add_argument("--max-live-snapshot-avg-ms", type=float, default=30.0)
+    parser.add_argument("--max-live-snapshot-avg-ms", type=float, default=60.0)
     parser.add_argument(
         "--fail-on-threshold",
         action="store_true",

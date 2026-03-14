@@ -18,7 +18,7 @@ export default function ProjectDetail() {
 
   const { data, isLoading, error } = useQuery<ProjectDetailResponse>({
     queryKey: ['project-detail', decodedProjectId],
-    queryFn: () => fetchApi(`/projects/${encodeURIComponent(decodedProjectId)}`, { days: 7 }),
+    queryFn: () => fetchApi(`/projects/${encodeURIComponent(decodedProjectId)}`),
     enabled: decodedProjectId.length > 0,
   })
 
@@ -81,6 +81,13 @@ export default function ProjectDetail() {
   }
 
   const normalizedSearch = searchTerm.trim().toLowerCase()
+  const looksLikePath = data.project_name.includes('/') || data.project_name.includes('\\')
+  const displayProjectName =
+    data.project_path && data.project_name === data.project_path
+      ? data.project_name.split(/[\\/]/).filter(Boolean).pop() || data.project_id
+      : looksLikePath
+        ? data.project_name.split(/[\\/]/).filter(Boolean).pop() || data.project_name
+        : data.project_name
   const visibleSessions = data.sessions
     .filter((session) => {
       if (normalizedSearch.length === 0) {
@@ -120,13 +127,15 @@ export default function ProjectDetail() {
 
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-            {data.project_name}
+            {displayProjectName}
           </h1>
           <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2 min-w-0">
             <Folder className="h-4 w-4 shrink-0" />
             <span className="truncate">{data.project_path || data.project_id}</span>
           </div>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Session activity for the last 7 days.</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Session activity across all available history.
+          </p>
         </div>
       </div>
 

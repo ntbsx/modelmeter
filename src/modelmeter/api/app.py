@@ -259,7 +259,7 @@ def create_app(
     @app.get("/api/projects/{project_id}", response_model=ProjectDetailResponse)
     def project_detail(
         project_id: str,
-        days: int | None = Query(default=7, ge=1),
+        days: int | None = Query(default=None, ge=1),
         session_offset: int = Query(default=0, ge=0),
         session_limit: int | None = Query(default=None, ge=1),
         db_path: str | None = Query(default=None),

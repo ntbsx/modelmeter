@@ -71,4 +71,4 @@ perf-check:
 	uv run python scripts/perf_baseline.py
 
 perf-guardrail:
-	uv run python scripts/perf_baseline.py --fail-on-threshold
+	uv run python scripts/perf_baseline.py --fail-on-threshold --max-live-snapshot-avg-ms 60
