@@ -204,6 +204,38 @@ def test_sources_endpoint_returns_empty_registry_by_default() -> None:
     assert payload["sources"] == []
 
 
+def test_sources_endpoint_redacts_credentials(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "sources": [
+                    {
+                        "source_id": "remote",
+                        "kind": "http",
+                        "base_url": "http://example.com",
+                        "auth": {"username": "user", "password": "s3cret"},
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    client = _new_client()
+    response = client.get("/api/sources")
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    source = payload["sources"][0]
+    assert source["has_auth"] is True
+    assert "auth" not in source
+    assert "password" not in json.dumps(source)
+
+
 def test_sources_check_endpoint_reports_reachability(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

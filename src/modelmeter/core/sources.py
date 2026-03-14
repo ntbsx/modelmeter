@@ -52,6 +52,27 @@ class SourceRegistry(BaseModel):
     )
 
 
+class DataSourcePublic(BaseModel):
+    """Public view of a source config with credentials redacted."""
+
+    source_id: str
+    label: str | None = None
+    kind: Literal["sqlite", "http"]
+    enabled: bool = True
+    db_path: Path | None = None
+    base_url: str | None = None
+    has_auth: bool = False
+
+
+class SourceRegistryPublic(BaseModel):
+    """Public registry view with credentials stripped."""
+
+    version: int = 1
+    sources: list[DataSourcePublic] = Field(
+        default_factory=lambda: cast(list[DataSourcePublic], [])
+    )
+
+
 class SourceHealth(BaseModel):
     """Health status for one source."""
 
@@ -170,6 +191,23 @@ def _check_http_source(source: DataSourceConfig, *, timeout_seconds: int) -> Sou
         detail=f"HTTP {status_code}",
         error=None if status_code == 200 else f"Unexpected status {status_code}",
     )
+
+
+def to_public_registry(registry: SourceRegistry) -> SourceRegistryPublic:
+    """Strip credentials from a registry for API responses."""
+    public_sources = [
+        DataSourcePublic(
+            source_id=source.source_id,
+            label=source.label,
+            kind=source.kind,
+            enabled=source.enabled,
+            db_path=source.db_path,
+            base_url=source.base_url,
+            has_auth=source.auth is not None,
+        )
+        for source in registry.sources
+    ]
+    return SourceRegistryPublic(version=registry.version, sources=public_sources)
 
 
 def check_source_health(*, source: DataSourceConfig, settings: AppSettings) -> SourceHealth:

@@ -44,9 +44,10 @@ from modelmeter.core.models import (
 )
 from modelmeter.core.sources import (
     SourceHealth,
-    SourceRegistry,
+    SourceRegistryPublic,
     check_source_health,
     load_source_registry,
+    to_public_registry,
 )
 
 LOCAL_CORS_ORIGINS = [
@@ -162,9 +163,10 @@ def create_app(
             db_path_override=_optional_path(db_path),
         )
 
-    @app.get("/api/sources", response_model=SourceRegistry)
-    def sources() -> SourceRegistry:
-        return load_source_registry(settings=settings)
+    @app.get("/api/sources", response_model=SourceRegistryPublic)
+    def sources() -> SourceRegistryPublic:
+        registry = load_source_registry(settings=settings)
+        return to_public_registry(registry)
 
     @app.get("/api/sources/check", response_model=list[SourceHealth])
     def sources_check() -> list[SourceHealth]:

@@ -255,11 +255,10 @@ export interface components {
             usage: components["schemas"]["TokenUsage"];
         };
         /**
-         * DataSourceConfig
-         * @description Single configured analytics source.
+         * DataSourcePublic
+         * @description Public view of a source config with credentials redacted.
          */
-        DataSourceConfig: {
-            auth?: components["schemas"]["SourceAuth"] | null;
+        DataSourcePublic: {
             /** Base Url */
             base_url?: string | null;
             /** Db Path */
@@ -269,6 +268,11 @@ export interface components {
              * @default true
              */
             enabled: boolean;
+            /**
+             * Has Auth
+             * @default false
+             */
+            has_auth: boolean;
             /**
              * Kind
              * @enum {string}
@@ -695,16 +699,6 @@ export interface components {
             tables_present?: string[];
         };
         /**
-         * SourceAuth
-         * @description Optional basic auth credentials for HTTP sources.
-         */
-        SourceAuth: {
-            /** Password */
-            password: string;
-            /** Username */
-            username: string;
-        };
-        /**
          * SourceHealth
          * @description Health status for one source.
          */
@@ -724,12 +718,12 @@ export interface components {
             source_id: string;
         };
         /**
-         * SourceRegistry
-         * @description Registry file payload for configured sources.
+         * SourceRegistryPublic
+         * @description Public registry view with credentials stripped.
          */
-        SourceRegistry: {
+        SourceRegistryPublic: {
             /** Sources */
-            sources?: components["schemas"]["DataSourceConfig"][];
+            sources?: components["schemas"]["DataSourcePublic"][];
             /**
              * Version
              * @default 1
@@ -1105,7 +1099,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SourceRegistry"];
+                    "application/json": components["schemas"]["SourceRegistryPublic"];
                 };
             };
         };

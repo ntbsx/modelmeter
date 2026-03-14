@@ -98,19 +98,9 @@
         "title": "DailyUsage",
         "type": "object"
       },
-      "DataSourceConfig": {
-        "description": "Single configured analytics source.",
+      "DataSourcePublic": {
+        "description": "Public view of a source config with credentials redacted.",
         "properties": {
-          "auth": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/SourceAuth"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
           "base_url": {
             "anyOf": [
               {
@@ -139,6 +129,11 @@
             "title": "Enabled",
             "type": "boolean"
           },
+          "has_auth": {
+            "default": false,
+            "title": "Has Auth",
+            "type": "boolean"
+          },
           "kind": {
             "enum": [
               "sqlite",
@@ -159,8 +154,6 @@
             "title": "Label"
           },
           "source_id": {
-            "maxLength": 64,
-            "minLength": 1,
             "title": "Source Id",
             "type": "string"
           }
@@ -169,7 +162,7 @@
           "source_id",
           "kind"
         ],
-        "title": "DataSourceConfig",
+        "title": "DataSourcePublic",
         "type": "object"
       },
       "DoctorReport": {
@@ -1094,25 +1087,6 @@
         "title": "SQLiteDiagnostics",
         "type": "object"
       },
-      "SourceAuth": {
-        "description": "Optional basic auth credentials for HTTP sources.",
-        "properties": {
-          "password": {
-            "title": "Password",
-            "type": "string"
-          },
-          "username": {
-            "title": "Username",
-            "type": "string"
-          }
-        },
-        "required": [
-          "username",
-          "password"
-        ],
-        "title": "SourceAuth",
-        "type": "object"
-      },
       "SourceHealth": {
         "description": "Health status for one source.",
         "properties": {
@@ -1163,12 +1137,12 @@
         "title": "SourceHealth",
         "type": "object"
       },
-      "SourceRegistry": {
-        "description": "Registry file payload for configured sources.",
+      "SourceRegistryPublic": {
+        "description": "Public registry view with credentials stripped.",
         "properties": {
           "sources": {
             "items": {
-              "$ref": "#/components/schemas/DataSourceConfig"
+              "$ref": "#/components/schemas/DataSourcePublic"
             },
             "title": "Sources",
             "type": "array"
@@ -1179,7 +1153,7 @@
             "type": "integer"
           }
         },
-        "title": "SourceRegistry",
+        "title": "SourceRegistryPublic",
         "type": "object"
       },
       "SummaryResponse": {
@@ -2148,7 +2122,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SourceRegistry"
+                  "$ref": "#/components/schemas/SourceRegistryPublic"
                 }
               }
             },
