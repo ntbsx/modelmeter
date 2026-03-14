@@ -1,8 +1,11 @@
-from typer.testing import CliRunner
 import pytest
+from typer.testing import CliRunner
 
+import modelmeter.cli.main as cli_main_module
 from modelmeter.cli.main import app
 from modelmeter.common.formatting import format_pricing_source_human, format_usd_human
+from modelmeter.config.settings import AppSettings
+from modelmeter.core.models import UpdateCheckResponse
 
 
 def test_info_command_runs() -> None:
@@ -48,11 +51,16 @@ def test_version_flag_prints_runtime_version() -> None:
 def test_update_check_command_json_output(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
 
-    class _Result:
-        def model_dump_json(self, *, indent: int) -> str:
-            return '{"update_available": true, "latest_version": "2026.3.20"}'
+    def _mock_check_for_updates(*, settings: AppSettings) -> UpdateCheckResponse:
+        _ = settings
+        return UpdateCheckResponse(
+            current_version="2026.3.16",
+            latest_version="2026.3.20",
+            update_available=True,
+            checked_at_ms=1,
+        )
 
-    monkeypatch.setattr("modelmeter.cli.main.check_for_updates", lambda *, settings: _Result())
+    monkeypatch.setattr(cli_main_module, "check_for_updates", _mock_check_for_updates)
 
     result = runner.invoke(app, ["update", "check", "--json"])
     assert result.exit_code == 0
@@ -61,13 +69,29 @@ def test_update_check_command_json_output(monkeypatch: pytest.MonkeyPatch) -> No
 
 def test_update_apply_dry_run_command(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
-    monkeypatch.setattr(
-        "modelmeter.cli.main.apply_update",
-        lambda *, settings, version, method, dry_run: (
+
+    def _mock_apply_update(
+        *,
+        settings: AppSettings,
+        version: str | None,
+        method: str,
+        dry_run: bool,
+    ) -> tuple[str, list[str]]:
+        _ = (settings, version, method, dry_run)
+        return (
             "https://example.com/modelmeter.whl",
-            ["python3", "-m", "pip", "install", "--user", "--upgrade", "https://example.com/modelmeter.whl"],
-        ),
-    )
+            [
+                "python3",
+                "-m",
+                "pip",
+                "install",
+                "--user",
+                "--upgrade",
+                "https://example.com/modelmeter.whl",
+            ],
+        )
+
+    monkeypatch.setattr(cli_main_module, "apply_update", _mock_apply_update)
 
     result = runner.invoke(app, ["update", "apply", "--dry-run"])
     assert result.exit_code == 0

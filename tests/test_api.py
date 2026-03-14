@@ -11,7 +11,10 @@ from typing import Any, cast
 import pytest
 from fastapi.testclient import TestClient
 
+import modelmeter.api.app as api_app_module
 from modelmeter.api.app import create_app
+from modelmeter.config.settings import AppSettings
+from modelmeter.core.models import UpdateCheckResponse
 
 
 def _new_client(**create_app_kwargs: Any) -> Any:
@@ -194,18 +197,18 @@ def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
 
 
 def test_update_check_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "modelmeter.api.app.check_for_updates",
-        lambda *, settings: {
-            "current_version": "2026.3.1",
-            "latest_version": "2026.3.20",
-            "update_available": True,
-            "release_tag": "v2026.3.20",
-            "release_url": "https://gitlab.example/release",
-            "checked_at_ms": 1,
-            "error": None,
-        },
-    )
+    def _mock_update_check(*, settings: AppSettings) -> UpdateCheckResponse:
+        _ = settings
+        return UpdateCheckResponse(
+            current_version="2026.3.1",
+            latest_version="2026.3.20",
+            update_available=True,
+            release_tag="v2026.3.20",
+            release_url="https://gitlab.example/release",
+            checked_at_ms=1,
+        )
+
+    monkeypatch.setattr(api_app_module, "check_for_updates", _mock_update_check)
     client = _new_client()
     response = client.get("/api/update/check")
 

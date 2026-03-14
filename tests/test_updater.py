@@ -2,19 +2,20 @@ from __future__ import annotations
 
 import pytest
 
+import modelmeter.core.updater as updater_module
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.updater import apply_update, check_for_updates
 
 
 def test_check_for_updates_reports_available(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "modelmeter.core.updater.get_base_version",
-        lambda: "2026.3.1",
-    )
-    monkeypatch.setattr(
-        "modelmeter.core.updater._resolve_latest_release",
-        lambda *, settings: ("2026.3.20", "v2026.3.20", "https://gitlab.example/release", None),
-    )
+    def _mock_latest_release(
+        *, settings: AppSettings
+    ) -> tuple[str | None, str | None, str | None, str | None]:
+        _ = settings
+        return "2026.3.20", "v2026.3.20", "https://gitlab.example/release", None
+
+    monkeypatch.setattr(updater_module, "get_base_version", lambda: "2026.3.1")
+    monkeypatch.setattr(updater_module, "_resolve_latest_release", _mock_latest_release)
 
     result = check_for_updates(settings=AppSettings())
 
@@ -31,10 +32,11 @@ def test_check_for_updates_handles_disabled_setting() -> None:
 
 
 def test_apply_update_dry_run_returns_command(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "modelmeter.core.updater._resolve_install_spec",
-        lambda *, version, timeout_seconds: f"https://example.com/modelmeter-{version}.whl",
-    )
+    def _mock_resolve_install_spec(*, version: str, timeout_seconds: int) -> str:
+        _ = timeout_seconds
+        return f"https://example.com/modelmeter-{version}.whl"
+
+    monkeypatch.setattr(updater_module, "_resolve_install_spec", _mock_resolve_install_spec)
 
     spec, command = apply_update(
         settings=AppSettings(),
@@ -48,16 +50,17 @@ def test_apply_update_dry_run_returns_command(monkeypatch: pytest.MonkeyPatch) -
 
 
 def test_apply_update_runs_install_command(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        "modelmeter.core.updater._resolve_install_spec",
-        lambda *, version, timeout_seconds: f"https://example.com/modelmeter-{version}.whl",
-    )
+    def _mock_resolve_install_spec(*, version: str, timeout_seconds: int) -> str:
+        _ = timeout_seconds
+        return f"https://example.com/modelmeter-{version}.whl"
+
+    monkeypatch.setattr(updater_module, "_resolve_install_spec", _mock_resolve_install_spec)
     calls: list[list[str]] = []
 
     def _record(command: list[str]) -> None:
         calls.append(command)
 
-    monkeypatch.setattr("modelmeter.core.updater._run_install_command", _record)
+    monkeypatch.setattr(updater_module, "_run_install_command", _record)
 
     apply_update(
         settings=AppSettings(),
