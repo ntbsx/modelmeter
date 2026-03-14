@@ -1,5 +1,6 @@
-from typer.testing import CliRunner
 from pathlib import Path
+
+from typer.testing import CliRunner
 
 from modelmeter.cli.main import app
 from modelmeter.common.formatting import format_pricing_source_human, format_usd_human

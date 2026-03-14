@@ -8,7 +8,7 @@ import sqlite3
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -34,7 +34,7 @@ class DataSourceConfig(BaseModel):
     auth: SourceAuth | None = None
 
     @model_validator(mode="after")
-    def validate_kind_fields(self) -> "DataSourceConfig":
+    def validate_kind_fields(self) -> DataSourceConfig:
         if self.kind == "sqlite":
             if self.db_path is None:
                 raise ValueError("sqlite source requires db_path")
@@ -47,7 +47,9 @@ class SourceRegistry(BaseModel):
     """Registry file payload for configured sources."""
 
     version: int = 1
-    sources: list[DataSourceConfig] = Field(default_factory=list)
+    sources: list[DataSourceConfig] = Field(
+        default_factory=lambda: cast(list[DataSourceConfig], [])
+    )
 
 
 class SourceHealth(BaseModel):
@@ -146,7 +148,7 @@ def _check_http_source(source: DataSourceConfig, *, timeout_seconds: int) -> Sou
     request = urllib.request.Request(health_url, headers={"User-Agent": "modelmeter/health-check"})
 
     if source.auth is not None:
-        token_raw = f"{source.auth.username}:{source.auth.password}".encode("utf-8")
+        token_raw = f"{source.auth.username}:{source.auth.password}".encode()
         token = base64.b64encode(token_raw).decode("ascii")
         request.add_header("Authorization", f"Basic {token}")
 
