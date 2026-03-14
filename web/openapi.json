@@ -1157,7 +1157,7 @@
   },
   "info": {
     "title": "ModelMeter",
-    "version": "2026.3.16"
+    "version": "2026.3.17"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -2097,7 +2097,14 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": {
-                    "type": "string"
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
                   },
                   "title": "Response Health Health Get",
                   "type": "object"

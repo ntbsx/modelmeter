@@ -133,15 +133,21 @@ def create_app(
 
         if not is_authorized:
             return Response(
+                content=json.dumps({"detail": "Invalid credentials"}),
                 status_code=401,
+                media_type="application/json",
                 headers={"WWW-Authenticate": 'Basic realm="ModelMeter"'},
             )
 
         return await call_next(request)
 
     @app.get("/health")
-    def health() -> dict[str, str]:
-        return {"status": "ok", "app_version": settings.app_runtime_version}
+    def health() -> dict[str, str | bool]:
+        return {
+            "status": "ok",
+            "app_version": settings.app_runtime_version,
+            "auth_required": auth_enabled,
+        }
 
     @app.get("/doc", include_in_schema=False)
     def doc_alias() -> RedirectResponse:
