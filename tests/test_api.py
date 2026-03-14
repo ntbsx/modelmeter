@@ -195,11 +195,8 @@ def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
 
 def test_sources_endpoint_returns_empty_registry_by_default() -> None:
     client = _new_client()
-    response = client.get(
-        "/api/sources",
-        headers={"X-Ignore": "1"},
-        cookies={"ignore": "1"},
-    )
+    client.cookies.set("ignore", "1")
+    response = client.get("/api/sources", headers={"X-Ignore": "1"})
 
     assert response.status_code == 200
     payload = _get_json(response)
