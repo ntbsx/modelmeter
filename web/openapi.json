@@ -1150,6 +1150,77 @@
         "title": "SQLiteDiagnostics",
         "type": "object"
       },
+      "SettingsKeyStatus": {
+        "description": "Status of a single API key setting.",
+        "properties": {
+          "configured": {
+            "default": false,
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "title": "SettingsKeyStatus",
+        "type": "object"
+      },
+      "SettingsResponse": {
+        "description": "Current API key settings (keys are never returned, only status).",
+        "properties": {
+          "anthropic_api_key": {
+            "$ref": "#/components/schemas/SettingsKeyStatus",
+            "default": {
+              "configured": false
+            }
+          },
+          "openai_api_key": {
+            "$ref": "#/components/schemas/SettingsKeyStatus",
+            "default": {
+              "configured": false
+            }
+          }
+        },
+        "title": "SettingsResponse",
+        "type": "object"
+      },
+      "SettingsUpdateRequest": {
+        "description": "Payload for updating user-persisted API keys. None clears the key.",
+        "properties": {
+          "anthropic_api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anthropic Api Key"
+          },
+          "openai_api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Openai Api Key"
+          }
+        },
+        "title": "SettingsUpdateRequest",
+        "type": "object"
+      },
       "SummaryResponse": {
         "description": "Top-level summary response contract.",
         "properties": {
@@ -1356,7 +1427,7 @@
   },
   "info": {
     "title": "ModelMeter",
-    "version": "2026.3.18"
+    "version": "2026.3.19"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -2193,6 +2264,60 @@
           }
         },
         "summary": "Provider Usage"
+      }
+    },
+    "/api/settings": {
+      "get": {
+        "operationId": "get_settings_api_settings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Settings"
+      },
+      "put": {
+        "operationId": "update_settings_api_settings_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingsUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Settings"
       }
     },
     "/api/summary": {

@@ -23,6 +23,7 @@ from fastapi.responses import (
 from fastapi.staticfiles import StaticFiles
 
 from modelmeter.config.settings import AppSettings
+from modelmeter.config.user_settings import load_user_settings, save_user_settings
 from modelmeter.core.analytics import (
     get_daily,
     get_model_detail,
@@ -41,6 +42,9 @@ from modelmeter.core.models import (
     ProjectDetailResponse,
     ProjectsResponse,
     ProvidersUsageResponse,
+    SettingsKeyStatus,
+    SettingsResponse,
+    SettingsUpdateRequest,
     SummaryResponse,
     UpdateCheckResponse,
 )
@@ -169,9 +173,53 @@ def create_app(
     def update_check() -> UpdateCheckResponse:
         return check_for_updates(settings=settings)
 
+    def _effective_api_keys() -> tuple[str | None, str | None]:
+        """Resolve API keys: env vars take priority over user-saved file."""
+        user = load_user_settings()
+        anthropic = settings.anthropic_api_key or user.get("anthropic_api_key")
+        openai = settings.openai_api_key or user.get("openai_api_key")
+        return anthropic, openai
+
+    @app.get("/api/settings", response_model=SettingsResponse)
+    def get_settings() -> SettingsResponse:
+        user = load_user_settings()
+
+        def _key_status(env_val: str | None, user_key: str) -> SettingsKeyStatus:
+            if env_val:
+                return SettingsKeyStatus(configured=True, source="env")
+            if user.get(user_key):
+                return SettingsKeyStatus(configured=True, source="user")
+            return SettingsKeyStatus(configured=False, source=None)
+
+        return SettingsResponse(
+            anthropic_api_key=_key_status(settings.anthropic_api_key, "anthropic_api_key"),
+            openai_api_key=_key_status(settings.openai_api_key, "openai_api_key"),
+        )
+
+    @app.put("/api/settings", response_model=SettingsResponse)
+    def update_settings(body: SettingsUpdateRequest) -> SettingsResponse:
+        user = load_user_settings()
+        if "anthropic_api_key" in body.model_fields_set:
+            if body.anthropic_api_key:
+                user["anthropic_api_key"] = body.anthropic_api_key
+            else:
+                user.pop("anthropic_api_key", None)
+        if "openai_api_key" in body.model_fields_set:
+            if body.openai_api_key:
+                user["openai_api_key"] = body.openai_api_key
+            else:
+                user.pop("openai_api_key", None)
+        save_user_settings(user)
+        return get_settings()
+
     @app.get("/api/provider-usage", response_model=ProvidersUsageResponse)
     def provider_usage() -> ProvidersUsageResponse:
-        return get_providers_usage(settings=settings)
+        anthropic_key, openai_key = _effective_api_keys()
+        return get_providers_usage(
+            anthropic_api_key=anthropic_key,
+            openai_api_key=openai_key,
+            timeout=settings.provider_usage_timeout_seconds,
+        )
 
     @app.get("/api/summary", response_model=SummaryResponse)
     def summary(

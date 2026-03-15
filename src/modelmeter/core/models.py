@@ -239,3 +239,24 @@ class ProvidersUsageResponse(BaseModel):
     """Combined provider usage/status response."""
 
     providers: list[ProviderStatusResponse] = []
+
+
+class SettingsKeyStatus(BaseModel):
+    """Status of a single API key setting."""
+
+    configured: bool = False
+    source: str | None = None  # "env" | "user" | None
+
+
+class SettingsResponse(BaseModel):
+    """Current API key settings (keys are never returned, only status)."""
+
+    anthropic_api_key: SettingsKeyStatus = SettingsKeyStatus()
+    openai_api_key: SettingsKeyStatus = SettingsKeyStatus()
+
+
+class SettingsUpdateRequest(BaseModel):
+    """Payload for updating user-persisted API keys. None clears the key."""
+
+    anthropic_api_key: str | None = None
+    openai_api_key: str | None = None

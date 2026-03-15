@@ -157,6 +157,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings */
+        get: operations["get_settings_api_settings_get"];
+        /** Update Settings */
+        put: operations["update_settings_api_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/summary": {
         parameters: {
             query?: never;
@@ -723,6 +741,47 @@ export interface components {
             tables_present?: string[];
         };
         /**
+         * SettingsKeyStatus
+         * @description Status of a single API key setting.
+         */
+        SettingsKeyStatus: {
+            /**
+             * Configured
+             * @default false
+             */
+            configured: boolean;
+            /** Source */
+            source?: string | null;
+        };
+        /**
+         * SettingsResponse
+         * @description Current API key settings (keys are never returned, only status).
+         */
+        SettingsResponse: {
+            /**
+             * @default {
+             *       "configured": false
+             *     }
+             */
+            anthropic_api_key: components["schemas"]["SettingsKeyStatus"];
+            /**
+             * @default {
+             *       "configured": false
+             *     }
+             */
+            openai_api_key: components["schemas"]["SettingsKeyStatus"];
+        };
+        /**
+         * SettingsUpdateRequest
+         * @description Payload for updating user-persisted API keys. None clears the key.
+         */
+        SettingsUpdateRequest: {
+            /** Anthropic Api Key */
+            anthropic_api_key?: string | null;
+            /** Openai Api Key */
+            openai_api_key?: string | null;
+        };
+        /**
          * SummaryResponse
          * @description Top-level summary response contract.
          */
@@ -1118,6 +1177,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProvidersUsageResponse"];
+                };
+            };
+        };
+    };
+    get_settings_api_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+        };
+    };
+    update_settings_api_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

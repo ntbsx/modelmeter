@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import httpx
 
-from modelmeter.config.settings import AppSettings
 from modelmeter.core.models import (
     ProviderRateLimits,
     ProviderStatusResponse,
@@ -128,18 +127,22 @@ def _int_header(response: httpx.Response, header: str) -> int | None:
         return None
 
 
-def get_providers_usage(settings: AppSettings) -> ProvidersUsageResponse:
+def get_providers_usage(
+    *,
+    anthropic_api_key: str | None,
+    openai_api_key: str | None,
+    timeout: int,
+) -> ProvidersUsageResponse:
     """Fetch current usage/status from configured AI providers."""
-    timeout = settings.provider_usage_timeout_seconds
     providers: list[ProviderStatusResponse] = []
 
-    if settings.anthropic_api_key:
-        providers.append(_fetch_anthropic_status(settings.anthropic_api_key, timeout))
+    if anthropic_api_key:
+        providers.append(_fetch_anthropic_status(anthropic_api_key, timeout))
     else:
         providers.append(ProviderStatusResponse(provider="anthropic", configured=False))
 
-    if settings.openai_api_key:
-        providers.append(_fetch_openai_status(settings.openai_api_key, timeout))
+    if openai_api_key:
+        providers.append(_fetch_openai_status(openai_api_key, timeout))
     else:
         providers.append(ProviderStatusResponse(provider="openai", configured=False))
 
