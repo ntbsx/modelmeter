@@ -216,6 +216,7 @@ def create_app(
         days: int | None = Query(default=7, ge=1),
         offset: int = Query(default=0, ge=0),
         limit: int = Query(default=20, ge=1),
+        provider: str | None = Query(default=None),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
     ) -> ModelsResponse:
@@ -225,6 +226,7 @@ def create_app(
                 days=days,
                 offset=offset,
                 limit=limit,
+                provider=provider,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
             )

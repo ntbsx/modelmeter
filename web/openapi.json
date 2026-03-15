@@ -426,6 +426,10 @@
             ],
             "title": "Pricing Source"
           },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
           "total_interactions": {
             "default": 0,
             "minimum": 0.0,
@@ -456,6 +460,7 @@
         },
         "required": [
           "model_id",
+          "provider",
           "usage"
         ],
         "title": "ModelDetailResponse",
@@ -1817,6 +1822,22 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider"
             }
           },
           {

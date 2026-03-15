@@ -405,6 +405,8 @@ export interface components {
             model_id: string;
             /** Pricing Source */
             pricing_source?: string | null;
+            /** Provider */
+            provider: string;
             /**
              * Total Interactions
              * @default 0
@@ -979,6 +981,7 @@ export interface operations {
                 days?: number | null;
                 offset?: number;
                 limit?: number;
+                provider?: string | null;
                 db_path?: string | null;
                 pricing_file?: string | null;
             };

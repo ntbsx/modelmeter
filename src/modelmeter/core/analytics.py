@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import date
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal, cast
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.doctor import generate_doctor_report
@@ -207,6 +207,7 @@ def get_models(
     days: int | None = None,
     db_path_override: Path | None = None,
     pricing_file_override: Path | None = None,
+    provider: str | None = None,
     offset: int = 0,
     limit: int = 20,
 ) -> ModelsResponse:
@@ -214,8 +215,26 @@ def get_models(
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     rows = repository.fetch_model_usage_detail(days=days)
-    summary_row = repository.fetch_summary(days=days)
-    total_sessions = repository.fetch_session_count(days=days)
+
+    if provider is not None:
+        filtered_rows: list[Any] = []
+        for row in rows:
+            model_id = str(row["model_id"])
+            if provider_from_model_id(model_id) == provider:
+                filtered_rows.append(row)  # type: ignore
+        rows = filtered_rows
+
+        totals = TokenUsage(
+            input_tokens=sum(int(cast(Any, r)["input_tokens"]) for r in rows),  # type: ignore
+            output_tokens=sum(int(cast(Any, r)["output_tokens"]) for r in rows),  # type: ignore
+            cache_read_tokens=sum(int(cast(Any, r)["cache_read"]) for r in rows),  # type: ignore
+            cache_write_tokens=sum(int(cast(Any, r)["cache_write"]) for r in rows),  # type: ignore
+        )
+        total_sessions = sum(int(cast(Any, r)["total_sessions"]) for r in rows)  # type: ignore
+    else:
+        summary_row = repository.fetch_summary(days=days)
+        totals = _token_usage_from_row(summary_row)
+        total_sessions = repository.fetch_session_count(days=days)
 
     pricing_book, pricing_source = load_pricing_book(
         settings=settings,
@@ -263,7 +282,7 @@ def get_models(
         models_limit=limit,
         models_returned=len(usage_rows),
         total_models=total_models,
-        totals=_token_usage_from_row(summary_row),
+        totals=totals,
         total_sessions=total_sessions,
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
         pricing_source=pricing_source,
@@ -418,6 +437,7 @@ def get_model_detail(
 
     return ModelDetailResponse(
         model_id=model_id,
+        provider=provider_from_model_id(model_id),
         window_days=days,
         usage=usage,
         total_sessions=int(row["total_sessions"]),

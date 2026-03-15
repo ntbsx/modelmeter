@@ -595,3 +595,21 @@ def test_providers_command_json_output(tmp_path: Path) -> None:
     payload = json.loads(result.stdout)
     assert payload["total_providers"] == 2
     assert len(payload["providers"]) == 2
+
+
+def test_get_models_filters_by_provider(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_provider_fixture(db_path)
+
+    result = get_models(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+        provider="anthropic",
+    )
+
+    assert result.total_models == 1
+    assert len(result.models) == 1
+    assert result.models[0].model_id == "anthropic/claude-sonnet-4-5"
+    assert result.totals.input_tokens == 10
+    assert result.totals.output_tokens == 1

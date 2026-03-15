@@ -89,6 +89,7 @@ class ModelDetailResponse(BaseModel):
     """Single model detail response contract."""
 
     model_id: str
+    provider: str
     window_days: int | None = Field(default=None, ge=1)
     usage: TokenUsage
     total_sessions: int = Field(default=0, ge=0)

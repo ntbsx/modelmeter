@@ -487,3 +487,18 @@ def test_spa_routes_are_not_blocked_when_auth_enabled() -> None:
 
     assert root_response.status_code != 401
     assert login_response.status_code != 401
+
+
+def test_models_endpoint_filters_by_provider(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client()
+    response = client.get(
+        "/api/models", params={"db_path": str(db_path), "days": 7, "provider": "anthropic"}
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["total_models"] == 1
+    assert payload["models"][0]["model_id"] == "anthropic/claude-sonnet-4-5"
