@@ -210,16 +210,6 @@ jobs:
         with:
           name: coverage-xml
           path: coverage.xml
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5.5.2
-        continue-on-error: true
-        with:
-          files: ./coverage.xml
-          flags: unittests
-          name: pytest-coverage
-          fail_ci_if_error: false
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   package-smoke:
     runs-on: ubuntu-latest
