@@ -19,10 +19,20 @@ The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.
 - Migrated CI workflows to GitHub Actions with Node 24 runtime.
 - Aligned release versioning with PEP 440 rc tag format.
 
+## [2026.3.17] - 2026-03-15
+
+### Added
+- Custom login page for web dashboard auth, replacing browser basic auth modal.
+- Release update check and apply flow via CLI (`modelmeter update check`, `modelmeter update apply`).
+
+### Changed
+- Migrated CI from GitLab to GitHub Actions workflows.
+- Migrated installer and updater to GitHub Releases.
+
 ## [2026.3.16] - 2026-03-14
 
 ### Fixed
-- Fixed release publishing job payload handling for the Releases API.
+- Fixed release publishing job payload handling for the GitHub Releases API.
 - Fixed release/version mismatch by aligning package versioning with the release tag flow.
 
 ## [2026.3.14] - 2026-03-14
@@ -45,6 +55,7 @@ The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.
 - Updated CI to include frontend lint and packaging smoke checks.
 - Updated README and AGENTS docs with frontend testing and dashboard feature guidance.
 - Standardized OpenAPI snapshot and generated TypeScript contract workflow for frontend/backend parity.
+- Distribution via GitHub Releases with installer script.
 
 ### Fixed
 - Fixed web version badge fetch path to use `/health`.
