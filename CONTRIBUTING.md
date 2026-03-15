@@ -24,7 +24,7 @@ make setup
 make dev
 ```
 
-The web UI will be available at `http://localhost:5173` and the API at `http://127.0.0.1:8000`.
+The web UI will be available at `http://localhost:5173` and the API at `http://localhost:8000`.
 
 ## Project Structure
 
