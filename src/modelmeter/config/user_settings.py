@@ -7,7 +7,7 @@ from pathlib import Path
 
 _USER_SETTINGS_PATH = Path.home() / ".local" / "share" / "modelmeter" / "user_settings.json"
 
-_ALLOWED_KEYS = frozenset({"anthropic_api_key", "openai_api_key"})
+ALLOWED_KEYS: frozenset[str] = frozenset({"anthropic_api_key", "openai_api_key"})
 
 
 def get_user_settings_path() -> Path:
@@ -21,7 +21,7 @@ def load_user_settings() -> dict[str, str]:
         return {}
     try:
         data = json.loads(path.read_text())
-        return {k: v for k, v in data.items() if k in _ALLOWED_KEYS and isinstance(v, str) and v}
+        return {k: v for k, v in data.items() if k in ALLOWED_KEYS and isinstance(v, str) and v}
     except Exception:
         return {}
 
@@ -30,5 +30,5 @@ def save_user_settings(data: dict[str, str | None] | dict[str, str]) -> None:
     """Persist user settings to disk, omitting keys with None/empty values."""
     path = get_user_settings_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    cleaned = {k: v for k, v in data.items() if k in _ALLOWED_KEYS and v}
+    cleaned = {k: v for k, v in data.items() if k in ALLOWED_KEYS and v}
     path.write_text(json.dumps(cleaned, indent=2) + "\n")
