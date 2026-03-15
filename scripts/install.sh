@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_PATH="ntbsdev/modelmeter"
-PROJECT_PATH_ENCODED="ntbsdev%2Fmodelmeter"
-GITLAB_API="https://gitlab.com/api/v4/projects/${PROJECT_PATH_ENCODED}"
+PROJECT_PATH="ntbsx/modelmeter"
+GITHUB_API="https://api.github.com/repos/${PROJECT_PATH}"
 
 VERSION=""
 METHOD="auto"
 
 usage() {
   cat <<'EOF'
-Install ModelMeter from GitLab releases.
+Install ModelMeter from GitHub releases.
 
 Usage:
   install.sh [--version X.Y.Z] [--method auto|pipx|pip]
@@ -58,7 +57,7 @@ if ! command -v curl >/dev/null 2>&1; then
 fi
 
 resolve_latest_version() {
-  curl -fsSL "${GITLAB_API}/releases/permalink/latest" | python3 -c '
+  curl -fsSL "${GITHUB_API}/releases/latest" | python3 -c '
 import json, sys
 release = json.load(sys.stdin)
 tag = str(release.get("tag_name", "")).strip()
@@ -70,16 +69,15 @@ print(tag.lstrip("v"))
 
 resolve_wheel_url() {
   local tag="$1"
-  curl -fsSL "${GITLAB_API}/releases/${tag}" | python3 -c '
+  curl -fsSL "${GITHUB_API}/releases/tags/${tag}" | python3 -c '
 import json
 import sys
 
 release = json.load(sys.stdin)
-assets = release.get("assets", {})
-links = assets.get("links", [])
+assets = release.get("assets", [])
 
-for link in links:
-    url = str(link.get("url", "")).strip()
+for asset in assets:
+    url = str(asset.get("browser_download_url", "")).strip()
     if url.endswith(".whl"):
         print(url)
         raise SystemExit(0)
@@ -93,7 +91,7 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 TAG="v${VERSION}"
-ARCHIVE_URL="https://gitlab.com/${PROJECT_PATH}/-/archive/${TAG}/modelmeter-${TAG}.tar.gz"
+ARCHIVE_URL="https://github.com/${PROJECT_PATH}/archive/refs/tags/${TAG}.tar.gz"
 WHEEL_URL=""
 
 if WHEEL_URL="$(resolve_wheel_url "${TAG}" 2>/dev/null)"; then

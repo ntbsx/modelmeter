@@ -12,7 +12,12 @@ def test_check_for_updates_reports_available(monkeypatch: pytest.MonkeyPatch) ->
         *, settings: AppSettings
     ) -> tuple[str | None, str | None, str | None, str | None]:
         _ = settings
-        return "2026.3.20", "v2026.3.20", "https://gitlab.example/release", None
+        return (
+            "2026.3.20",
+            "v2026.3.20",
+            "https://github.com/ntbsx/modelmeter/releases/tag/v2026.3.20",
+            None,
+        )
 
     monkeypatch.setattr(updater_module, "get_base_version", lambda: "2026.3.1")
     monkeypatch.setattr(updater_module, "_resolve_latest_release", _mock_latest_release)
@@ -88,3 +93,34 @@ def test_apply_update_wraps_network_errors(monkeypatch: pytest.MonkeyPatch) -> N
             method="auto",
             dry_run=False,
         )
+
+
+@pytest.mark.parametrize(
+    ("current", "latest", "expected"),
+    [
+        ("2026.3.17rc1", "2026.3.17rc2", True),
+        ("2026.3.17rc2", "2026.3.17", True),
+        ("2026.3.17", "2026.3.17rc2", False),
+        ("2026.3.18rc1", "2026.3.17", False),
+    ],
+)
+def test_check_for_updates_handles_rc_ordering(
+    monkeypatch: pytest.MonkeyPatch, current: str, latest: str, expected: bool
+) -> None:
+    def _mock_latest_release(
+        *, settings: AppSettings
+    ) -> tuple[str | None, str | None, str | None, str | None]:
+        _ = settings
+        return (
+            latest,
+            f"v{latest}",
+            f"https://github.com/ntbsx/modelmeter/releases/tag/v{latest}",
+            None,
+        )
+
+    monkeypatch.setattr(updater_module, "get_base_version", lambda: current)
+    monkeypatch.setattr(updater_module, "_resolve_latest_release", _mock_latest_release)
+
+    result = check_for_updates(settings=AppSettings())
+
+    assert result.update_available is expected

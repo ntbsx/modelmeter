@@ -11,7 +11,7 @@ Add a safe update workflow so users can discover and apply newer ModelMeter rele
 ## Scope
 
 ### In Scope
-- Update metadata fetch from GitLab release API.
+- Update metadata fetch from GitHub release API.
 - CalVer-aware version comparison.
 - Explicit update commands:
   - `modelmeter update check`

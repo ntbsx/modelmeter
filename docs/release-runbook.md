@@ -33,7 +33,7 @@ make version-stamp
 
 2. Verify release tag/version alignment policy:
 
-- The git tag version (`vYYYY.M.D`) must match:
+- The git tag version (`vYYYY.M.x` for stable, or `vYYYY.M.xrcN` for prerelease) must match:
   - `pyproject.toml` `[project].version`
   - `web/package.json` `version`
 - Never cut a release tag first and bump versions later.
@@ -61,7 +61,7 @@ git push --tags
 Run install from release metadata:
 
 ```bash
-curl -fsSL https://gitlab.com/ntbsdev/modelmeter/-/raw/main/scripts/install.sh | bash -s -- --version <YYYY.M.D>
+curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --version <YYYY.M.x>
 modelmeter --version
 ```
 

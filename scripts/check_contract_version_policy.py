@@ -98,12 +98,6 @@ def main() -> int:
             for line in status_output.splitlines()
             if len(line) > 3 and line[3:].strip()
         }
-        if not changed_files:
-            for base_ref in base_refs:
-                fallback_changed = _changed_files_from_diff_range(root=root, base_ref=base_ref)
-                if fallback_changed is not None:
-                    changed_files = fallback_changed
-                    break
 
     if "web/openapi.json" not in changed_files:
         print("Contract check: no OpenAPI contract changes detected.")

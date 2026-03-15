@@ -15,4 +15,6 @@ def test_default_source_registry_file() -> None:
 def test_update_check_is_enabled_by_default() -> None:
     settings = AppSettings()
     assert settings.update_check_enabled is True
-    assert "gitlab.com/api/v4/projects" in settings.update_check_url
+    assert (
+        settings.update_check_url == "https://api.github.com/repos/ntbsx/modelmeter/releases/latest"
+    )
