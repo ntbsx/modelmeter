@@ -29,7 +29,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -51,7 +50,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -71,7 +69,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -93,7 +90,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -200,7 +196,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -216,7 +211,7 @@ jobs:
           name: coverage-xml
           path: coverage.xml
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v5.5.2
         continue-on-error: true
         with:
           files: ./coverage.xml
@@ -235,7 +230,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -266,7 +260,6 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
