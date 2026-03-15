@@ -6,14 +6,20 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
+  security-events: write
+  actions: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
-  version_check:
+  fast-checks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -22,16 +28,60 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
           version: "0.8.17"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Ruff format check
+        run: uv run ruff format --check
+      - name: Ruff lint
+        run: uv run ruff check
+
+  version-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
       - name: Install dependencies
         run: uv sync --frozen --all-groups
       - name: Version check
         run: make version-check
 
-  contract_policy:
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Pyright
+        run: uv run python -m pyright
+
+  contract-policy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,10 +92,12 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
           version: "0.8.17"
+          enable-cache: true
       - name: Install dependencies
         run: uv sync --frozen --all-groups
       - name: Fetch comparison branch
@@ -58,27 +110,7 @@ jobs:
       - name: Contract policy check
         run: make contract-policy-check
 
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-      - name: Ruff format check
-        run: uv run ruff format --check
-      - name: Ruff lint
-        run: uv run ruff check
-
-  frontend_lint:
+  frontend-lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -94,7 +126,23 @@ jobs:
       - name: Frontend lint
         run: npm run --prefix web lint
 
-  package_smoke:
+  frontend-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install frontend dependencies
+        run: npm ci --prefix web
+      - name: Frontend tests
+        run: npm run --prefix web test -- --run
+
+  security-deps:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -107,6 +155,85 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           version: "0.8.17"
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Run pip-audit
+        run: uv run pip-audit --disable-pip-args --format=json | tee pip-audit.json
+      - name: Upload pip-audit results
+        uses: actions/upload-artifact@v7
+        with:
+          name: pip-audit
+          path: pip-audit.json
+          retention-days: 7
+
+  security-secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Run trufflehog
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/workspace" \
+            trufflesecurity/trufflehog:latest filesystem /workspace \
+            --json --no-update | tee trufflehog.json || true
+      - name: Upload secrets scan
+        uses: actions/upload-artifact@v7
+        with:
+          name: secrets-scan
+          path: trufflehog.json
+          retention-days: 7
+
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Pytest with coverage
+        run: uv run python -m pytest -n auto --cov=src/modelmeter --cov-report=xml --cov-report=term-missing
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-xml
+          path: coverage.xml
+      - name: Upload coverage to Codecov
+        if: ${{ secrets.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          flags: unittests
+          name: pytest-coverage
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  package-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -123,7 +250,7 @@ jobs:
         run: |
           uv run python -c "import zipfile, pathlib; wheels=sorted(pathlib.Path('dist').glob('*.whl')); assert wheels, 'No wheel built'; z=zipfile.ZipFile(wheels[-1]); assert any(n.endswith('modelmeter/web_dist/index.html') for n in z.namelist()), 'Bundled web_dist/index.html missing in wheel'"
 
-  perf_guardrail:
+  perf-guardrail:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -132,10 +259,12 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
       - name: Setup uv
         uses: astral-sh/setup-uv@v7
         with:
           version: "0.8.17"
+          enable-cache: true
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
@@ -150,44 +279,3 @@ jobs:
         run: npm run --prefix web build
       - name: Performance guardrail
         run: make perf-guardrail
-
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-      - name: Pyright
-        run: uv run python -m pyright
-
-  pytest:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-      - name: Pytest with coverage
-        run: uv run python -m pytest --cov=src/modelmeter --cov-report=xml
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-xml
-          path: coverage.xml

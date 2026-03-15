@@ -34,6 +34,7 @@ dev = [
     "pyright>=1.1.405",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.6.1",
     "ruff>=0.13.0",
 ]
 
