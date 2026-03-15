@@ -57,7 +57,7 @@ export default function ModelDetail() {
             to="/models"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Models
+            Back to Providers
           </Link>
         }
       />
@@ -79,7 +79,7 @@ export default function ModelDetail() {
             to="/models"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Models
+            Back to Providers
           </Link>
         }
       />
@@ -97,7 +97,7 @@ export default function ModelDetail() {
             to="/models"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Models
+            Back to Providers
           </Link>
         }
       />
@@ -128,14 +128,14 @@ export default function ModelDetail() {
       <div className="space-y-3">
         <Link
           className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-          to="/models"
+          to={`/models/provider/${encodeURIComponent(data.provider)}`}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Models
+          Back to {data.provider} Models
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-all">
               {data.model_id}
             </h1>

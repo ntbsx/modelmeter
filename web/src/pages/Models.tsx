@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { ModelsResponse } from '../types'
@@ -9,11 +10,12 @@ import { PageErrorState } from '../components/PageState'
 import DateRangeFilter from '../components/DateRangeFilter'
 
 export default function Models() {
+  const { providerId } = useParams<{ providerId: string }>()
   const [days, setDays] = useState(7)
 
   const { data, isLoading } = useQuery<ModelsResponse>({
-    queryKey: ['models', days],
-    queryFn: () => fetchApi('/models', { days })
+    queryKey: ['models', days, providerId],
+    queryFn: () => fetchApi('/models', providerId ? { days, provider: providerId } : { days })
   })
 
   if (isLoading) return <PageLoading title="Models" subtitle="Loading model usage" cards={3} />
@@ -27,12 +29,21 @@ export default function Models() {
   }
 
   return (
-    <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto">
-      <div className="mb-6 sm:mb-8">
-        <div className="flex justify-between items-end gap-3">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Models</h1>
-            <p className="text-gray-500 dark:text-gray-400">
+    <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto space-y-6 w-full min-w-0">
+      <div className="space-y-3">
+        <Link 
+          to="/models" 
+          className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Providers
+        </Link>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-all">
+              {providerId ? `${providerId} Models` : 'Models'}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
               Usage breakdown by model ({days === 1 ? 'last 24 hours' : `last ${days} days`})
             </p>
           </div>

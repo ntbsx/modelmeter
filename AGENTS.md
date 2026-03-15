@@ -213,6 +213,15 @@ make format && make lint && make typecheck && make test
 - Start with smallest relevant verification, then widen coverage.
 - Update docs when changing developer workflows.
 
+OpenCode custom command in this repo:
+- `.opencode/commands/cleanup-local-branches.md`
+- Usage in OpenCode TUI:
+  - `/cleanup-local-branches` (dry-run)
+  - `/cleanup-local-branches apply`
+  - `/cleanup-local-branches force`
+- Purpose: clean local branches while keeping branches that have open PRs.
+- Safety: never delete `main`, `master`, `develop`, or current branch.
+
 ## 13) Release Safety Protocol
 - For any release request, ensure release tag/version alignment before tagging:
   - `vYYYY.M.x` (or prerelease `vYYYY.M.xrcN`) tag must equal `pyproject.toml` `[project].version`

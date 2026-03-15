@@ -140,6 +140,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Providers */
+        get: operations["providers_api_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/summary": {
         parameters: {
             query?: never;
@@ -388,6 +405,8 @@ export interface components {
             model_id: string;
             /** Pricing Source */
             pricing_source?: string | null;
+            /** Provider */
+            provider: string;
             /**
              * Total Interactions
              * @default 0
@@ -615,6 +634,72 @@ export interface components {
              * @default 0
              */
             total_projects: number;
+            /**
+             * Total Sessions
+             * @default 0
+             */
+            total_sessions: number;
+            totals: components["schemas"]["TokenUsage"];
+            /** Window Days */
+            window_days?: number | null;
+        };
+        /**
+         * ProviderUsage
+         * @description Per-provider usage aggregate.
+         */
+        ProviderUsage: {
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /**
+             * Has Pricing
+             * @default false
+             */
+            has_pricing: boolean;
+            /** Provider */
+            provider: string;
+            /**
+             * Total Interactions
+             * @default 0
+             */
+            total_interactions: number;
+            /**
+             * Total Models
+             * @default 0
+             */
+            total_models: number;
+            usage: components["schemas"]["TokenUsage"];
+        };
+        /**
+         * ProvidersResponse
+         * @description Top providers usage response contract.
+         */
+        ProvidersResponse: {
+            /** Pricing Source */
+            pricing_source?: string | null;
+            /**
+             * Providers
+             * @default []
+             */
+            providers: components["schemas"]["ProviderUsage"][];
+            /** Providers Limit */
+            providers_limit?: number | null;
+            /**
+             * Providers Offset
+             * @default 0
+             */
+            providers_offset: number;
+            /**
+             * Providers Returned
+             * @default 0
+             */
+            providers_returned: number;
+            /** Total Cost Usd */
+            total_cost_usd?: number | null;
+            /**
+             * Total Providers
+             * @default 0
+             */
+            total_providers: number;
             /**
              * Total Sessions
              * @default 0
@@ -896,6 +981,7 @@ export interface operations {
                 days?: number | null;
                 offset?: number;
                 limit?: number;
+                provider?: string | null;
                 db_path?: string | null;
                 pricing_file?: string | null;
             };
@@ -1019,6 +1105,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    providers_api_providers_get: {
+        parameters: {
+            query?: {
+                days?: number | null;
+                offset?: number;
+                limit?: number;
+                db_path?: string | null;
+                pricing_file?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvidersResponse"];
                 };
             };
             /** @description Validation Error */

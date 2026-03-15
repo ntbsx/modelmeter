@@ -125,7 +125,7 @@ export default function ProjectDetail() {
           Back to Projects
         </Link>
 
-        <div>
+        <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
             {displayProjectName}
           </h1>
