@@ -4,7 +4,7 @@ version = "2026.3.17"
 description = "OpenCode usage analytics for terminal and web"
 readme = "README.md"
 authors = [
-    { name = "Nikho Sagala", email = "nikho@ntbs.dev" }
+    { name = "Nikho Sagala", email = "work@ntbs.dev" }
 ]
 requires-python = ">=3.12"
 dependencies = [
