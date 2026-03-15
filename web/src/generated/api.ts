@@ -140,6 +140,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/provider-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Provider Usage */
+        get: operations["provider_usage_api_provider_usage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/summary": {
         parameters: {
             query?: never;
@@ -625,6 +642,59 @@ export interface components {
             window_days?: number | null;
         };
         /**
+         * ProviderRateLimits
+         * @description Rate limit info returned from a provider API.
+         */
+        ProviderRateLimits: {
+            /** Requests Limit */
+            requests_limit?: number | null;
+            /** Requests Remaining */
+            requests_remaining?: number | null;
+            /** Tokens Limit */
+            tokens_limit?: number | null;
+            /** Tokens Remaining */
+            tokens_remaining?: number | null;
+        };
+        /**
+         * ProviderStatusResponse
+         * @description Status and usage info for a single AI provider.
+         */
+        ProviderStatusResponse: {
+            /**
+             * Configured
+             * @default false
+             */
+            configured: boolean;
+            /** Error */
+            error?: string | null;
+            /**
+             * Models
+             * @default []
+             */
+            models: string[];
+            /** Models Count */
+            models_count?: number | null;
+            /** Provider */
+            provider: string;
+            rate_limits?: components["schemas"]["ProviderRateLimits"] | null;
+            /**
+             * Status
+             * @default not_configured
+             */
+            status: string;
+        };
+        /**
+         * ProvidersUsageResponse
+         * @description Combined provider usage/status response.
+         */
+        ProvidersUsageResponse: {
+            /**
+             * Providers
+             * @default []
+             */
+            providers: components["schemas"]["ProviderStatusResponse"][];
+        };
+        /**
          * SQLiteDiagnostics
          * @description SQLite data source diagnostics.
          */
@@ -1028,6 +1098,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    provider_usage_api_provider_usage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvidersUsageResponse"];
                 };
             };
         };

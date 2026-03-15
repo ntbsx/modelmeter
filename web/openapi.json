@@ -943,6 +943,136 @@
         "title": "ProjectsResponse",
         "type": "object"
       },
+      "ProviderRateLimits": {
+        "description": "Rate limit info returned from a provider API.",
+        "properties": {
+          "requests_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requests Limit"
+          },
+          "requests_remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requests Remaining"
+          },
+          "tokens_limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens Limit"
+          },
+          "tokens_remaining": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokens Remaining"
+          }
+        },
+        "title": "ProviderRateLimits",
+        "type": "object"
+      },
+      "ProviderStatusResponse": {
+        "description": "Status and usage info for a single AI provider.",
+        "properties": {
+          "configured": {
+            "default": false,
+            "title": "Configured",
+            "type": "boolean"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "models": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "models_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Models Count"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "rate_limits": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProviderRateLimits"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "default": "not_configured",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider"
+        ],
+        "title": "ProviderStatusResponse",
+        "type": "object"
+      },
+      "ProvidersUsageResponse": {
+        "description": "Combined provider usage/status response.",
+        "properties": {
+          "providers": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProviderStatusResponse"
+            },
+            "title": "Providers",
+            "type": "array"
+          }
+        },
+        "title": "ProvidersUsageResponse",
+        "type": "object"
+      },
       "SQLiteDiagnostics": {
         "description": "SQLite data source diagnostics.",
         "properties": {
@@ -2045,6 +2175,24 @@
           }
         },
         "summary": "Project Detail"
+      }
+    },
+    "/api/provider-usage": {
+      "get": {
+        "operationId": "provider_usage_api_provider_usage_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersUsageResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Provider Usage"
       }
     },
     "/api/summary": {
