@@ -26,6 +26,9 @@ class AppSettings(BaseSettings):
     update_check_enabled: bool = True
     update_check_url: str = "https://api.github.com/repos/ntbsx/modelmeter/releases/latest"
     update_check_timeout_seconds: int = Field(default=8, ge=1, le=60)
+    anthropic_api_key: str | None = None
+    openai_api_key: str | None = None
+    provider_usage_timeout_seconds: int = Field(default=10, ge=1, le=60)
 
     @property
     def app_version(self) -> str:

@@ -40,9 +40,11 @@ from modelmeter.core.models import (
     ModelsResponse,
     ProjectDetailResponse,
     ProjectsResponse,
+    ProvidersUsageResponse,
     SummaryResponse,
     UpdateCheckResponse,
 )
+from modelmeter.core.provider_usage import get_providers_usage
 from modelmeter.core.updater import check_for_updates
 
 LOCAL_CORS_ORIGINS = [
@@ -166,6 +168,10 @@ def create_app(
     @app.get("/api/update/check", response_model=UpdateCheckResponse)
     def update_check() -> UpdateCheckResponse:
         return check_for_updates(settings=settings)
+
+    @app.get("/api/provider-usage", response_model=ProvidersUsageResponse)
+    def provider_usage() -> ProvidersUsageResponse:
+        return get_providers_usage(settings=settings)
 
     @app.get("/api/summary", response_model=SummaryResponse)
     def summary(

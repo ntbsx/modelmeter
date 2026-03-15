@@ -212,3 +212,30 @@ class UpdateCheckResponse(BaseModel):
     release_url: str | None = None
     checked_at_ms: int = Field(default=0, ge=0)
     error: str | None = None
+
+
+class ProviderRateLimits(BaseModel):
+    """Rate limit info returned from a provider API."""
+
+    requests_limit: int | None = None
+    requests_remaining: int | None = None
+    tokens_limit: int | None = None
+    tokens_remaining: int | None = None
+
+
+class ProviderStatusResponse(BaseModel):
+    """Status and usage info for a single AI provider."""
+
+    provider: str
+    configured: bool = False
+    status: str = "not_configured"  # "ok" | "error" | "not_configured"
+    models_count: int | None = None
+    models: list[str] = []
+    rate_limits: ProviderRateLimits | None = None
+    error: str | None = None
+
+
+class ProvidersUsageResponse(BaseModel):
+    """Combined provider usage/status response."""
+
+    providers: list[ProviderStatusResponse] = []

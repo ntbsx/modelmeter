@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Activity, BarChart2, FolderGit2, Cpu, LogOut } from 'lucide-react'
+import { Activity, BarChart2, FolderGit2, Cpu, LogOut, Zap } from 'lucide-react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
@@ -15,6 +15,7 @@ const ModelDetail = lazy(() => import('./pages/ModelDetail'))
 const Projects = lazy(() => import('./pages/Projects'))
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
 const Live = lazy(() => import('./pages/Live'))
+const ProviderUsage = lazy(() => import('./pages/ProviderUsage'))
 const Login = lazy(() => import('./pages/Login'))
 
 type HealthResponse = {
@@ -49,6 +50,7 @@ const links = [
   { to: '/models', icon: Cpu, label: 'Models' },
   { to: '/projects', icon: FolderGit2, label: 'Projects' },
   { to: '/live', icon: Activity, label: 'Live' },
+  { to: '/provider-usage', icon: Zap, label: 'Providers' },
 ]
 
 function LogoutButton({ compact = false }: { compact?: boolean }) {
@@ -188,6 +190,7 @@ function AuthGate() {
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:projectId" element={<ProjectDetail />} />
               <Route path="/live" element={<Live />} />
+              <Route path="/provider-usage" element={<ProviderUsage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
