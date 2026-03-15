@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle, Eye, EyeOff, Lock, Save, Trash2 } from 'lucide-react'
+import { CheckCircle, ExternalLink, Eye, EyeOff, Lock, Save, Trash2 } from 'lucide-react'
 import { fetchApi } from '../lib/api'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
@@ -39,6 +39,11 @@ async function putSettings(body: SettingsUpdateRequest): Promise<SettingsRespons
 const PROVIDER_LABELS: Record<string, string> = {
   anthropic_api_key: 'Anthropic (Claude)',
   openai_api_key: 'OpenAI',
+}
+
+const PROVIDER_KEY_URLS: Record<string, string> = {
+  anthropic_api_key: 'https://console.anthropic.com/settings/keys',
+  openai_api_key: 'https://platform.openai.com/api-keys',
 }
 
 const PROVIDER_PLACEHOLDERS: Record<string, string> = {
@@ -82,6 +87,15 @@ function ApiKeyField({ label, fieldKey, status, onSave, saving }: ApiKeyFieldPro
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {PROVIDER_LABELS[fieldKey]} API Key
           </p>
+          <a
+            href={PROVIDER_KEY_URLS[fieldKey]}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-1 mt-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Get API key
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
         </div>
         {status.configured && (
           <span
@@ -207,6 +221,9 @@ export default function Settings() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Configure API keys for provider usage checks. Keys are stored locally on the server.
           Environment variables always take precedence.
+        </p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          Use provider API keys, not your ChatGPT/Claude web login credentials.
         </p>
       </div>
 
