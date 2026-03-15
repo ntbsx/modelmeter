@@ -144,11 +144,7 @@ def create_app(
 
         if not is_authorized:
             is_sse_path = request.url.path.startswith(SSE_PATH_PREFIXES)
-            headers = (
-                {}
-                if is_sse_path
-                else {"WWW-Authenticate": 'Basic realm="ModelMeter"'}
-            )
+            headers = {} if is_sse_path else {"WWW-Authenticate": 'Basic realm="ModelMeter"'}
             return Response(
                 content=json.dumps({"detail": "Invalid credentials"}),
                 status_code=401,
