@@ -211,12 +211,13 @@ jobs:
           name: coverage-xml
           path: coverage.xml
       - name: Upload coverage to Codecov
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v5
+        continue-on-error: true
         with:
           files: ./coverage.xml
           flags: unittests
           name: pytest-coverage
+          fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
