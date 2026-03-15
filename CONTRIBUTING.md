@@ -138,6 +138,7 @@ make version-check  # Verify versions are aligned
 
 - Open an issue for bugs or feature requests
 - Check existing issues before creating new ones
+- See the [README](README.md) for detailed usage instructions
 
 ## License
 
