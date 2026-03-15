@@ -99,9 +99,7 @@ def _fetch_openai_status(api_key: str, timeout: int) -> ProviderStatusResponse:
         )
 
     data = response.json()
-    model_ids = sorted(
-        {m.get("id", "") for m in data.get("data", []) if m.get("id")}
-    )
+    model_ids = sorted({m.get("id", "") for m in data.get("data", []) if m.get("id")})
 
     rate_limits = ProviderRateLimits(
         requests_limit=_int_header(response, "x-ratelimit-limit-requests"),
