@@ -11,7 +11,8 @@ from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as metadata_version
 from pathlib import Path
 
-CALVER_PATTERN = re.compile(r"^\d{4}\.(0?[1-9]|1[0-2])\.(0?[1-9]|[12][0-9]|3[01])$")
+CALVER_PATTERN = re.compile(r"^\d{4}\.(?:[1-9]|1[0-2])\.\d+$")
+RELEASE_VERSION_PATTERN = re.compile(r"^\d{4}\.(?:[1-9]|1[0-2])\.\d+(?:rc\d+)?$")
 
 
 def _find_pyproject_path() -> Path | None:
@@ -84,5 +85,10 @@ def get_product_version() -> str:
 
 
 def is_calver(value: str) -> bool:
-    """Return True when value matches the canonical CalVer format."""
+    """Return True when value matches the stable canonical CalVer format."""
     return CALVER_PATTERN.match(value) is not None
+
+
+def is_release_version(value: str) -> bool:
+    """Return True when value matches stable or rc release version format."""
+    return RELEASE_VERSION_PATTERN.match(value) is not None

@@ -26,7 +26,7 @@ Migrate ModelMeter versioning from SemVer to a CalVer-based canonical version, w
 
 ### Out of Scope
 - API path namespacing changes (`/api/v1`)
-- Distribution channel changes (PyPI/GitLab release flow)
+- Distribution channel changes (PyPI/GitHub release flow)
 - Breaking API contract redesign
 
 ## Workstreams

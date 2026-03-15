@@ -76,7 +76,7 @@ This plan prioritizes reliability and compatibility while minimizing regressions
 - `web/package.json`
 - `web/src/lib/api.ts`
 - `web/src/types.ts` (reduce/retire duplicated contracts)
-- `.gitlab-ci.yml`
+- `.github/workflows/ci.yml`
 - `README.md` / developer docs
 
 #### Acceptance Criteria
