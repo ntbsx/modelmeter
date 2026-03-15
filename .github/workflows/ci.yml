@@ -109,7 +109,12 @@ jobs:
             git fetch origin "${{ github.event.repository.default_branch }}"
           fi
       - name: Contract policy check
-        run: make contract-policy-check
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            uv run python scripts/check_contract_version_policy.py --base-ref "origin/${{ github.event.pull_request.base.ref }}"
+          else
+            uv run python scripts/check_contract_version_policy.py --base-ref "origin/${{ github.event.repository.default_branch }}"
+          fi
 
   frontend-lint:
     runs-on: ubuntu-latest
