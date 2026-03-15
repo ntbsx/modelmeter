@@ -62,6 +62,7 @@ def test_providers_help_command_runs() -> None:
     assert result.exit_code == 0
     assert "top provider usage" in result.stdout.lower()
 
+
 def test_update_check_command_json_output(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
 
