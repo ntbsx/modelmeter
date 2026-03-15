@@ -9,6 +9,16 @@ The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.
 ### Added
 - Placeholder for upcoming changes.
 
+## [2026.3.18] - 2026-03-16
+
+### Added
+- Provider analytics page with drill-down views in web dashboard.
+- Open source community files: CONTRIBUTING.md, issue templates, enhanced .gitignore.
+
+### Changed
+- Migrated CI workflows to GitHub Actions with Node 24 runtime.
+- Aligned release versioning with PEP 440 rc tag format.
+
 ## [2026.3.16] - 2026-03-14
 
 ### Fixed
