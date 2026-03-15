@@ -489,6 +489,82 @@ def test_spa_routes_are_not_blocked_when_auth_enabled() -> None:
     assert login_response.status_code != 401
 
 
+def test_auth_via_query_param_is_accepted(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client(server_password="secret", server_username="alice")
+    token = base64.b64encode(b"alice:secret").decode("ascii")
+    response = client.get(
+        "/api/doctor",
+        params={"db_path": str(db_path), "_auth": token},
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["selected_source"] == "sqlite"
+
+
+def test_auth_via_invalid_query_param_is_rejected(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client(server_password="secret")
+    token = base64.b64encode(b"wrong:creds").decode("ascii")
+    response = client.get(
+        "/api/doctor",
+        params={"db_path": str(db_path), "_auth": token},
+    )
+
+    assert response.status_code == 401
+
+
+def test_sse_endpoint_401_omits_www_authenticate_header(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client(server_password="secret")
+    response = client.get(
+        "/api/live/events",
+        params={"db_path": str(db_path), "once": "true"},
+    )
+
+    assert response.status_code == 401
+    assert "www-authenticate" not in response.headers
+
+
+def test_non_sse_endpoint_401_includes_www_authenticate_header(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client(server_password="secret")
+    response = client.get("/api/doctor", params={"db_path": str(db_path)})
+
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == 'Basic realm="ModelMeter"'
+
+
+def test_sse_endpoint_accepts_auth_query_param(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client(server_password="secret", server_username="alice")
+    token = base64.b64encode(b"alice:secret").decode("ascii")
+    response = client.get(
+        "/api/live/events",
+        params={
+            "db_path": str(db_path),
+            "window_minutes": 60,
+            "interval_seconds": 1,
+            "once": "true",
+            "_auth": token,
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+
+
 def test_models_endpoint_filters_by_provider(tmp_path: Path) -> None:
     db_path = tmp_path / "opencode.db"
     _create_api_fixture(db_path)
