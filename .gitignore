@@ -12,3 +12,7 @@ wheels/
 # Local caches
 .pytest_cache/
 .ruff_cache/
+
+# Coverage reports
+.coverage
+coverage.xml
