@@ -178,21 +178,79 @@ Comments/docstrings:
 - On auth failures, protected endpoints return `401` with JSON detail (`{"detail": "Invalid credentials"}`).
 - Live SSE note: browser `EventSource` cannot set custom auth headers; client may fall back to polling when auth is enabled.
 
+## 9.2) Provider API Key Architecture
+Two keys are supported: `anthropic_api_key` and `openai_api_key`.
+
+**Resolution priority (highest → lowest):**
+1. Environment variable (`MODELMETER_ANTHROPIC_API_KEY` / `MODELMETER_OPENAI_API_KEY`)
+2. User-saved file (`config/user_settings.py` → `~/.config/modelmeter/user_settings.json` by default)
+
+**Modules:**
+- `modelmeter/config/settings.py` – `AppSettings` exposes `anthropic_api_key` / `openai_api_key` (env-sourced via `pydantic-settings`, prefix `MODELMETER_`).
+- `modelmeter/config/user_settings.py` – `load_user_settings()` / `save_user_settings()` for the JSON file store. Only keys in `ALLOWED_KEYS` are persisted/loaded; non-string values are silently dropped. `None`/empty-string values are omitted from the file.
+- `modelmeter/core/provider_usage.py` – `get_providers_usage(anthropic_api_key, openai_api_key, timeout)` calls provider model-list APIs synchronously with `httpx.Client`; returns a `ProvidersUsageResponse` Pydantic model. Each provider entry carries `configured`, `status` (`"not_configured"` / `"ok"` / `"error"`), `models_count`, `models` list, `rate_limits`, and `error`.
+
+**API endpoints:**
+- `GET /api/settings` – returns `{configured: bool, source: "env"|"user"|null}` per key; **never** leaks the key value.
+- `PUT /api/settings` – accepts partial body (use Pydantic `model_fields_set` to detect explicit `null`); merges into user file; returns same shape as `GET`.
+- `GET /api/provider-usage` – calls `get_providers_usage()` with resolved keys and returns live provider status.
+
+**Key safety rule:** the settings endpoints must never return the raw key value in any response field. Tests verify this with a substring check against the full response body.
+
 ## 10) Testing Expectations
 - Backend behavior changes should update/add pytest coverage.
 - API schema changes must update OpenAPI artifacts and related tests.
 - Run targeted tests first, then broader checks before final handoff.
 - Useful suites:
-  - `tests/test_api.py`
-  - `tests/test_updater.py`
-  - `tests/test_openapi_contract.py`
-  - `tests/test_versioning.py`
+  - `tests/test_api.py` – core API endpoints
+  - `tests/test_updater.py` – self-update logic
+  - `tests/test_openapi_contract.py` – snapshot/artifact integrity
+  - `tests/test_versioning.py` – CalVer invariants
+  - `tests/test_user_settings.py` – file-based key persistence
+  - `tests/test_provider_settings_api.py` – `GET`/`PUT /api/settings`
+  - `tests/test_provider_usage.py` – `get_providers_usage()` and `GET /api/provider-usage`
 
 For update-related changes, run a focused suite first:
 
 ```bash
 uv run pytest tests/test_updater.py tests/test_cli.py tests/test_api.py tests/test_settings.py
 ```
+
+For provider key / settings changes, run:
+
+```bash
+uv run pytest tests/test_user_settings.py tests/test_provider_settings_api.py tests/test_provider_usage.py
+```
+
+### Mocking patterns for new features
+
+**Redirect `user_settings` file path** (isolate file I/O in tests):
+
+```python
+from unittest.mock import patch
+
+with patch("modelmeter.config.user_settings._USER_SETTINGS_PATH", tmp_path / "user_settings.json"):
+    ...
+```
+
+**Mock `httpx.Client` for provider API calls** (`get_providers_usage` uses a context-manager client):
+
+```python
+from unittest.mock import MagicMock, patch
+import httpx
+
+mock_resp = MagicMock(spec=httpx.Response)
+mock_resp.status_code = 200
+mock_resp.json.return_value = {"data": [{"id": "claude-opus-4-5"}]}
+mock_resp.headers = httpx.Headers({})
+mock_resp.raise_for_status.return_value = None
+
+with patch("httpx.Client") as mock_client_cls:
+    mock_client_cls.return_value.__enter__.return_value.get.return_value = mock_resp
+    result = get_providers_usage(anthropic_api_key="sk-ant-test", openai_api_key=None)
+```
+
+For error paths, set `raise_for_status.side_effect = httpx.HTTPStatusError(...)` or use `get.side_effect = httpx.ConnectError(...)`.
 
 ## 11) Pre-commit Alignment
 Configured hooks in `.pre-commit-config.yaml`:

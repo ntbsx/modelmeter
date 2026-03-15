@@ -231,6 +231,34 @@ Live web monitoring uses server-sent events at `/api/live/events` and automatica
 
 When auth is enabled, SSE in browsers may fall back to polling because `EventSource` does not support custom Authorization headers.
 
+## Provider API Keys
+
+ModelMeter can display live Anthropic and OpenAI account status (available models, rate limits) when API keys are configured.
+
+**Two ways to provide keys:**
+
+1. **Environment variables** (recommended for server deployments):
+
+   ```bash
+   export MODELMETER_ANTHROPIC_API_KEY=sk-ant-...
+   export MODELMETER_OPENAI_API_KEY=sk-...
+   modelmeter serve
+   ```
+
+2. **Settings UI** — open the web dashboard, go to **Settings**, and enter keys in the browser. Keys are saved to `~/.config/modelmeter/user_settings.json` and persist across restarts.
+
+Key resolution priority: environment variable > user-saved file.
+
+The settings API never returns raw key values; it only reports `{configured: true/false, source: "env"|"user"|null}` per provider.
+
+**Relevant API endpoints:**
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/settings` | Return configured state (no key values) |
+| `PUT` | `/api/settings` | Save/clear user-stored keys |
+| `GET` | `/api/provider-usage` | Live provider model list and rate limits |
+
 ## Web Dashboard Features
 
 The web dashboard provides visual analytics for OpenCode usage:
@@ -239,6 +267,8 @@ The web dashboard provides visual analytics for OpenCode usage:
 - **Models**: Usage breakdown by model with drill-down to model detail pages
 - **Projects**: Usage breakdown by project with session-level detail
 - **Live**: Real-time monitoring with active session info and rolling window stats
+- **Provider Usage**: Live Anthropic and OpenAI account status — available models, rate limit headroom, and key configuration state
+- **Settings**: Manage provider API keys directly from the browser (stored locally on the server)
 
 All views support flexible time range filtering with presets (24h, 7d, 30d, 90d) or custom date ranges.
 
