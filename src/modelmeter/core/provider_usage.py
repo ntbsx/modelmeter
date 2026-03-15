@@ -6,9 +6,9 @@ import httpx
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.models import (
-    ProvidersUsageResponse,
     ProviderRateLimits,
     ProviderStatusResponse,
+    ProvidersUsageResponse,
 )
 
 _ANTHROPIC_MODELS_URL = "https://api.anthropic.com/v1/models"
