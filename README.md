@@ -6,23 +6,31 @@ ModelMeter: OpenCode usage analytics for terminal and web.
 
 ModelMeter is currently distributed via GitHub Releases (not PyPI yet).
 
-Install via the GitHub release installer script (public project):
+Install via the GitHub release installer script (public project).
+
+Latest release:
 
 ```bash
-# Latest release
 curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash
+```
 
-# Pinned release
+Pinned release:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --version 2026.3.16
 ```
 
-Choose installation method explicitly if needed:
+Choose installation method explicitly if needed.
+
+Prefer pipx:
 
 ```bash
-# Prefer pipx
 curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --method pipx
+```
 
-# Use pip --user
+Use pip --user:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --method pip
 ```
 
