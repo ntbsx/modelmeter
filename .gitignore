@@ -6,6 +6,9 @@ dist/
 wheels/
 *.egg-info
 
+# Bundled web assets (generated at build time)
+src/modelmeter/web_dist/
+
 # Virtual environments
 .venv
 
