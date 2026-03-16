@@ -55,6 +55,7 @@ LOCAL_CORS_ORIGINS = [
 ]
 
 AUTH_PROTECTED_PREFIXES = ("/api",)
+SSE_PATH_PREFIXES = ("/api/live/events",)
 
 
 def _optional_path(value: str | None) -> Path | None:
@@ -127,6 +128,13 @@ def create_app(
             return await call_next(request)
 
         decoded = _decode_basic_auth_header(request.headers.get("Authorization"))
+
+        # Fallback: accept _auth query param (EventSource cannot set headers)
+        if decoded is None:
+            auth_param = request.query_params.get("_auth")
+            if auth_param:
+                decoded = _decode_basic_auth_header(f"Basic {auth_param}")
+
         is_authorized = False
         if decoded is not None:
             username, password = decoded
@@ -135,11 +143,13 @@ def create_app(
             ) and secrets.compare_digest(password, expected_password)
 
         if not is_authorized:
+            is_sse_path = request.url.path.startswith(SSE_PATH_PREFIXES)
+            headers = {} if is_sse_path else {"WWW-Authenticate": 'Basic realm="ModelMeter"'}
             return Response(
                 content=json.dumps({"detail": "Invalid credentials"}),
                 status_code=401,
                 media_type="application/json",
-                headers={"WWW-Authenticate": 'Basic realm="ModelMeter"'},
+                headers=headers,
             )
 
         return await call_next(request)

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Activity, Clock, Terminal, Box } from 'lucide-react'
-import { buildApiUrl, fetchApi } from '../lib/api'
+import { buildApiUrl, fetchApi, getAuthToken } from '../lib/api'
 import { formatTokens, formatUsd, cn } from '../lib/utils'
 import type { LiveSnapshotResponse } from '../types'
 import PageLoading from '../components/PageLoading'
@@ -38,7 +38,15 @@ export default function Live() {
       return
     }
 
-    const eventsUrl = buildApiUrl('/live/events', { window_minutes: 60, interval_seconds: 3 })
+    const authToken = getAuthToken()
+    const eventsParams: Record<string, string | number> = { window_minutes: 60, interval_seconds: 3 }
+    if (authToken) {
+      // NOTE: Token in query string is visible in browser history and server logs.
+      // This is an inherent limitation of EventSource which cannot set custom headers.
+      // The backend validates this token identically to the Authorization header.
+      eventsParams._auth = authToken
+    }
+    const eventsUrl = buildApiUrl('/live/events', eventsParams)
     const source = new window.EventSource(eventsUrl)
 
     const onSnapshot = (event: MessageEvent<string>) => {
