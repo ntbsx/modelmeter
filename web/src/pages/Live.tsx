@@ -41,6 +41,9 @@ export default function Live() {
     const authToken = getAuthToken()
     const eventsParams: Record<string, string | number> = { window_minutes: 60, interval_seconds: 3 }
     if (authToken) {
+      // NOTE: Token in query string is visible in browser history and server logs.
+      // This is an inherent limitation of EventSource which cannot set custom headers.
+      // The backend validates this token identically to the Authorization header.
       eventsParams._auth = authToken
     }
     const eventsUrl = buildApiUrl('/live/events', eventsParams)
