@@ -137,7 +137,7 @@ def _fetch_http_daily(
     token_source: str,
     session_count_source: str,
 ) -> dict[str, object]:
-    """Fetch daily from an HTTP source."""
+    """Fetch models from an HTTP source."""
     assert source.base_url is not None
     assert source.auth is not None
 
@@ -498,6 +498,14 @@ def execute_daily_federated(
             total_cost_usd=round(total_cost, 8) if total_cost is not None else None,
             pricing_source=pricing_source,
             daily=daily_rows,
+            source_scope="all",
+            sources_considered=[s.source_id for s in sources],
+            sources_succeeded=[
+                s.source_id
+                for s in sources
+                if not any(f.source_id == s.source_id for f in failures)
+            ],
+            sources_failed=[{"source_id": f.source_id, "error": f.error} for f in failures],
         ),
         failures,
     )
@@ -650,6 +658,14 @@ def execute_models_federated(
             priced_models=priced_models,
             unpriced_models=unpriced_models,
             models=paginated_models,
+            source_scope="all",
+            sources_considered=[s.source_id for s in sources],
+            sources_succeeded=[
+                s.source_id
+                for s in sources
+                if not any(f.source_id == s.source_id for f in failures)
+            ],
+            sources_failed=[{"source_id": f.source_id, "error": f.error} for f in failures],
         ),
         failures,
     )
@@ -779,6 +795,14 @@ def execute_providers_federated(
             total_cost_usd=round(total_cost, 8) if total_cost is not None else None,
             pricing_source=pricing_source,
             providers=sorted_providers,
+            source_scope="all",
+            sources_considered=[s.source_id for s in sources],
+            sources_succeeded=[
+                s.source_id
+                for s in sources
+                if not any(f.source_id == s.source_id for f in failures)
+            ],
+            sources_failed=[{"source_id": f.source_id, "error": f.error} for f in failures],
         ),
         failures,
     )
@@ -910,6 +934,14 @@ def execute_projects_federated(
             total_cost_usd=round(total_cost, 8) if total_cost is not None else None,
             pricing_source=pricing_source,
             projects=sorted_projects,
+            source_scope="all",
+            sources_considered=[s.source_id for s in sources],
+            sources_succeeded=[
+                s.source_id
+                for s in sources
+                if not any(f.source_id == s.source_id for f in failures)
+            ],
+            sources_failed=[{"source_id": f.source_id, "error": f.error} for f in failures],
         ),
         failures,
     )
