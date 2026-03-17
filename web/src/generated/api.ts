@@ -977,6 +977,8 @@ export interface operations {
                 session_source?: "auto" | "activity" | "session";
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1118,6 +1120,8 @@ export interface operations {
                 provider?: string | null;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1151,6 +1155,8 @@ export interface operations {
                 days?: number | null;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path: {
@@ -1188,6 +1194,8 @@ export interface operations {
                 limit?: number;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1260,6 +1268,8 @@ export interface operations {
                 limit?: number;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1335,6 +1345,8 @@ export interface operations {
                 session_source?: "auto" | "activity" | "session";
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;

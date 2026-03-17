@@ -1625,6 +1625,24 @@
               ],
               "title": "Pricing File"
             }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
+            }
           }
         ],
         "responses": {
@@ -2029,6 +2047,24 @@
               ],
               "title": "Pricing File"
             }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
+            }
           }
         ],
         "responses": {
@@ -2117,6 +2153,24 @@
                 }
               ],
               "title": "Pricing File"
+            }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
             }
           }
         ],
@@ -2219,6 +2273,24 @@
                 }
               ],
               "title": "Pricing File"
+            }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
             }
           }
         ],
@@ -2438,6 +2510,24 @@
               ],
               "title": "Pricing File"
             }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
+            }
           }
         ],
         "responses": {
@@ -2587,6 +2677,24 @@
                 }
               ],
               "title": "Pricing File"
+            }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
             }
           }
         ],

@@ -26,6 +26,7 @@ from modelmeter.core.models import (
 )
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
 from modelmeter.core.providers import provider_from_model_id
+from modelmeter.core.sources import SourceScope, SourceScopeKind
 from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.data.storage import resolve_storage_paths
 
@@ -59,8 +60,25 @@ def get_summary(
     pricing_file_override: Path | None = None,
     token_source: Literal["auto", "message", "steps"] = "auto",
     session_count_source: Literal["auto", "activity", "session"] = "auto",
+    source_scope: SourceScope | None = None,
 ) -> SummaryResponse:
     """Return summary usage totals."""
+    from modelmeter.core.sources import SourceScopeKind, get_sources_for_scope
+
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        from modelmeter.core.federation import execute_summary_federated
+
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_summary_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            token_source=token_source,
+            session_count_source=session_count_source,
+        )
+        return result
+
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     resolved_source = repository.resolve_token_source(days=days, token_source=token_source)
@@ -114,8 +132,11 @@ def get_daily(
     pricing_file_override: Path | None = None,
     token_source: Literal["auto", "message", "steps"] = "auto",
     session_count_source: Literal["auto", "activity", "session"] = "auto",
+    source_scope: SourceScope | None = None,
 ) -> DailyResponse:
     """Return daily usage time-series and totals."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated daily analytics not yet implemented")
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     resolved_source = repository.resolve_token_source(days=days, token_source=token_source)
@@ -210,8 +231,11 @@ def get_models(
     provider: str | None = None,
     offset: int = 0,
     limit: int = 20,
+    source_scope: SourceScope | None = None,
 ) -> ModelsResponse:
     """Return top model usage aggregates."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated models analytics not yet implemented")
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     rows = repository.fetch_model_usage_detail(days=days)
@@ -300,8 +324,11 @@ def get_providers(
     pricing_file_override: Path | None = None,
     offset: int = 0,
     limit: int = 20,
+    source_scope: SourceScope | None = None,
 ) -> ProvidersResponse:
     """Return usage aggregates grouped by provider."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated providers analytics not yet implemented")
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     model_rows = repository.fetch_model_usage_detail(days=days)
@@ -389,8 +416,11 @@ def get_model_detail(
     days: int | None = None,
     db_path_override: Path | None = None,
     pricing_file_override: Path | None = None,
+    source_scope: SourceScope | None = None,
 ) -> ModelDetailResponse:
     """Return usage details for one model."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated model detail analytics not yet implemented")
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
 
@@ -456,8 +486,11 @@ def get_projects(
     pricing_file_override: Path | None = None,
     offset: int = 0,
     limit: int = 20,
+    source_scope: SourceScope | None = None,
 ) -> ProjectsResponse:
     """Return top project usage aggregates."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated projects analytics not yet implemented")
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     rows = repository.fetch_project_usage_detail(days=days)
@@ -531,8 +564,11 @@ def get_project_detail(
     session_limit: int | None = None,
     db_path_override: Path | None = None,
     pricing_file_override: Path | None = None,
+    source_scope: SourceScope | None = None,
 ) -> ProjectDetailResponse:
     """Return session-level usage details for one project."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated project detail analytics not yet implemented")
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
 

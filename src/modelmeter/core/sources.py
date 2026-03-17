@@ -1,4 +1,4 @@
-"""Source registry and health checks for multi-source analytics."""
+"""Source registry, health checks, and federation for multi-source analytics."""
 
 from __future__ import annotations
 
@@ -8,12 +8,50 @@ import os
 import sqlite3
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Literal, cast
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from modelmeter.config.settings import AppSettings
+
+
+class SourceScopeKind(StrEnum):
+    """Source scope kind for analytics queries."""
+
+    LOCAL = "local"
+    ALL = "all"
+    SPECIFIC = "source"
+
+
+@dataclass
+class SourceScope:
+    """Parsed source scope for analytics queries."""
+
+    kind: SourceScopeKind
+    source_id: str | None = None
+
+    @classmethod
+    def parse(cls, value: str | None) -> SourceScope:
+        """Parse a source scope string into a SourceScope."""
+        if value is None or value == "local":
+            return cls(kind=SourceScopeKind.LOCAL)
+        if value == "all":
+            return cls(kind=SourceScopeKind.ALL)
+        if value.startswith("source:"):
+            source_id = value[7:]
+            return cls(kind=SourceScopeKind.SPECIFIC, source_id=source_id)
+        raise ValueError(f"Invalid source scope: {value}")
+
+
+class SourceFailure(BaseModel):
+    """Metadata about a failed source in a federated query."""
+
+    source_id: str
+    error: str
+    kind: Literal["sqlite", "http"]
 
 
 class SourceAuth(BaseModel):
@@ -245,3 +283,42 @@ def check_source_health(*, source: DataSourceConfig, settings: AppSettings) -> S
     if source.kind == "sqlite":
         return _check_sqlite_source(source)
     return _check_http_source(source, timeout_seconds=settings.source_http_timeout_seconds)
+
+
+def get_sources_for_scope(
+    *,
+    settings: AppSettings,
+    scope: SourceScope,
+) -> tuple[list[DataSourceConfig], list[SourceFailure]]:
+    """Get sources matching the given scope, with health checks."""
+    try:
+        registry = load_source_registry(settings=settings)
+    except SourceRegistryError:
+        return [], []
+
+    enabled_sources = [s for s in registry.sources if s.enabled]
+
+    if scope.kind == SourceScopeKind.LOCAL:
+        return [], []
+
+    if scope.kind == SourceScopeKind.SPECIFIC:
+        matched = [s for s in enabled_sources if s.source_id == scope.source_id]
+        return matched, []
+
+    sources: list[DataSourceConfig] = []
+    failures: list[SourceFailure] = []
+
+    for source in enabled_sources:
+        health = check_source_health(source=source, settings=settings)
+        if health.is_reachable:
+            sources.append(source)
+        else:
+            failures.append(
+                SourceFailure(
+                    source_id=source.source_id,
+                    error=health.error or health.detail or "unreachable",
+                    kind=source.kind,
+                )
+            )
+
+    return sources, failures

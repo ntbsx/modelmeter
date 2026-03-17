@@ -49,6 +49,7 @@ from modelmeter.core.sources import (
     SourceHealth,
     SourceRegistryError,
     SourceRegistryPublic,
+    SourceScope,
     check_source_health,
     load_source_registry,
     to_public_registry,
@@ -219,8 +220,12 @@ def create_app(
         session_source: Literal["auto", "activity", "session"] = Query(default="auto"),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> SummaryResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope else None
             return get_summary(
                 settings=settings,
                 days=days,
@@ -228,9 +233,12 @@ def create_app(
                 session_count_source=session_source,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/daily", response_model=DailyResponse)
     def daily(
@@ -240,8 +248,12 @@ def create_app(
         session_source: Literal["auto", "activity", "session"] = Query(default="auto"),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> DailyResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope else None
             return get_daily(
                 settings=settings,
                 days=days,
@@ -250,9 +262,12 @@ def create_app(
                 session_count_source=session_source,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/models", response_model=ModelsResponse)
     def models(
@@ -262,8 +277,12 @@ def create_app(
         provider: str | None = Query(default=None),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ModelsResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope else None
             return get_models(
                 settings=settings,
                 days=days,
@@ -272,9 +291,12 @@ def create_app(
                 provider=provider,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/providers", response_model=ProvidersResponse)
     def providers(
@@ -283,8 +305,12 @@ def create_app(
         limit: int = Query(default=20, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ProvidersResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope else None
             return get_providers(
                 settings=settings,
                 days=days,
@@ -292,9 +318,12 @@ def create_app(
                 limit=limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/models/{model_id:path}", response_model=ModelDetailResponse)
     def model_detail(
@@ -302,17 +331,24 @@ def create_app(
         days: int | None = Query(default=7, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ModelDetailResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope else None
             return get_model_detail(
                 settings=settings,
                 model_id=model_id,
                 days=days,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/projects", response_model=ProjectsResponse)
     def projects(
@@ -321,8 +357,12 @@ def create_app(
         limit: int = Query(default=20, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ProjectsResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope else None
             return get_projects(
                 settings=settings,
                 days=days,
@@ -330,9 +370,12 @@ def create_app(
                 limit=limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/projects/{project_id}", response_model=ProjectDetailResponse)
     def project_detail(
