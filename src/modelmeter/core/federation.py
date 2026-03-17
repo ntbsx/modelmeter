@@ -99,6 +99,7 @@ def merge_project_usage(a: ProjectUsage, b: ProjectUsage) -> ProjectUsage:
         if a.cost_usd is not None or b.cost_usd is not None
         else None,
         has_pricing=a.has_pricing or b.has_pricing,
+        sources=list(set(a.sources + b.sources)),
     )
 
 
@@ -952,12 +953,23 @@ def execute_projects_federated(
                 if typed_result.pricing_source:
                     pricing_source = typed_result.pricing_source
                 for project in typed_result.projects:
+                    project_with_source = ProjectUsage(
+                        project_id=project.project_id,
+                        project_name=project.project_name,
+                        project_path=project.project_path,
+                        usage=project.usage,
+                        total_sessions=project.total_sessions,
+                        total_interactions=project.total_interactions,
+                        cost_usd=project.cost_usd,
+                        has_pricing=project.has_pricing,
+                        sources=[source.source_id],
+                    )
                     if project.project_id in project_map:
                         project_map[project.project_id] = merge_project_usage(
-                            project_map[project.project_id], project
+                            project_map[project.project_id], project_with_source
                         )
                     else:
-                        project_map[project.project_id] = project
+                        project_map[project.project_id] = project_with_source
             else:
                 page_size = 1000
                 data = _fetch_http_projects(
@@ -1031,6 +1043,7 @@ def execute_projects_federated(
                         total_interactions=project_item.get("total_interactions", 0),
                         cost_usd=project_item.get("cost_usd"),
                         has_pricing=project_item.get("has_pricing", False),
+                        sources=[source.source_id],
                     )
                     if project_id in project_map:
                         project_map[project_id] = merge_project_usage(

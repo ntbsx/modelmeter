@@ -1052,6 +1052,13 @@
             ],
             "title": "Project Path"
           },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
           "total_interactions": {
             "default": 0,
             "minimum": 0.0,

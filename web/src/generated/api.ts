@@ -765,6 +765,8 @@ export interface components {
             project_name: string;
             /** Project Path */
             project_path?: string | null;
+            /** Sources */
+            sources?: string[];
             /**
              * Total Interactions
              * @default 0

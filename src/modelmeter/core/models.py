@@ -156,6 +156,7 @@ class ProjectUsage(BaseModel):
     total_interactions: int = Field(default=0, ge=0)
     cost_usd: float | None = None
     has_pricing: bool = False
+    sources: list[str] = Field(default_factory=list)
 
 
 class ProjectsResponse(BaseModel):

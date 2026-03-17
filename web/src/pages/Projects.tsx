@@ -60,6 +60,7 @@ export default function Projects() {
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Total Tokens</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Interactions</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Cost</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium whitespace-nowrap">Sources</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
@@ -81,11 +82,24 @@ export default function Projects() {
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">{formatTokens(p.usage.total_tokens)}</td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{p.total_interactions}</td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">{p.cost_usd ? formatUsd(p.cost_usd) : '-'}</td>
+                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {(p.sources ?? ['local']).map((src) => (
+                        <span
+                          key={src}
+                          className="inline-flex rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 text-xs font-medium"
+                          title={src}
+                        >
+                          {src}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
                 </tr>
               ))}
               {data.projects.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">No project usage found in this period.</td>
+                  <td colSpan={6} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">No project usage found in this period.</td>
                 </tr>
               )}
             </tbody>

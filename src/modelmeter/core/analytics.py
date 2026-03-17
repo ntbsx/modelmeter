@@ -639,6 +639,7 @@ def get_projects(
                 total_interactions=int(row["total_interactions"]),
                 cost_usd=round(project_cost, 8) if project_cost is not None else None,
                 has_pricing=project_cost is not None,
+                sources=["local"],
             )
         )
 
