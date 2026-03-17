@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import sqlite3
@@ -225,13 +224,8 @@ def _check_sqlite_source(source: DataSourceConfig) -> SourceHealth:
 
 def _check_http_source(source: DataSourceConfig, *, timeout_seconds: int) -> SourceHealth:
     assert source.base_url is not None
-    health_url = source.base_url.rstrip("/") + "/api/auth/check"
+    health_url = source.base_url.rstrip("/") + "/health"
     request = urllib.request.Request(health_url, headers={"User-Agent": "modelmeter/health-check"})
-
-    if source.auth is not None:
-        token_raw = f"{source.auth.username}:{source.auth.password}".encode()
-        token = base64.b64encode(token_raw).decode("ascii")
-        request.add_header("Authorization", f"Basic {token}")
 
     try:
         with urllib.request.urlopen(request, timeout=timeout_seconds) as response:

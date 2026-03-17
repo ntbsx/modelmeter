@@ -10,6 +10,8 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import sqlite3
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date
@@ -32,6 +34,9 @@ from modelmeter.core.sources import (
     DataSourceConfig,
     SourceFailure,
 )
+
+# Maximum number of items to fetch from a remote source to prevent memory exhaustion
+MAX_FETCH_LIMIT = 5000
 
 
 def _http_headers(source: DataSourceConfig) -> dict[str, str]:
@@ -334,7 +339,15 @@ def execute_summary_federated(
                 pricing_val = data.get("pricing_source")
                 if isinstance(pricing_val, str):
                     pricing_source = pricing_val
-        except Exception as e:
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            sqlite3.Error,
+            json.JSONDecodeError,
+            ValueError,
+            KeyError,
+            OSError,
+        ) as e:
             failures.append(
                 SourceFailure(
                     source_id=source.source_id,
@@ -474,7 +487,15 @@ def execute_daily_federated(
                         )
                     else:
                         daily_map[day] = daily_usage
-        except Exception as e:
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            sqlite3.Error,
+            json.JSONDecodeError,
+            ValueError,
+            KeyError,
+            OSError,
+        ) as e:
             failures.append(
                 SourceFailure(
                     source_id=source.source_id,
@@ -599,7 +620,7 @@ def execute_models_federated(
                     cast("int | None", data.get("total_models")) or len(models_list)
                 )
                 next_offset = len(models_list)
-                while next_offset < total_remote_models:
+                while next_offset < total_remote_models and len(models_list) < MAX_FETCH_LIMIT:
                     page_data = _fetch_http_models(
                         source,
                         days=days,
@@ -614,6 +635,12 @@ def execute_models_federated(
                         break
                     models_list.extend(page_models)
                     next_offset += len(page_models)
+
+                if len(models_list) >= MAX_FETCH_LIMIT:
+                    logging.warning(
+                        f"HTTP source {source.source_id} reached fetch limit "
+                        f"({MAX_FETCH_LIMIT} items)"
+                    )
 
                 if models_list and "has_pricing" not in models_list[0]:
                     logging.warning(
@@ -643,7 +670,15 @@ def execute_models_federated(
                         model_map[model_id] = merge_model_usage(model_map[model_id], model)
                     else:
                         model_map[model_id] = model
-        except Exception as e:
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            sqlite3.Error,
+            json.JSONDecodeError,
+            ValueError,
+            KeyError,
+            OSError,
+        ) as e:
             failures.append(
                 SourceFailure(
                     source_id=source.source_id,
@@ -775,7 +810,9 @@ def execute_providers_federated(
                     cast("int | None", data.get("total_providers")) or len(provider_items)
                 )
                 next_offset = len(provider_items)
-                while next_offset < total_remote_providers:
+                while (
+                    next_offset < total_remote_providers and len(provider_items) < MAX_FETCH_LIMIT
+                ):
                     page_data = _fetch_http_providers(
                         source,
                         days=days,
@@ -789,6 +826,12 @@ def execute_providers_federated(
                         break
                     provider_items.extend(page_providers)
                     next_offset += len(page_providers)
+
+                if len(provider_items) >= MAX_FETCH_LIMIT:
+                    logging.warning(
+                        f"HTTP source {source.source_id} reached fetch limit "
+                        f"({MAX_FETCH_LIMIT} items)"
+                    )
 
                 for provider_item in provider_items:
                     provider_name = str(provider_item["provider"])
@@ -812,7 +855,15 @@ def execute_providers_federated(
                         )
                     else:
                         provider_map[provider_name] = provider
-        except Exception as e:
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            sqlite3.Error,
+            json.JSONDecodeError,
+            ValueError,
+            KeyError,
+            OSError,
+        ) as e:
             failures.append(
                 SourceFailure(
                     source_id=source.source_id,
@@ -942,7 +993,7 @@ def execute_projects_federated(
                     cast("int | None", data.get("total_projects")) or len(project_items)
                 )
                 next_offset = len(project_items)
-                while next_offset < total_remote_projects:
+                while next_offset < total_remote_projects and len(project_items) < MAX_FETCH_LIMIT:
                     page_data = _fetch_http_projects(
                         source,
                         days=days,
@@ -956,6 +1007,12 @@ def execute_projects_federated(
                         break
                     project_items.extend(page_projects)
                     next_offset += len(page_projects)
+
+                if len(project_items) >= MAX_FETCH_LIMIT:
+                    logging.warning(
+                        f"HTTP source {source.source_id} reached fetch limit "
+                        f"({MAX_FETCH_LIMIT} items)"
+                    )
 
                 for project_item in project_items:
                     project_id = str(project_item["project_id"])
@@ -981,7 +1038,15 @@ def execute_projects_federated(
                         )
                     else:
                         project_map[project_id] = project
-        except Exception as e:
+        except (
+            urllib.error.URLError,
+            urllib.error.HTTPError,
+            sqlite3.Error,
+            json.JSONDecodeError,
+            ValueError,
+            KeyError,
+            OSError,
+        ) as e:
             failures.append(
                 SourceFailure(
                     source_id=source.source_id,
