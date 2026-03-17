@@ -156,7 +156,7 @@ class TestMergeFunctions:
         assert result.cost_usd == 1.5
         assert result.has_pricing is True
 
-    def testmerge_project_usage_sums_fields(self) -> None:
+    def test_merge_project_usage_sums_fields(self) -> None:
         a = ProjectUsage(
             project_id="p1",
             project_name="Project One",
@@ -166,6 +166,7 @@ class TestMergeFunctions:
             total_interactions=100,
             cost_usd=1.0,
             has_pricing=True,
+            sources=["local"],
         )
         b = ProjectUsage(
             project_id="p1",
@@ -176,6 +177,7 @@ class TestMergeFunctions:
             total_interactions=50,
             cost_usd=0.5,
             has_pricing=False,
+            sources=["remote-prod"],
         )
         result = merge_project_usage(a, b)
         assert result.project_id == "p1"
@@ -186,6 +188,35 @@ class TestMergeFunctions:
         assert result.total_interactions == 150
         assert result.cost_usd == 1.5
         assert result.has_pricing is True
+        assert set(result.sources) == {"local", "remote-prod"}
+
+    def test_merge_project_usage_combines_multiple_sources(self) -> None:
+        a = ProjectUsage(
+            project_id="p1",
+            project_name="Project One",
+            usage=TokenUsage(input_tokens=100, output_tokens=50),
+            total_sessions=10,
+            total_interactions=100,
+            sources=["local", "remote-a"],
+        )
+        b = ProjectUsage(
+            project_id="p1",
+            project_name="Project One",
+            usage=TokenUsage(input_tokens=200, output_tokens=30),
+            total_sessions=5,
+            total_interactions=50,
+            sources=["remote-b"],
+        )
+        c = ProjectUsage(
+            project_id="p1",
+            project_name="Project One",
+            usage=TokenUsage(input_tokens=50, output_tokens=10),
+            total_sessions=2,
+            total_interactions=20,
+            sources=["local"],
+        )
+        result = merge_project_usage(merge_project_usage(a, b), c)
+        assert set(result.sources) == {"local", "remote-a", "remote-b"}
 
 
 class TestSourceScope:
