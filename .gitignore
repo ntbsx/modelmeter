@@ -6,9 +6,33 @@ dist/
 wheels/
 *.egg-info
 
+# Bundled web assets (generated at build time)
+src/modelmeter/web_dist/
+
 # Virtual environments
 .venv
 
 # Local caches
 .pytest_cache/
 .ruff_cache/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE / Editor directories
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml

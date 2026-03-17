@@ -6,23 +6,31 @@ ModelMeter: OpenCode usage analytics for terminal and web.
 
 ModelMeter is currently distributed via GitHub Releases (not PyPI yet).
 
-Install via the GitHub release installer script (public project):
+Install via the GitHub release installer script (public project).
+
+Latest release:
 
 ```bash
-# Latest release
 curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash
+```
 
-# Pinned release
+Pinned release:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --version 2026.3.16
 ```
 
-Choose installation method explicitly if needed:
+Choose installation method explicitly if needed.
+
+Prefer pipx:
 
 ```bash
-# Prefer pipx
 curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --method pipx
+```
 
-# Use pip --user
+Use pip --user:
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/ntbsx/modelmeter/main/scripts/install.sh | bash -s -- --method pip
 ```
 
@@ -178,6 +186,26 @@ Before opening a PR, run:
 ```bash
 make release-check
 ```
+
+## OpenCode Custom Commands
+
+This repo includes a project-level OpenCode command at `.opencode/commands/cleanup-local-branches.md`.
+
+Use it from OpenCode TUI:
+
+```bash
+/cleanup-local-branches
+/cleanup-local-branches apply
+/cleanup-local-branches force
+```
+
+Behavior:
+
+- default (`dry-run`): show what would be deleted, no branch changes
+- `apply`: delete local branches without an open PR using safe delete first (`git branch -d`)
+- `force`: if safe delete fails, force-delete remaining non-PR branches (`git branch -D`)
+- protected branches are never deleted: `main`, `master`, `develop`, and current branch
+- command requires `gh` CLI installed and authenticated (`gh auth status`)
 
 ## Versioning
 

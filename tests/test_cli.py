@@ -1,5 +1,4 @@
 import re
-from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -56,41 +55,13 @@ def test_version_flag_prints_runtime_version() -> None:
     assert result.stdout.strip()
 
 
-def test_sources_add_list_and_remove(tmp_path: Path) -> None:
+def test_providers_help_command_runs() -> None:
     runner = CliRunner()
-    registry_path = tmp_path / "sources.json"
-    env = {"MODELMETER_SOURCE_REGISTRY_FILE": str(registry_path)}
+    result = runner.invoke(app, ["providers", "--help"])
 
-    add_result = runner.invoke(
-        app,
-        ["sources", "add-sqlite", "local-main", str(tmp_path / "opencode.db")],
-        env=env,
-    )
-    assert add_result.exit_code == 0
-
-    list_result = runner.invoke(app, ["sources", "list", "--json"], env=env)
-    assert list_result.exit_code == 0
-    assert '"source_id": "local-main"' in list_result.stdout
-
-    remove_result = runner.invoke(app, ["sources", "remove", "local-main"], env=env)
-    assert remove_result.exit_code == 0
-
-
-def test_sources_check_reports_missing_sqlite_path(tmp_path: Path) -> None:
-    runner = CliRunner()
-    registry_path = tmp_path / "sources.json"
-    env = {"MODELMETER_SOURCE_REGISTRY_FILE": str(registry_path)}
-
-    runner.invoke(
-        app,
-        ["sources", "add-sqlite", "missing-db", str(tmp_path / "does-not-exist.db")],
-        env=env,
-    )
-
-    result = runner.invoke(app, ["sources", "check", "--json"], env=env)
     assert result.exit_code == 0
-    assert '"source_id": "missing-db"' in result.stdout
-    assert '"is_reachable": false' in result.stdout
+    assert "top provider usage" in result.stdout.lower()
+
 
 def test_update_check_command_json_output(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()

@@ -1,7 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Activity, BarChart2, FolderGit2, Cpu, LogOut } from 'lucide-react'
+import { Activity, BarChart2, FolderGit2, Building2, LogOut } from 'lucide-react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
@@ -14,6 +14,7 @@ const Models = lazy(() => import('./pages/Models'))
 const ModelDetail = lazy(() => import('./pages/ModelDetail'))
 const Projects = lazy(() => import('./pages/Projects'))
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
+const Providers = lazy(() => import('./pages/Providers'))
 const Live = lazy(() => import('./pages/Live'))
 const Login = lazy(() => import('./pages/Login'))
 
@@ -46,7 +47,7 @@ function VersionBadge({ className }: { className: string }) {
 
 const links = [
   { to: '/', icon: BarChart2, label: 'Overview' },
-  { to: '/models', icon: Cpu, label: 'Models' },
+  { to: '/models', icon: Building2, label: 'Providers' },
   { to: '/projects', icon: FolderGit2, label: 'Projects' },
   { to: '/live', icon: Activity, label: 'Live' },
 ]
@@ -84,13 +85,12 @@ function Nav() {
       <div className="space-y-1 flex-1">
         {links.map((l) => {
           const Icon = l.icon
-          const active = location.pathname === l.to
           return (
             <Link
               key={l.to}
               to={l.to}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
-                active 
+                (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
                   ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 font-medium' 
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60'
               }`}
@@ -120,14 +120,13 @@ function MobileNav() {
         <div className="flex gap-2 min-w-max">
           {links.map((l) => {
             const Icon = l.icon
-            const active = location.pathname === l.to
 
             return (
               <Link
                 key={l.to}
                 to={l.to}
                 className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  active
+                  (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
                     ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 font-medium'
                     : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60'
                 }`}
@@ -183,7 +182,8 @@ function AuthGate() {
           >
             <Routes>
               <Route path="/" element={<Overview />} />
-              <Route path="/models" element={<Models />} />
+              <Route path="/models" element={<Providers />} />
+              <Route path="/models/provider/:providerId" element={<Models />} />
               <Route path="/models/:modelId" element={<ModelDetail />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:projectId" element={<ProjectDetail />} />

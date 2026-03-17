@@ -15,6 +15,7 @@ from modelmeter.core.analytics import (
     get_models,
     get_project_detail,
     get_projects,
+    get_providers,
     get_summary,
 )
 
@@ -156,6 +157,75 @@ def _create_pricing_fixture(path: Path) -> None:
         }
     }
     path.write_text(json.dumps(payload))
+
+
+def _create_provider_fixture(db_path: Path) -> None:
+    now_ms = int(datetime.now(tz=UTC).timestamp() * 1000)
+    with sqlite3.connect(db_path) as conn:
+        conn.execute(
+            "CREATE TABLE session ("
+            "id TEXT PRIMARY KEY, "
+            "project_id TEXT, "
+            "title TEXT, "
+            "directory TEXT, "
+            "time_created INTEGER, "
+            "time_updated INTEGER, "
+            "time_archived INTEGER"
+            ")"
+        )
+        conn.execute("CREATE TABLE project (id TEXT PRIMARY KEY, worktree TEXT, name TEXT)")
+        conn.execute("CREATE TABLE message (id TEXT PRIMARY KEY, session_id TEXT, data TEXT)")
+        conn.execute(
+            "CREATE TABLE part ("
+            "id TEXT PRIMARY KEY, "
+            "message_id TEXT, "
+            "session_id TEXT, "
+            "time_created INTEGER, "
+            "time_updated INTEGER, "
+            "data TEXT"
+            ")"
+        )
+        conn.execute(
+            "INSERT INTO project (id, worktree, name) VALUES (?, ?, ?)",
+            ("p1", "/tmp/providers", "providers"),
+        )
+        conn.execute(
+            "INSERT INTO session "
+            "(id, project_id, title, directory, time_created, time_updated, time_archived) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            ("s1", "p1", "Provider Session", "/tmp/providers", now_ms, now_ms, None),
+        )
+
+        conn.execute(
+            "INSERT INTO message (id, session_id, data) VALUES (?, ?, ?)",
+            (
+                "m1",
+                "s1",
+                json.dumps(
+                    {
+                        "role": "assistant",
+                        "modelID": "anthropic/claude-sonnet-4-5",
+                        "time": {"created": now_ms},
+                        "tokens": {"input": 10, "output": 1, "cache": {"read": 0, "write": 0}},
+                    }
+                ),
+            ),
+        )
+        conn.execute(
+            "INSERT INTO message (id, session_id, data) VALUES (?, ?, ?)",
+            (
+                "m2",
+                "s1",
+                json.dumps(
+                    {
+                        "role": "assistant",
+                        "modelID": "openai/gpt-5",
+                        "time": {"created": now_ms},
+                        "tokens": {"input": 8, "output": 2, "cache": {"read": 0, "write": 0}},
+                    }
+                ),
+            ),
+        )
 
 
 def test_get_summary_aggregates_tokens(tmp_path: Path) -> None:
@@ -490,3 +560,56 @@ def test_get_project_detail_raises_when_project_is_missing(tmp_path: Path) -> No
         assert str(exc) == "No data found for project 'missing'."
     else:
         raise AssertionError("Expected RuntimeError for missing project")
+
+
+def test_get_providers_returns_provider_rows(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_provider_fixture(db_path)
+
+    result = get_providers(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+        limit=10,
+    )
+
+    assert len(result.providers) == 2
+    assert result.total_providers == 2
+    providers = {row.provider for row in result.providers}
+    assert providers == {"anthropic", "openai"}
+    for row in result.providers:
+        assert row.total_models == 1
+
+
+def test_providers_command_json_output(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_provider_fixture(db_path)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["providers", "--db-path", str(db_path), "--days", "7", "--json"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["total_providers"] == 2
+    assert len(payload["providers"]) == 2
+
+
+def test_get_models_filters_by_provider(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_provider_fixture(db_path)
+
+    result = get_models(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+        provider="anthropic",
+    )
+
+    assert result.total_models == 1
+    assert len(result.models) == 1
+    assert result.models[0].model_id == "anthropic/claude-sonnet-4-5"
+    assert result.totals.input_tokens == 10
+    assert result.totals.output_tokens == 1
