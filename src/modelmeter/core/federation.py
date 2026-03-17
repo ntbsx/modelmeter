@@ -188,7 +188,7 @@ def _fetch_http_models(
         params["days"] = days
 
     query = "&".join(f"{k}={v}" for k, v in params.items())
-    url = f"{source.base_url.rstrip('/')}/api/providers?{query}"
+    url = f"{source.base_url.rstrip('/')}/api/models?{query}"
 
     token_raw = f"{source.auth.username}:{source.auth.password}".encode()
     token = __import__("base64").b64encode(token_raw).decode("ascii")
@@ -547,8 +547,8 @@ def execute_models_federated(
                 total_cost += typed_result.total_cost_usd
             if typed_result.pricing_source:
                 pricing_source = typed_result.pricing_source
-            priced_models = max(priced_models, typed_result.priced_models)
-            unpriced_models = max(unpriced_models, typed_result.unpriced_models)
+            priced_models += typed_result.priced_models
+            unpriced_models += typed_result.unpriced_models
             for model in typed_result.models:
                 if model.model_id in model_map:
                     model_map[model.model_id] = merge_model_usage(model_map[model.model_id], model)
