@@ -1,1178 +1,16 @@
 {
-  "openapi": "3.1.0",
-  "info": {
-    "title": "ModelMeter",
-    "version": "2026.3.19"
-  },
-  "paths": {
-    "/health": {
-      "get": {
-        "summary": "Health",
-        "operationId": "health_health_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "anyOf": [
-                      {
-                        "type": "string"
-                      },
-                      {
-                        "type": "boolean"
-                      }
-                    ]
-                  },
-                  "type": "object",
-                  "title": "Response Health Health Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/doctor": {
-      "get": {
-        "summary": "Doctor",
-        "operationId": "doctor_api_doctor_get",
-        "parameters": [
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DoctorReport"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/sources": {
-      "get": {
-        "summary": "Sources",
-        "operationId": "sources_api_sources_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SourceRegistryPublic"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/sources/check": {
-      "get": {
-        "summary": "Sources Check",
-        "operationId": "sources_check_api_sources_check_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/SourceHealth"
-                  },
-                  "type": "array",
-                  "title": "Response Sources Check Api Sources Check Get"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/update/check": {
-      "get": {
-        "summary": "Update Check",
-        "operationId": "update_check_api_update_check_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UpdateCheckResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/summary": {
-      "get": {
-        "summary": "Summary",
-        "operationId": "summary_api_summary_get",
-        "parameters": [
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 7,
-              "title": "Days"
-            }
-          },
-          {
-            "name": "token_source",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "auto",
-                "message",
-                "steps"
-              ],
-              "type": "string",
-              "default": "auto",
-              "title": "Token Source"
-            }
-          },
-          {
-            "name": "session_source",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "auto",
-                "activity",
-                "session"
-              ],
-              "type": "string",
-              "default": "auto",
-              "title": "Session Source"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          },
-          {
-            "name": "pricing_file",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Pricing File"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SummaryResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/daily": {
-      "get": {
-        "summary": "Daily",
-        "operationId": "daily_api_daily_get",
-        "parameters": [
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 7,
-              "title": "Days"
-            }
-          },
-          {
-            "name": "timezone_offset_minutes",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "maximum": 840,
-              "minimum": -840,
-              "default": 0,
-              "title": "Timezone Offset Minutes"
-            }
-          },
-          {
-            "name": "token_source",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "auto",
-                "message",
-                "steps"
-              ],
-              "type": "string",
-              "default": "auto",
-              "title": "Token Source"
-            }
-          },
-          {
-            "name": "session_source",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "auto",
-                "activity",
-                "session"
-              ],
-              "type": "string",
-              "default": "auto",
-              "title": "Session Source"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          },
-          {
-            "name": "pricing_file",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Pricing File"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DailyResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/models": {
-      "get": {
-        "summary": "Models",
-        "operationId": "models_api_models_get",
-        "parameters": [
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 7,
-              "title": "Days"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 20,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "provider",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Provider"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          },
-          {
-            "name": "pricing_file",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Pricing File"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ModelsResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/providers": {
-      "get": {
-        "summary": "Providers",
-        "operationId": "providers_api_providers_get",
-        "parameters": [
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 7,
-              "title": "Days"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 20,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          },
-          {
-            "name": "pricing_file",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Pricing File"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProvidersResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/models/{model_id}": {
-      "get": {
-        "summary": "Model Detail",
-        "operationId": "model_detail_api_models__model_id__get",
-        "parameters": [
-          {
-            "name": "model_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Model Id"
-            }
-          },
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 7,
-              "title": "Days"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          },
-          {
-            "name": "pricing_file",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Pricing File"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ModelDetailResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/projects": {
-      "get": {
-        "summary": "Projects",
-        "operationId": "projects_api_projects_get",
-        "parameters": [
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "default": 7,
-              "title": "Days"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Offset"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 20,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          },
-          {
-            "name": "pricing_file",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Pricing File"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectsResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/projects/{project_id}": {
-      "get": {
-        "summary": "Project Detail",
-        "operationId": "project_detail_api_projects__project_id__get",
-        "parameters": [
-          {
-            "name": "project_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Project Id"
-            }
-          },
-          {
-            "name": "days",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Days"
-            }
-          },
-          {
-            "name": "session_offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "default": 0,
-              "title": "Session Offset"
-            }
-          },
-          {
-            "name": "session_limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Session Limit"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          },
-          {
-            "name": "pricing_file",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Pricing File"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectDetailResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/live/snapshot": {
-      "get": {
-        "summary": "Live Snapshot",
-        "operationId": "live_snapshot_api_live_snapshot_get",
-        "parameters": [
-          {
-            "name": "window_minutes",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 60,
-              "title": "Window Minutes"
-            }
-          },
-          {
-            "name": "token_source",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "auto",
-                "message",
-                "steps"
-              ],
-              "type": "string",
-              "default": "auto",
-              "title": "Token Source"
-            }
-          },
-          {
-            "name": "models_limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 5,
-              "title": "Models Limit"
-            }
-          },
-          {
-            "name": "tools_limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 8,
-              "title": "Tools Limit"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          },
-          {
-            "name": "pricing_file",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Pricing File"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/LiveSnapshotResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/live/events": {
-      "get": {
-        "summary": "Live Events",
-        "operationId": "live_events_api_live_events_get",
-        "parameters": [
-          {
-            "name": "window_minutes",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 60,
-              "title": "Window Minutes"
-            }
-          },
-          {
-            "name": "token_source",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "enum": [
-                "auto",
-                "message",
-                "steps"
-              ],
-              "type": "string",
-              "default": "auto",
-              "title": "Token Source"
-            }
-          },
-          {
-            "name": "models_limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 5,
-              "title": "Models Limit"
-            }
-          },
-          {
-            "name": "tools_limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "default": 8,
-              "title": "Tools Limit"
-            }
-          },
-          {
-            "name": "interval_seconds",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "number",
-              "maximum": 30.0,
-              "minimum": 1.0,
-              "default": 3.0,
-              "title": "Interval Seconds"
-            }
-          },
-          {
-            "name": "once",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "boolean",
-              "default": false,
-              "title": "Once"
-            }
-          },
-          {
-            "name": "db_path",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Db Path"
-            }
-          },
-          {
-            "name": "pricing_file",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Pricing File"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
   "components": {
     "schemas": {
       "DailyResponse": {
+        "description": "Daily time-series response contract.",
         "properties": {
-          "window_days": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Days"
-          },
-          "totals": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
-          "total_cost_usd": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Total Cost Usd"
+          "daily": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DailyUsage"
+            },
+            "title": "Daily",
+            "type": "array"
           },
           "pricing_source": {
             "anyOf": [
@@ -1185,38 +23,48 @@
             ],
             "title": "Pricing Source"
           },
-          "daily": {
-            "items": {
-              "$ref": "#/components/schemas/DailyUsage"
-            },
-            "type": "array",
-            "title": "Daily",
-            "default": []
+          "total_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Usd"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "window_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
           }
         },
-        "type": "object",
         "required": [
           "totals"
         ],
         "title": "DailyResponse",
-        "description": "Daily time-series response contract."
+        "type": "object"
       },
       "DailyUsage": {
+        "description": "Daily aggregate usage.",
         "properties": {
-          "day": {
-            "type": "string",
-            "format": "date",
-            "title": "Day"
-          },
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
           "cost_usd": {
             "anyOf": [
               {
@@ -1227,21 +75,72 @@
               }
             ],
             "title": "Cost Usd"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
           }
         },
-        "type": "object",
         "required": [
           "day",
           "usage"
         ],
         "title": "DailyUsage",
-        "description": "Daily aggregate usage."
+        "type": "object"
       },
       "DataSourcePublic": {
+        "description": "Public view of a source config with credentials redacted.",
         "properties": {
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "db_path": {
+            "anyOf": [
+              {
+                "format": "path",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Db Path"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "has_auth": {
+            "default": false,
+            "title": "Has Auth",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "sqlite",
+              "http"
+            ],
+            "title": "Kind",
+            "type": "string"
           },
           "label": {
             "anyOf": [
@@ -1254,82 +153,44 @@
             ],
             "title": "Label"
           },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "sqlite",
-              "http"
-            ],
-            "title": "Kind"
-          },
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled",
-            "default": true
-          },
-          "db_path": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "path"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Db Path"
-          },
-          "base_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Base Url"
-          },
-          "has_auth": {
-            "type": "boolean",
-            "title": "Has Auth",
-            "default": false
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
           }
         },
-        "type": "object",
         "required": [
           "source_id",
           "kind"
         ],
         "title": "DataSourcePublic",
-        "description": "Public view of a source config with credentials redacted."
+        "type": "object"
       },
       "DoctorReport": {
+        "description": "Top-level health diagnostics payload.",
         "properties": {
           "app_name": {
-            "type": "string",
-            "title": "App Name"
+            "title": "App Name",
+            "type": "string"
           },
           "app_version": {
-            "type": "string",
-            "title": "App Version"
-          },
-          "opencode_data_dir": {
-            "type": "string",
-            "title": "Opencode Data Dir"
-          },
-          "selected_source": {
-            "type": "string",
-            "title": "Selected Source"
-          },
-          "sqlite": {
-            "$ref": "#/components/schemas/SQLiteDiagnostics"
+            "title": "App Version",
+            "type": "string"
           },
           "legacy": {
             "$ref": "#/components/schemas/LegacyDiagnostics"
+          },
+          "opencode_data_dir": {
+            "title": "Opencode Data Dir",
+            "type": "string"
+          },
+          "selected_source": {
+            "title": "Selected Source",
+            "type": "string"
+          },
+          "sqlite": {
+            "$ref": "#/components/schemas/SQLiteDiagnostics"
           }
         },
-        "type": "object",
         "required": [
           "app_name",
           "app_version",
@@ -1339,7 +200,7 @@
           "legacy"
         ],
         "title": "DoctorReport",
-        "description": "Top-level health diagnostics payload."
+        "type": "object"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1347,41 +208,38 @@
             "items": {
               "$ref": "#/components/schemas/ValidationError"
             },
-            "type": "array",
-            "title": "Detail"
+            "title": "Detail",
+            "type": "array"
           }
         },
-        "type": "object",
-        "title": "HTTPValidationError"
+        "title": "HTTPValidationError",
+        "type": "object"
       },
       "LegacyDiagnostics": {
+        "description": "Legacy message directory diagnostics.",
         "properties": {
           "candidate_dirs": {
             "items": {
               "type": "string"
             },
-            "type": "array",
-            "title": "Candidate Dirs"
+            "title": "Candidate Dirs",
+            "type": "array"
           },
           "existing_dirs": {
             "items": {
               "type": "string"
             },
-            "type": "array",
-            "title": "Existing Dirs"
+            "title": "Existing Dirs",
+            "type": "array"
           }
         },
-        "type": "object",
         "title": "LegacyDiagnostics",
-        "description": "Legacy message directory diagnostics."
+        "type": "object"
       },
       "LiveActiveSession": {
+        "description": "Active session metadata in live snapshot.",
         "properties": {
-          "session_id": {
-            "type": "string",
-            "title": "Session Id"
-          },
-          "title": {
+          "directory": {
             "anyOf": [
               {
                 "type": "string"
@@ -1390,7 +248,18 @@
                 "type": "null"
               }
             ],
-            "title": "Title"
+            "title": "Directory"
+          },
+          "is_active": {
+            "default": false,
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "last_updated_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Last Updated Ms",
+            "type": "integer"
           },
           "project_id": {
             "anyOf": [
@@ -1414,7 +283,11 @@
             ],
             "title": "Project Name"
           },
-          "directory": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "title": {
             "anyOf": [
               {
                 "type": "string"
@@ -1423,48 +296,18 @@
                 "type": "null"
               }
             ],
-            "title": "Directory"
-          },
-          "last_updated_ms": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Last Updated Ms",
-            "default": 0
-          },
-          "is_active": {
-            "type": "boolean",
-            "title": "Is Active",
-            "default": false
+            "title": "Title"
           }
         },
-        "type": "object",
         "required": [
           "session_id"
         ],
         "title": "LiveActiveSession",
-        "description": "Active session metadata in live snapshot."
+        "type": "object"
       },
       "LiveModelUsage": {
+        "description": "Live model usage row.",
         "properties": {
-          "model_id": {
-            "type": "string",
-            "title": "Model Id"
-          },
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
-          "total_interactions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Interactions",
-            "default": 0
-          },
           "cost_usd": {
             "anyOf": [
               {
@@ -1475,71 +318,37 @@
               }
             ],
             "title": "Cost Usd"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
           }
         },
-        "type": "object",
         "required": [
           "model_id",
           "usage"
         ],
         "title": "LiveModelUsage",
-        "description": "Live model usage row."
+        "type": "object"
       },
       "LiveSnapshotResponse": {
+        "description": "Live snapshot response contract.",
         "properties": {
-          "generated_at_ms": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Generated At Ms",
-            "default": 0
-          },
-          "window_minutes": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Window Minutes",
-            "default": 60
-          },
-          "token_source": {
-            "type": "string",
-            "title": "Token Source"
-          },
-          "total_interactions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Interactions",
-            "default": 0
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "cost_usd": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cost Usd"
-          },
-          "pricing_source": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pricing Source"
-          },
           "active_session": {
             "anyOf": [
               {
@@ -1550,88 +359,6 @@
               }
             ]
           },
-          "top_models": {
-            "items": {
-              "$ref": "#/components/schemas/LiveModelUsage"
-            },
-            "type": "array",
-            "title": "Top Models",
-            "default": []
-          },
-          "top_tools": {
-            "items": {
-              "$ref": "#/components/schemas/LiveToolUsage"
-            },
-            "type": "array",
-            "title": "Top Tools",
-            "default": []
-          }
-        },
-        "type": "object",
-        "required": [
-          "token_source",
-          "usage"
-        ],
-        "title": "LiveSnapshotResponse",
-        "description": "Live snapshot response contract."
-      },
-      "LiveToolUsage": {
-        "properties": {
-          "tool_name": {
-            "type": "string",
-            "title": "Tool Name"
-          },
-          "total_calls": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Calls",
-            "default": 0
-          }
-        },
-        "type": "object",
-        "required": [
-          "tool_name"
-        ],
-        "title": "LiveToolUsage",
-        "description": "Live tool usage row."
-      },
-      "ModelDetailResponse": {
-        "properties": {
-          "model_id": {
-            "type": "string",
-            "title": "Model Id"
-          },
-          "provider": {
-            "type": "string",
-            "title": "Provider"
-          },
-          "window_days": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Days"
-          },
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
-          "total_interactions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Interactions",
-            "default": 0
-          },
           "cost_usd": {
             "anyOf": [
               {
@@ -1642,6 +369,12 @@
               }
             ],
             "title": "Cost Usd"
+          },
+          "generated_at_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Generated At Ms",
+            "type": "integer"
           },
           "pricing_source": {
             "anyOf": [
@@ -1654,45 +387,155 @@
             ],
             "title": "Pricing Source"
           },
+          "token_source": {
+            "title": "Token Source",
+            "type": "string"
+          },
+          "top_models": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LiveModelUsage"
+            },
+            "title": "Top Models",
+            "type": "array"
+          },
+          "top_tools": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/LiveToolUsage"
+            },
+            "title": "Top Tools",
+            "type": "array"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "window_minutes": {
+            "default": 60,
+            "minimum": 1.0,
+            "title": "Window Minutes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "token_source",
+          "usage"
+        ],
+        "title": "LiveSnapshotResponse",
+        "type": "object"
+      },
+      "LiveToolUsage": {
+        "description": "Live tool usage row.",
+        "properties": {
+          "tool_name": {
+            "title": "Tool Name",
+            "type": "string"
+          },
+          "total_calls": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Calls",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "tool_name"
+        ],
+        "title": "LiveToolUsage",
+        "type": "object"
+      },
+      "ModelDetailResponse": {
+        "description": "Single model detail response contract.",
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
           "daily": {
+            "default": [],
             "items": {
               "$ref": "#/components/schemas/DailyUsage"
             },
-            "type": "array",
             "title": "Daily",
-            "default": []
+            "type": "array"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "pricing_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Source"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "window_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
           }
         },
-        "type": "object",
         "required": [
           "model_id",
           "provider",
           "usage"
         ],
         "title": "ModelDetailResponse",
-        "description": "Single model detail response contract."
+        "type": "object"
       },
       "ModelUsage": {
+        "description": "Per-model usage aggregate.",
         "properties": {
-          "model_id": {
-            "type": "string",
-            "title": "Model Id"
-          },
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
-          "total_interactions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Interactions",
-            "default": 0
-          },
           "cost_usd": {
             "anyOf": [
               {
@@ -1705,44 +548,53 @@
             "title": "Cost Usd"
           },
           "has_pricing": {
-            "type": "boolean",
+            "default": false,
             "title": "Has Pricing",
-            "default": false
+            "type": "boolean"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
           }
         },
-        "type": "object",
         "required": [
           "model_id",
           "usage"
         ],
         "title": "ModelUsage",
-        "description": "Per-model usage aggregate."
+        "type": "object"
       },
       "ModelsResponse": {
+        "description": "Top models usage response contract.",
         "properties": {
-          "window_days": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Days"
-          },
-          "models_offset": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Models Offset",
-            "default": 0
+          "models": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ModelUsage"
+            },
+            "title": "Models",
+            "type": "array"
           },
           "models_limit": {
             "anyOf": [
               {
-                "type": "integer",
-                "minimum": 1.0
+                "minimum": 1.0,
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -1750,37 +602,23 @@
             ],
             "title": "Models Limit"
           },
+          "models_offset": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Models Offset",
+            "type": "integer"
+          },
           "models_returned": {
-            "type": "integer",
+            "default": 0,
             "minimum": 0.0,
             "title": "Models Returned",
-            "default": 0
+            "type": "integer"
           },
-          "total_models": {
-            "type": "integer",
+          "priced_models": {
+            "default": 0,
             "minimum": 0.0,
-            "title": "Total Models",
-            "default": 0
-          },
-          "totals": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
-          "total_cost_usd": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Total Cost Usd"
+            "title": "Priced Models",
+            "type": "integer"
           },
           "pricing_source": {
             "anyOf": [
@@ -1793,43 +631,78 @@
             ],
             "title": "Pricing Source"
           },
-          "priced_models": {
-            "type": "integer",
+          "total_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Usd"
+          },
+          "total_models": {
+            "default": 0,
             "minimum": 0.0,
-            "title": "Priced Models",
-            "default": 0
+            "title": "Total Models",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/TokenUsage"
           },
           "unpriced_models": {
-            "type": "integer",
+            "default": 0,
             "minimum": 0.0,
             "title": "Unpriced Models",
-            "default": 0
+            "type": "integer"
           },
-          "models": {
-            "items": {
-              "$ref": "#/components/schemas/ModelUsage"
-            },
-            "type": "array",
-            "title": "Models",
-            "default": []
+          "window_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
           }
         },
-        "type": "object",
         "required": [
           "totals"
         ],
         "title": "ModelsResponse",
-        "description": "Top models usage response contract."
+        "type": "object"
       },
       "ProjectDetailResponse": {
+        "description": "Single project detail response contract.",
         "properties": {
+          "pricing_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Source"
+          },
           "project_id": {
-            "type": "string",
-            "title": "Project Id"
+            "title": "Project Id",
+            "type": "string"
           },
           "project_name": {
-            "type": "string",
-            "title": "Project Name"
+            "title": "Project Name",
+            "type": "string"
           },
           "project_path": {
             "anyOf": [
@@ -1842,38 +715,19 @@
             ],
             "title": "Project Path"
           },
-          "window_days": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Days"
-          },
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
-          "sessions_offset": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Sessions Offset",
-            "default": 0
+          "sessions": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ProjectSessionUsage"
+            },
+            "title": "Sessions",
+            "type": "array"
           },
           "sessions_limit": {
             "anyOf": [
               {
-                "type": "integer",
-                "minimum": 1.0
+                "minimum": 1.0,
+                "type": "integer"
               },
               {
                 "type": "null"
@@ -1881,17 +735,17 @@
             ],
             "title": "Sessions Limit"
           },
+          "sessions_offset": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Sessions Offset",
+            "type": "integer"
+          },
           "sessions_returned": {
-            "type": "integer",
+            "default": 0,
             "minimum": 0.0,
             "title": "Sessions Returned",
-            "default": 0
-          },
-          "total_interactions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Interactions",
-            "default": 0
+            "type": "integer"
           },
           "total_cost_usd": {
             "anyOf": [
@@ -1904,51 +758,55 @@
             ],
             "title": "Total Cost Usd"
           },
-          "pricing_source": {
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "window_days": {
             "anyOf": [
               {
-                "type": "string"
+                "minimum": 1.0,
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Pricing Source"
-          },
-          "sessions": {
-            "items": {
-              "$ref": "#/components/schemas/ProjectSessionUsage"
-            },
-            "type": "array",
-            "title": "Sessions",
-            "default": []
+            "title": "Window Days"
           }
         },
-        "type": "object",
         "required": [
           "project_id",
           "project_name",
           "usage"
         ],
         "title": "ProjectDetailResponse",
-        "description": "Single project detail response contract."
+        "type": "object"
       },
       "ProjectSessionUsage": {
+        "description": "Per-session usage row for a project detail view.",
         "properties": {
-          "session_id": {
-            "type": "string",
-            "title": "Session Id"
-          },
-          "title": {
+          "cost_usd": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "number"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Title"
+            "title": "Cost Usd"
           },
           "directory": {
             "anyOf": [
@@ -1961,21 +819,52 @@
             ],
             "title": "Directory"
           },
+          "has_pricing": {
+            "default": false,
+            "title": "Has Pricing",
+            "type": "boolean"
+          },
           "last_updated_ms": {
-            "type": "integer",
+            "default": 0,
             "minimum": 0.0,
             "title": "Last Updated Ms",
-            "default": 0
+            "type": "integer"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
           },
           "usage": {
             "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_interactions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Interactions",
-            "default": 0
-          },
+          }
+        },
+        "required": [
+          "session_id",
+          "usage"
+        ],
+        "title": "ProjectSessionUsage",
+        "type": "object"
+      },
+      "ProjectUsage": {
+        "description": "Per-project usage aggregate.",
+        "properties": {
           "cost_usd": {
             "anyOf": [
               {
@@ -1988,28 +877,17 @@
             "title": "Cost Usd"
           },
           "has_pricing": {
-            "type": "boolean",
+            "default": false,
             "title": "Has Pricing",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "session_id",
-          "usage"
-        ],
-        "title": "ProjectSessionUsage",
-        "description": "Per-session usage row for a project detail view."
-      },
-      "ProjectUsage": {
-        "properties": {
+            "type": "boolean"
+          },
           "project_id": {
-            "type": "string",
-            "title": "Project Id"
+            "title": "Project Id",
+            "type": "string"
           },
           "project_name": {
-            "type": "string",
-            "title": "Project Name"
+            "title": "Project Name",
+            "type": "string"
           },
           "project_path": {
             "anyOf": [
@@ -2022,111 +900,33 @@
             ],
             "title": "Project Path"
           },
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
           "total_interactions": {
-            "type": "integer",
+            "default": 0,
             "minimum": 0.0,
             "title": "Total Interactions",
-            "default": 0
+            "type": "integer"
           },
-          "cost_usd": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Cost Usd"
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
           },
-          "has_pricing": {
-            "type": "boolean",
-            "title": "Has Pricing",
-            "default": false
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
           }
         },
-        "type": "object",
         "required": [
           "project_id",
           "project_name",
           "usage"
         ],
         "title": "ProjectUsage",
-        "description": "Per-project usage aggregate."
+        "type": "object"
       },
       "ProjectsResponse": {
+        "description": "Top projects usage response contract.",
         "properties": {
-          "window_days": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Days"
-          },
-          "projects_offset": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Projects Offset",
-            "default": 0
-          },
-          "projects_limit": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Projects Limit"
-          },
-          "projects_returned": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Projects Returned",
-            "default": 0
-          },
-          "total_projects": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Projects",
-            "default": 0
-          },
-          "totals": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
-          "total_cost_usd": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Total Cost Usd"
-          },
           "pricing_source": {
             "anyOf": [
               {
@@ -2139,119 +939,36 @@
             "title": "Pricing Source"
           },
           "projects": {
+            "default": [],
             "items": {
               "$ref": "#/components/schemas/ProjectUsage"
             },
-            "type": "array",
             "title": "Projects",
-            "default": []
-          }
-        },
-        "type": "object",
-        "required": [
-          "totals"
-        ],
-        "title": "ProjectsResponse",
-        "description": "Top projects usage response contract."
-      },
-      "ProviderUsage": {
-        "properties": {
-          "provider": {
-            "type": "string",
-            "title": "Provider"
+            "type": "array"
           },
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_models": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Models",
-            "default": 0
-          },
-          "total_interactions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Interactions",
-            "default": 0
-          },
-          "cost_usd": {
+          "projects_limit": {
             "anyOf": [
               {
-                "type": "number"
+                "minimum": 1.0,
+                "type": "integer"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Cost Usd"
+            "title": "Projects Limit"
           },
-          "has_pricing": {
-            "type": "boolean",
-            "title": "Has Pricing",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "provider",
-          "usage"
-        ],
-        "title": "ProviderUsage",
-        "description": "Per-provider usage aggregate."
-      },
-      "ProvidersResponse": {
-        "properties": {
-          "window_days": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Days"
-          },
-          "providers_offset": {
-            "type": "integer",
+          "projects_offset": {
+            "default": 0,
             "minimum": 0.0,
-            "title": "Providers Offset",
-            "default": 0
+            "title": "Projects Offset",
+            "type": "integer"
           },
-          "providers_limit": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Providers Limit"
-          },
-          "providers_returned": {
-            "type": "integer",
+          "projects_returned": {
+            "default": 0,
             "minimum": 0.0,
-            "title": "Providers Returned",
-            "default": 0
-          },
-          "total_providers": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Providers",
-            "default": 0
-          },
-          "totals": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
+            "title": "Projects Returned",
+            "type": "integer"
           },
           "total_cost_usd": {
             "anyOf": [
@@ -2264,6 +981,89 @@
             ],
             "title": "Total Cost Usd"
           },
+          "total_projects": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Projects",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "window_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
+          }
+        },
+        "required": [
+          "totals"
+        ],
+        "title": "ProjectsResponse",
+        "type": "object"
+      },
+      "ProviderUsage": {
+        "description": "Per-provider usage aggregate.",
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "has_pricing": {
+            "default": false,
+            "title": "Has Pricing",
+            "type": "boolean"
+          },
+          "provider": {
+            "title": "Provider",
+            "type": "string"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "total_models": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Models",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": [
+          "provider",
+          "usage"
+        ],
+        "title": "ProviderUsage",
+        "type": "object"
+      },
+      "ProvidersResponse": {
+        "description": "Top providers usage response contract.",
+        "properties": {
           "pricing_source": {
             "anyOf": [
               {
@@ -2276,34 +1076,131 @@
             "title": "Pricing Source"
           },
           "providers": {
+            "default": [],
             "items": {
               "$ref": "#/components/schemas/ProviderUsage"
             },
-            "type": "array",
             "title": "Providers",
-            "default": []
+            "type": "array"
+          },
+          "providers_limit": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Providers Limit"
+          },
+          "providers_offset": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Providers Offset",
+            "type": "integer"
+          },
+          "providers_returned": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Providers Returned",
+            "type": "integer"
+          },
+          "total_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Cost Usd"
+          },
+          "total_providers": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Providers",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "window_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
           }
         },
-        "type": "object",
         "required": [
           "totals"
         ],
         "title": "ProvidersResponse",
-        "description": "Top providers usage response contract."
+        "type": "object"
       },
       "SQLiteDiagnostics": {
+        "description": "SQLite data source diagnostics.",
         "properties": {
+          "can_connect": {
+            "title": "Can Connect",
+            "type": "boolean"
+          },
           "db_path": {
-            "type": "string",
-            "title": "Db Path"
+            "title": "Db Path",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
           },
           "exists": {
-            "type": "boolean",
-            "title": "Exists"
+            "title": "Exists",
+            "type": "boolean"
           },
-          "can_connect": {
-            "type": "boolean",
-            "title": "Can Connect"
+          "missing_columns": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "title": "Missing Columns",
+            "type": "object"
+          },
+          "missing_tables": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Tables",
+            "type": "array"
+          },
+          "row_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Row Counts",
+            "type": "object"
           },
           "sqlite_version": {
             "anyOf": [
@@ -2320,72 +1217,21 @@
             "items": {
               "type": "string"
             },
-            "type": "array",
-            "title": "Tables Present"
-          },
-          "missing_tables": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Missing Tables"
-          },
-          "missing_columns": {
-            "additionalProperties": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "type": "object",
-            "title": "Missing Columns"
-          },
-          "row_counts": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "type": "object",
-            "title": "Row Counts"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
+            "title": "Tables Present",
+            "type": "array"
           }
         },
-        "type": "object",
         "required": [
           "db_path",
           "exists",
           "can_connect"
         ],
         "title": "SQLiteDiagnostics",
-        "description": "SQLite data source diagnostics."
+        "type": "object"
       },
       "SourceHealth": {
+        "description": "Health status for one source.",
         "properties": {
-          "source_id": {
-            "type": "string",
-            "title": "Source Id"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "sqlite",
-              "http"
-            ],
-            "title": "Kind"
-          },
-          "is_reachable": {
-            "type": "boolean",
-            "title": "Is Reachable"
-          },
           "detail": {
             "anyOf": [
               {
@@ -2407,59 +1253,54 @@
               }
             ],
             "title": "Error"
+          },
+          "is_reachable": {
+            "title": "Is Reachable",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "sqlite",
+              "http"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
           }
         },
-        "type": "object",
         "required": [
           "source_id",
           "kind",
           "is_reachable"
         ],
         "title": "SourceHealth",
-        "description": "Health status for one source."
+        "type": "object"
       },
       "SourceRegistryPublic": {
+        "description": "Public registry view with credentials stripped.",
         "properties": {
-          "version": {
-            "type": "integer",
-            "title": "Version",
-            "default": 1
-          },
           "sources": {
             "items": {
               "$ref": "#/components/schemas/DataSourcePublic"
             },
-            "type": "array",
-            "title": "Sources"
+            "title": "Sources",
+            "type": "array"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
           }
         },
-        "type": "object",
         "title": "SourceRegistryPublic",
-        "description": "Public registry view with credentials stripped."
+        "type": "object"
       },
       "SummaryResponse": {
+        "description": "Top-level summary response contract.",
         "properties": {
-          "usage": {
-            "$ref": "#/components/schemas/TokenUsage"
-          },
-          "total_sessions": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total Sessions",
-            "default": 0
-          },
-          "window_days": {
-            "anyOf": [
-              {
-                "type": "integer",
-                "minimum": 1.0
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Window Days"
-          },
           "cost_usd": {
             "anyOf": [
               {
@@ -2481,60 +1322,98 @@
               }
             ],
             "title": "Pricing Source"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          },
+          "window_days": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Window Days"
           }
         },
-        "type": "object",
         "required": [
           "usage"
         ],
         "title": "SummaryResponse",
-        "description": "Top-level summary response contract."
+        "type": "object"
       },
       "TokenUsage": {
+        "description": "Token usage counters.",
         "properties": {
-          "input_tokens": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Input Tokens",
-            "default": 0
-          },
-          "output_tokens": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Output Tokens",
-            "default": 0
-          },
           "cache_read_tokens": {
-            "type": "integer",
+            "default": 0,
             "minimum": 0.0,
             "title": "Cache Read Tokens",
-            "default": 0
+            "type": "integer"
           },
           "cache_write_tokens": {
-            "type": "integer",
+            "default": 0,
             "minimum": 0.0,
             "title": "Cache Write Tokens",
-            "default": 0
+            "type": "integer"
+          },
+          "input_tokens": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "output_tokens": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Output Tokens",
+            "type": "integer"
           },
           "total_tokens": {
-            "type": "integer",
-            "title": "Total Tokens",
             "description": "Total tokens across all token categories.",
-            "readOnly": true
+            "readOnly": true,
+            "title": "Total Tokens",
+            "type": "integer"
           }
         },
-        "type": "object",
         "required": [
           "total_tokens"
         ],
         "title": "TokenUsage",
-        "description": "Token usage counters."
+        "type": "object"
       },
       "UpdateCheckResponse": {
+        "description": "Update check response contract.",
         "properties": {
+          "checked_at_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Checked At Ms",
+            "type": "integer"
+          },
           "current_version": {
-            "type": "string",
-            "title": "Current Version"
+            "title": "Current Version",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
           },
           "latest_version": {
             "anyOf": [
@@ -2546,11 +1425,6 @@
               }
             ],
             "title": "Latest Version"
-          },
-          "update_available": {
-            "type": "boolean",
-            "title": "Update Available",
-            "default": false
           },
           "release_tag": {
             "anyOf": [
@@ -2574,33 +1448,27 @@
             ],
             "title": "Release Url"
           },
-          "checked_at_ms": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Checked At Ms",
-            "default": 0
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
+          "update_available": {
+            "default": false,
+            "title": "Update Available",
+            "type": "boolean"
           }
         },
-        "type": "object",
         "required": [
           "current_version"
         ],
         "title": "UpdateCheckResponse",
-        "description": "Update check response contract."
+        "type": "object"
       },
       "ValidationError": {
         "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
           "loc": {
             "items": {
               "anyOf": [
@@ -2612,32 +1480,1186 @@
                 }
               ]
             },
-            "type": "array",
-            "title": "Location"
+            "title": "Location",
+            "type": "array"
           },
           "msg": {
-            "type": "string",
-            "title": "Message"
+            "title": "Message",
+            "type": "string"
           },
           "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
+            "title": "Error Type",
+            "type": "string"
           }
         },
-        "type": "object",
         "required": [
           "loc",
           "msg",
           "type"
         ],
-        "title": "ValidationError"
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "ModelMeter",
+    "version": "2026.3.19"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/auth/check": {
+      "get": {
+        "operationId": "auth_check_api_auth_check_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Auth Check Api Auth Check Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Check"
+      }
+    },
+    "/api/daily": {
+      "get": {
+        "operationId": "daily_api_daily_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 7,
+              "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "timezone_offset_minutes",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 840,
+              "minimum": -840,
+              "title": "Timezone Offset Minutes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "token_source",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "message",
+                "steps"
+              ],
+              "title": "Token Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "session_source",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "activity",
+                "session"
+              ],
+              "title": "Session Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Daily"
+      }
+    },
+    "/api/doctor": {
+      "get": {
+        "operationId": "doctor_api_doctor_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DoctorReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Doctor"
+      }
+    },
+    "/api/live/events": {
+      "get": {
+        "operationId": "live_events_api_live_events_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "window_minutes",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "minimum": 1,
+              "title": "Window Minutes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "token_source",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "message",
+                "steps"
+              ],
+              "title": "Token Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "models_limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "minimum": 1,
+              "title": "Models Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tools_limit",
+            "required": false,
+            "schema": {
+              "default": 8,
+              "minimum": 1,
+              "title": "Tools Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "interval_seconds",
+            "required": false,
+            "schema": {
+              "default": 3.0,
+              "maximum": 30.0,
+              "minimum": 1.0,
+              "title": "Interval Seconds",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "once",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Once",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Live Events"
+      }
+    },
+    "/api/live/snapshot": {
+      "get": {
+        "operationId": "live_snapshot_api_live_snapshot_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "window_minutes",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "minimum": 1,
+              "title": "Window Minutes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "token_source",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "message",
+                "steps"
+              ],
+              "title": "Token Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "models_limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "minimum": 1,
+              "title": "Models Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tools_limit",
+            "required": false,
+            "schema": {
+              "default": 8,
+              "minimum": 1,
+              "title": "Tools Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveSnapshotResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Live Snapshot"
+      }
+    },
+    "/api/models": {
+      "get": {
+        "operationId": "models_api_models_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 7,
+              "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Provider"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Models"
+      }
+    },
+    "/api/models/{model_id}": {
+      "get": {
+        "operationId": "model_detail_api_models__model_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "model_id",
+            "required": true,
+            "schema": {
+              "title": "Model Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 7,
+              "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Model Detail"
+      }
+    },
+    "/api/projects": {
+      "get": {
+        "operationId": "projects_api_projects_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 7,
+              "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Projects"
+      }
+    },
+    "/api/projects/{project_id}": {
+      "get": {
+        "operationId": "project_detail_api_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "session_offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Session Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "session_limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Session Limit"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Project Detail"
+      }
+    },
+    "/api/providers": {
+      "get": {
+        "operationId": "providers_api_providers_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 7,
+              "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProvidersResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Providers"
+      }
+    },
+    "/api/sources": {
+      "get": {
+        "operationId": "sources_api_sources_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRegistryPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sources"
+      }
+    },
+    "/api/sources/check": {
+      "get": {
+        "operationId": "sources_check_api_sources_check_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SourceHealth"
+                  },
+                  "title": "Response Sources Check Api Sources Check Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sources Check"
+      }
+    },
+    "/api/summary": {
+      "get": {
+        "operationId": "summary_api_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": 7,
+              "title": "Days"
+            }
+          },
+          {
+            "in": "query",
+            "name": "token_source",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "message",
+                "steps"
+              ],
+              "title": "Token Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "session_source",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "activity",
+                "session"
+              ],
+              "title": "Session Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Summary"
+      }
+    },
+    "/api/update/check": {
+      "get": {
+        "operationId": "update_check_api_update_check_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateCheckResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Update Check"
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "boolean"
+                      }
+                    ]
+                  },
+                  "title": "Response Health Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
       }
     }
   }

@@ -47,6 +47,7 @@ from modelmeter.core.models import (
 )
 from modelmeter.core.sources import (
     SourceHealth,
+    SourceRegistryError,
     SourceRegistryPublic,
     check_source_health,
     load_source_registry,
@@ -184,15 +185,28 @@ def create_app(
 
     @app.get("/api/sources", response_model=SourceRegistryPublic)
     def sources() -> SourceRegistryPublic:
-        registry = load_source_registry(settings=settings)
-        return to_public_registry(registry)
+        try:
+            registry = load_source_registry(settings=settings)
+            return to_public_registry(registry)
+        except SourceRegistryError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     @app.get("/api/sources/check", response_model=list[SourceHealth])
     def sources_check() -> list[SourceHealth]:
-        registry = load_source_registry(settings=settings)
-        return [
-            check_source_health(source=source, settings=settings) for source in registry.sources
-        ]
+        try:
+            registry = load_source_registry(settings=settings)
+            return [
+                check_source_health(source=source, settings=settings) for source in registry.sources
+            ]
+        except SourceRegistryError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    @app.get("/api/auth/check")
+    def auth_check() -> dict[str, str]:
+        return {
+            "status": "ok",
+            "app_version": settings.app_runtime_version,
+        }
 
     @app.get("/api/update/check", response_model=UpdateCheckResponse)
     def update_check() -> UpdateCheckResponse:

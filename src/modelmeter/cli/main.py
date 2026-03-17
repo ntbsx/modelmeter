@@ -48,9 +48,12 @@ from modelmeter.core.models import (
 from modelmeter.core.sources import (
     DataSourceConfig,
     SourceAuth,
+    SourceRegistry,
+    SourceRegistryError,
     check_source_health,
     load_source_registry,
     remove_source,
+    to_public_registry,
     upsert_source,
 )
 from modelmeter.core.updater import apply_update, check_for_updates
@@ -88,6 +91,18 @@ def callback(
     """ModelMeter command group."""
 
 
+def _source_settings() -> AppSettings:
+    return AppSettings()
+
+
+def _load_source_registry_or_exit(*, settings: AppSettings) -> SourceRegistry:
+    try:
+        return load_source_registry(settings=settings)
+    except SourceRegistryError as exc:
+        typer.echo(f"Error: {exc}")
+        raise typer.Exit(code=1) from None
+
+
 @sources_app.command("list")
 def list_sources(
     json_output: Annotated[
@@ -96,11 +111,11 @@ def list_sources(
     ] = False,
 ) -> None:
     """List configured analytics sources."""
-    settings = AppSettings()
-    registry = load_source_registry(settings=settings)
+    settings = _source_settings()
+    registry = _load_source_registry_or_exit(settings=settings)
 
     if json_output:
-        typer.echo(registry.model_dump_json(indent=2))
+        typer.echo(to_public_registry(registry).model_dump_json(indent=2))
         return
 
     console = Console()
@@ -139,7 +154,11 @@ def add_sqlite_source(
 ) -> None:
     """Add or update a SQLite source."""
     source = DataSourceConfig(source_id=source_id, label=label, kind="sqlite", db_path=db_path)
-    upsert_source(settings=AppSettings(), source=source)
+    try:
+        upsert_source(settings=_source_settings(), source=source)
+    except SourceRegistryError as exc:
+        typer.echo(f"Error: {exc}")
+        raise typer.Exit(code=1) from None
     typer.echo(f"Saved sqlite source '{source_id}'.")
 
 
@@ -175,7 +194,11 @@ def add_http_source(
         base_url=base_url,
         auth=auth,
     )
-    upsert_source(settings=AppSettings(), source=source)
+    try:
+        upsert_source(settings=_source_settings(), source=source)
+    except SourceRegistryError as exc:
+        typer.echo(f"Error: {exc}")
+        raise typer.Exit(code=1) from None
     typer.echo(f"Saved http source '{source_id}'.")
 
 
@@ -184,7 +207,11 @@ def remove_registered_source(
     source_id: Annotated[str, typer.Argument(help="Source id to remove.")],
 ) -> None:
     """Remove a configured source."""
-    removed = remove_source(settings=AppSettings(), source_id=source_id)
+    try:
+        removed = remove_source(settings=_source_settings(), source_id=source_id)
+    except SourceRegistryError as exc:
+        typer.echo(f"Error: {exc}")
+        raise typer.Exit(code=1) from None
     if not removed:
         typer.echo(f"No source found with id '{source_id}'.")
         raise typer.Exit(code=1)
@@ -200,8 +227,8 @@ def check_sources(
     ] = False,
 ) -> None:
     """Check reachability for configured sources."""
-    settings = AppSettings()
-    registry = load_source_registry(settings=settings)
+    settings = _source_settings()
+    registry = _load_source_registry_or_exit(settings=settings)
     checks = [check_source_health(source=source, settings=settings) for source in registry.sources]
 
     if json_output:

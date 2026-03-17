@@ -281,6 +281,36 @@ def test_sources_check_endpoint_reports_reachability(
     assert payload[0]["is_reachable"] is True
 
 
+def test_sources_endpoint_reports_invalid_registry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text("{invalid json")
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    client = _new_client()
+    response = client.get("/api/sources")
+
+    assert response.status_code == 500
+    payload = _get_json(response)
+    assert "Invalid source registry JSON" in payload["detail"]
+
+
+def test_auth_check_endpoint_requires_credentials_when_auth_enabled() -> None:
+    client = _new_client(server_password="secret")
+
+    unauthorized = client.get("/api/auth/check")
+    authorized = client.get(
+        "/api/auth/check",
+        headers=_basic_auth_headers("modelmeter", "secret"),
+    )
+
+    assert unauthorized.status_code == 401
+    assert authorized.status_code == 200
+    payload = _get_json(authorized)
+    assert payload["status"] == "ok"
+
+
 def test_update_check_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     def _mock_update_check(*, settings: AppSettings) -> UpdateCheckResponse:
         _ = settings

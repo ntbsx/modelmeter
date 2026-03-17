@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import sqlite3
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Literal, cast
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from modelmeter.config.settings import AppSettings
 
@@ -83,6 +84,10 @@ class SourceHealth(BaseModel):
     error: str | None = None
 
 
+class SourceRegistryError(RuntimeError):
+    """Raised when the source registry cannot be loaded safely."""
+
+
 def load_source_registry(*, settings: AppSettings) -> SourceRegistry:
     """Load source registry from configured path."""
     path = settings.source_registry_file
@@ -91,19 +96,34 @@ def load_source_registry(*, settings: AppSettings) -> SourceRegistry:
 
     try:
         payload = json.loads(path.read_text())
-    except (OSError, ValueError):
-        return SourceRegistry()
+    except OSError as exc:
+        raise SourceRegistryError(f"Unable to read source registry at {path}: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise SourceRegistryError(f"Invalid source registry JSON at {path}: {exc.msg}") from exc
 
     if not isinstance(payload, dict):
-        return SourceRegistry()
-    return SourceRegistry.model_validate(payload)
+        raise SourceRegistryError(f"Invalid source registry format at {path}: expected an object")
+
+    try:
+        return SourceRegistry.model_validate(payload)
+    except ValidationError as exc:
+        raise SourceRegistryError(
+            f"Invalid source registry data at {path}: {exc.errors()[0]['msg']}"
+        ) from exc
 
 
 def save_source_registry(*, settings: AppSettings, registry: SourceRegistry) -> None:
     """Persist source registry to configured path."""
     path = settings.source_registry_file
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(registry.model_dump_json(indent=2))
+    payload = registry.model_dump_json(indent=2)
+
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(payload)
+    finally:
+        path.chmod(0o600)
 
 
 def upsert_source(*, settings: AppSettings, source: DataSourceConfig) -> None:
@@ -165,7 +185,7 @@ def _check_sqlite_source(source: DataSourceConfig) -> SourceHealth:
 
 def _check_http_source(source: DataSourceConfig, *, timeout_seconds: int) -> SourceHealth:
     assert source.base_url is not None
-    health_url = source.base_url.rstrip("/") + "/health"
+    health_url = source.base_url.rstrip("/") + "/api/auth/check"
     request = urllib.request.Request(health_url, headers={"User-Agent": "modelmeter/health-check"})
 
     if source.auth is not None:
@@ -176,6 +196,16 @@ def _check_http_source(source: DataSourceConfig, *, timeout_seconds: int) -> Sou
     try:
         with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
             status_code = int(getattr(response, "status", 200))
+    except urllib.error.HTTPError as exc:
+        status_code = int(exc.code)
+        detail = exc.reason or f"HTTP {status_code}"
+        return SourceHealth(
+            source_id=source.source_id,
+            kind=source.kind,
+            is_reachable=False,
+            detail=f"HTTP {status_code}",
+            error=str(detail),
+        )
     except urllib.error.URLError as exc:
         return SourceHealth(
             source_id=source.source_id,

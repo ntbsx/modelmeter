@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/auth/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Auth Check */
+        get: operations["auth_check_api_auth_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/daily": {
         parameters: {
             query?: never;
@@ -140,6 +157,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Providers */
+        get: operations["providers_api_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sources": {
         parameters: {
             query?: never;
@@ -166,23 +200,6 @@ export interface paths {
         };
         /** Sources Check */
         get: operations["sources_check_api_sources_check_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/providers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Providers */
-        get: operations["providers_api_providers_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -929,6 +946,28 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    auth_check_api_auth_check_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
     daily_api_daily_get: {
         parameters: {
             query?: {
@@ -1213,6 +1252,41 @@ export interface operations {
             };
         };
     };
+    providers_api_providers_get: {
+        parameters: {
+            query?: {
+                days?: number | null;
+                offset?: number;
+                limit?: number;
+                db_path?: string | null;
+                pricing_file?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvidersResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sources_api_sources_get: {
         parameters: {
             query?: never;
@@ -1249,41 +1323,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceHealth"][];
-                };
-            };
-        };
-    };
-    providers_api_providers_get: {
-        parameters: {
-            query?: {
-                days?: number | null;
-                offset?: number;
-                limit?: number;
-                db_path?: string | null;
-                pricing_file?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProvidersResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
