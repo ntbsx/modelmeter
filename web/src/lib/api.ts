@@ -1,7 +1,7 @@
 const API_BASE = import.meta.env.DEV ? '/api' : '/api'
 const AUTH_STORAGE_KEY = 'modelmeter-auth'
 
-function getAuthHeaders(): HeadersInit {
+function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem(AUTH_STORAGE_KEY)
   if (token) {
     return { Authorization: `Basic ${token}` }
@@ -35,7 +35,7 @@ export async function fetchApi<T>(
   const url = buildApiUrl(endpoint, params)
   const method = options?.method ?? 'GET'
 
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     ...getAuthHeaders(),
   }
 

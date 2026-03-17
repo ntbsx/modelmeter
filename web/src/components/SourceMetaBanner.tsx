@@ -2,7 +2,7 @@ type Props = {
   sourceScope?: string | null
   sourcesConsidered?: string[]
   sourcesSucceeded?: string[]
-  sourcesFailed?: Array<{ source_id: string; error: string }>
+  sourcesFailed?: Record<string, string>[]
 }
 
 function scopeLabel(scope: string | null | undefined): string {

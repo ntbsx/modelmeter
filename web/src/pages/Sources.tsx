@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
 import type { DataSourcePublic, SourceHealth, SourceRegistryPublic } from '../types'
@@ -297,7 +297,7 @@ export default function Sources() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {registry.sources.map((source) => {
+              {(registry.sources ?? []).map((source) => {
                 const result = health?.find((item) => item.source_id === source.source_id)
                 return (
                   <tr key={source.source_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
@@ -337,7 +337,7 @@ export default function Sources() {
                   </tr>
                 )
               })}
-              {registry.sources.length === 0 ? (
+              {(registry.sources ?? []).length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     No sources configured yet.
