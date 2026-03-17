@@ -584,7 +584,16 @@ def execute_models_federated(
                 pricing_val = data.get("pricing_source")
                 if isinstance(pricing_val, str):
                     pricing_source = pricing_val
-                for model_item in cast("list[dict[str, Any]]", data.get("models", [])):
+
+                models_list = cast("list[dict[str, Any]]", data.get("models", []))
+                if models_list and "has_pricing" not in models_list[0]:
+                    import logging
+
+                    logging.warning(
+                        f"HTTP source {source.source_id} response missing 'has_pricing' field - "
+                        "API contract may have changed"
+                    )
+                for model_item in models_list:
                     model_id = str(model_item["model_id"])
                     model = ModelUsage(
                         model_id=model_id,
