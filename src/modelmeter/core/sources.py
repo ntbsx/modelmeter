@@ -305,6 +305,15 @@ def get_sources_for_scope(
 
     if scope.kind == SourceScopeKind.SPECIFIC:
         matched = [s for s in enabled_sources if s.source_id == scope.source_id]
+        if not matched:
+            source_id = scope.source_id or "unknown"
+            return [], [
+                SourceFailure(
+                    source_id=source_id,
+                    error=f"Source '{source_id}' not found or disabled",
+                    kind="sqlite",
+                )
+            ]
         return matched, []
 
     sources: list[DataSourceConfig] = []

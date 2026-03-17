@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import urllib.parse
 import urllib.request
 from datetime import date
 from typing import Any, cast
@@ -124,7 +125,7 @@ def _fetch_http_summary(
     if days is not None:
         params["days"] = days
 
-    query = "&".join(f"{k}={v}" for k, v in params.items())
+    query = urllib.parse.urlencode(params)
     url = f"{source.base_url.rstrip('/')}/api/summary?{query}"
 
     request = urllib.request.Request(
@@ -155,7 +156,7 @@ def _fetch_http_daily(
     if days is not None:
         params["days"] = days
 
-    query = "&".join(f"{k}={v}" for k, v in params.items())
+    query = urllib.parse.urlencode(params)
     url = f"{source.base_url.rstrip('/')}/api/daily?{query}"
 
     request = urllib.request.Request(
@@ -191,7 +192,7 @@ def _fetch_http_models(
     if provider is not None:
         params["provider"] = provider
 
-    query = "&".join(f"{k}={v}" for k, v in params.items())
+    query = urllib.parse.urlencode(params)
     url = f"{source.base_url.rstrip('/')}/api/models?{query}"
 
     request = urllib.request.Request(
@@ -224,7 +225,7 @@ def _fetch_http_providers(
     if days is not None:
         params["days"] = days
 
-    query = "&".join(f"{k}={v}" for k, v in params.items())
+    query = urllib.parse.urlencode(params)
     url = f"{source.base_url.rstrip('/')}/api/providers?{query}"
 
     request = urllib.request.Request(
@@ -257,7 +258,7 @@ def _fetch_http_projects(
     if days is not None:
         params["days"] = days
 
-    query = "&".join(f"{k}={v}" for k, v in params.items())
+    query = urllib.parse.urlencode(params)
     url = f"{source.base_url.rstrip('/')}/api/projects?{query}"
 
     request = urllib.request.Request(
