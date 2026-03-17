@@ -17,6 +17,7 @@ from modelmeter.core.models import (
     TokenUsage,
 )
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
+from modelmeter.core.sources import SourceScope, SourceScopeKind
 from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.data.storage import resolve_storage_paths
 
@@ -68,8 +69,12 @@ def get_live_snapshot(
     token_source: Literal["auto", "message", "steps"] = "auto",
     models_limit: int = 5,
     tools_limit: int = 8,
+    source_scope: SourceScope | None = None,
 ) -> LiveSnapshotResponse:
     """Return a live activity snapshot for the selected rolling window."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated live analytics not yet implemented")
+
     now_ms = int(time.time() * 1000)
     since_ms = now_ms - (window_minutes * 60 * 1000)
 

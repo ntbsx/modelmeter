@@ -5,6 +5,7 @@ import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server } from 'luci
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
+import SourceScopePicker from './components/SourceScopePicker'
 import { useAuth } from './hooks/useAuth'
 
 const queryClient = new QueryClient()
@@ -169,6 +170,7 @@ function AuthGate() {
             ModelMeter
           </div>
           <div className="flex items-center gap-3">
+            <SourceScopePicker />
             <div className="md:hidden">
               <LogoutButton compact />
             </div>

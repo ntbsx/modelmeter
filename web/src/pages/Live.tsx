@@ -6,6 +6,7 @@ import { formatTokens, formatUsd, cn } from '../lib/utils'
 import type { LiveSnapshotResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
+import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function Live() {
   const [streamData, setStreamData] = useState<LiveSnapshotResponse | null>(null)
@@ -17,10 +18,11 @@ export default function Live() {
   )
   const [reconnectCountdownSeconds, setReconnectCountdownSeconds] = useState<number | null>(null)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
+  const { sourceScope } = useSourceScope()
 
   const { data: polledData, isError: pollingError } = useQuery<LiveSnapshotResponse>({
-    queryKey: ['live'],
-    queryFn: () => fetchApi('/live/snapshot', { window_minutes: 60 }),
+    queryKey: ['live', sourceScope],
+    queryFn: () => fetchApi('/live/snapshot', { window_minutes: 60, source_scope: sourceScope }),
     refetchInterval: 3000,
     enabled: streamMode === 'polling' && !isPaused,
   })
@@ -39,7 +41,11 @@ export default function Live() {
     }
 
     const authToken = getAuthToken()
-    const eventsParams: Record<string, string | number> = { window_minutes: 60, interval_seconds: 3 }
+    const eventsParams: Record<string, string | number> = {
+      window_minutes: 60,
+      interval_seconds: 3,
+      source_scope: sourceScope,
+    }
     if (authToken) {
       // NOTE: Token in query string is visible in browser history and server logs.
       // This is an inherent limitation of EventSource which cannot set custom headers.
@@ -76,7 +82,7 @@ export default function Live() {
       source.removeEventListener('live.error', onError)
       source.close()
     }
-  }, [isPaused, reconnectAttempt, streamMode])
+  }, [isPaused, reconnectAttempt, sourceScope, streamMode])
 
   useEffect(() => {
     if (isPaused || streamMode !== 'polling' || reconnectCountdownSeconds === null) {

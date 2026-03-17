@@ -1239,6 +1239,8 @@ export interface operations {
                 once?: boolean;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1275,6 +1277,8 @@ export interface operations {
                 tools_limit?: number;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1422,6 +1426,8 @@ export interface operations {
                 session_limit?: number | null;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path: {

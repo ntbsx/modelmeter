@@ -455,8 +455,12 @@ def create_app(
         session_limit: int | None = Query(default=None, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ProjectDetailResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_project_detail(
                 settings=settings,
                 project_id=project_id,
@@ -465,9 +469,14 @@ def create_app(
                 session_limit=session_limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/live/snapshot", response_model=LiveSnapshotResponse)
     def live_snapshot(
@@ -477,8 +486,12 @@ def create_app(
         tools_limit: int = Query(default=8, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> LiveSnapshotResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_live_snapshot(
                 settings=settings,
                 window_minutes=window_minutes,
@@ -487,9 +500,14 @@ def create_app(
                 tools_limit=tools_limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/live/events")
     async def live_events(
@@ -502,6 +520,9 @@ def create_app(
         once: bool = Query(default=False),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> StreamingResponse:
         async def event_generator():
             try:
@@ -510,6 +531,9 @@ def create_app(
                         break
 
                     try:
+                        scope = (
+                            SourceScope.parse(source_scope) if source_scope is not None else None
+                        )
                         snapshot = get_live_snapshot(
                             settings=settings,
                             window_minutes=window_minutes,
@@ -518,9 +542,17 @@ def create_app(
                             tools_limit=tools_limit,
                             db_path_override=_optional_path(db_path),
                             pricing_file_override=_optional_path(pricing_file),
+                            source_scope=scope,
                         )
                         payload = json.dumps(snapshot.model_dump(mode="json"))
                         yield f"event: live.snapshot\ndata: {payload}\n\n"
+                    except (NotImplementedError, ValueError) as exc:
+                        payload = json.dumps({"detail": str(exc)})
+                        yield f"event: live.error\ndata: {payload}\n\n"
+                        if once:
+                            break
+                        await asyncio.sleep(interval_seconds)
+                        continue
                     except RuntimeError as exc:
                         payload = json.dumps({"detail": str(exc)})
                         yield f"event: live.error\ndata: {payload}\n\n"

@@ -7,18 +7,24 @@ import { formatTokens, formatUsd } from '../lib/utils'
 import type { ProjectDetailResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageEmptyState, PageErrorState } from '../components/PageState'
+import SourceMetaBanner from '../components/SourceMetaBanner'
+import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function ProjectDetail() {
   const { projectId } = useParams()
   const decodedProjectId = decodeURIComponent(projectId ?? '')
+  const { sourceScope } = useSourceScope()
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'last_updated' | 'tokens' | 'cost' | 'interactions'>(
     'last_updated'
   )
 
   const { data, isLoading, error } = useQuery<ProjectDetailResponse>({
-    queryKey: ['project-detail', decodedProjectId],
-    queryFn: () => fetchApi(`/projects/${encodeURIComponent(decodedProjectId)}`),
+    queryKey: ['project-detail', decodedProjectId, sourceScope],
+    queryFn: () =>
+      fetchApi(`/projects/${encodeURIComponent(decodedProjectId)}`, {
+        source_scope: sourceScope,
+      }),
     enabled: decodedProjectId.length > 0,
   })
 
@@ -138,6 +144,13 @@ export default function ProjectDetail() {
           </p>
         </div>
       </div>
+
+      <SourceMetaBanner
+        sourceScope={data.source_scope}
+        sourcesConsidered={data.sources_considered}
+        sourcesSucceeded={data.sources_succeeded}
+        sourcesFailed={data.sources_failed}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">

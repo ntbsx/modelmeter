@@ -764,4 +764,12 @@ def get_project_detail(
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
         pricing_source=pricing_source,
         sessions=sliced_sessions,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )

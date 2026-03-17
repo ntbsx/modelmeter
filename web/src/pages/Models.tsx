@@ -8,14 +8,23 @@ import type { ModelsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import DateRangeFilter from '../components/DateRangeFilter'
+import SourceMetaBanner from '../components/SourceMetaBanner'
+import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function Models() {
   const { providerId } = useParams<{ providerId: string }>()
   const [days, setDays] = useState(7)
+  const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ModelsResponse>({
-    queryKey: ['models', days, providerId],
-    queryFn: () => fetchApi('/models', providerId ? { days, provider: providerId } : { days })
+    queryKey: ['models', days, providerId, sourceScope],
+    queryFn: () =>
+      fetchApi(
+        '/models',
+        providerId
+          ? { days, provider: providerId, source_scope: sourceScope }
+          : { days, source_scope: sourceScope }
+      )
   })
 
   if (isLoading) return <PageLoading title="Models" subtitle="Loading model usage" cards={3} />
@@ -50,6 +59,13 @@ export default function Models() {
           <DateRangeFilter days={days} onChange={setDays} />
         </div>
       </div>
+
+      <SourceMetaBanner
+        sourceScope={data.source_scope}
+        sourcesConsidered={data.sources_considered}
+        sourcesSucceeded={data.sources_succeeded}
+        sourcesFailed={data.sources_failed}
+      />
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
         <div className="overflow-x-auto">

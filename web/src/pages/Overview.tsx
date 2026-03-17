@@ -17,6 +17,8 @@ import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import DateRangeFilter from '../components/DateRangeFilter'
+import SourceMetaBanner from '../components/SourceMetaBanner'
+import { useSourceScope } from '../hooks/useSourceScope'
 
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
   return (
@@ -34,6 +36,7 @@ export default function Overview() {
   const [showSessions, setShowSessions] = useState(true)
   const [showCost, setShowCost] = useState(true)
   const timezoneOffsetMinutes = -new Date().getTimezoneOffset()
+  const { sourceScope } = useSourceScope()
 
   const { theme } = useTheme()
   const isDark =
@@ -41,13 +44,18 @@ export default function Overview() {
     (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const { data: summary, isLoading: loadingSummary } = useQuery<SummaryResponse>({
-    queryKey: ['summary', days],
-    queryFn: () => fetchApi('/summary', { days })
+    queryKey: ['summary', days, sourceScope],
+    queryFn: () => fetchApi('/summary', { days, source_scope: sourceScope })
   })
 
   const { data: daily, isLoading: loadingDaily } = useQuery<DailyResponse>({
-    queryKey: ['daily', days],
-    queryFn: () => fetchApi('/daily', { days, timezone_offset_minutes: timezoneOffsetMinutes })
+    queryKey: ['daily', days, sourceScope],
+    queryFn: () =>
+      fetchApi('/daily', {
+        days,
+        timezone_offset_minutes: timezoneOffsetMinutes,
+        source_scope: sourceScope,
+      })
   })
 
   if (loadingSummary || loadingDaily) {
@@ -99,6 +107,13 @@ export default function Overview() {
         </div>
         <DateRangeFilter days={days} onChange={setDays} />
       </div>
+
+      <SourceMetaBanner
+        sourceScope={summary.source_scope}
+        sourcesConsidered={summary.sources_considered}
+        sourcesSucceeded={summary.sources_succeeded}
+        sourcesFailed={summary.sources_failed}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <StatCard 

@@ -7,13 +7,16 @@ import type { ProjectsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import TimeRangeFilter from '../components/TimeRangeFilter'
+import SourceMetaBanner from '../components/SourceMetaBanner'
+import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function Projects() {
   const [days, setDays] = useState<1 | 7 | 30 | 90>(7)
+  const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ProjectsResponse>({
-    queryKey: ['projects', days],
-    queryFn: () => fetchApi('/projects', { days })
+    queryKey: ['projects', days, sourceScope],
+    queryFn: () => fetchApi('/projects', { days, source_scope: sourceScope })
   })
 
   if (isLoading) return <PageLoading title="Projects" subtitle="Loading project usage" cards={3} />
@@ -39,6 +42,13 @@ export default function Projects() {
           <TimeRangeFilter days={days} onChange={setDays} />
         </div>
       </div>
+
+      <SourceMetaBanner
+        sourceScope={data.source_scope}
+        sourcesConsidered={data.sources_considered}
+        sourcesSucceeded={data.sources_succeeded}
+        sourcesFailed={data.sources_failed}
+      />
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
         <div className="overflow-x-auto">
