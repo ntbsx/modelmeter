@@ -208,6 +208,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upsert Source Api */
+        put: operations["upsert_source_api_api_sources__source_id__put"];
+        post?: never;
+        /** Remove Source Api */
+        delete: operations["remove_source_api_api_sources__source_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/summary": {
         parameters: {
             query?: never;
@@ -932,6 +950,16 @@ export interface components {
             tables_present?: string[];
         };
         /**
+         * SourceAuth
+         * @description Optional basic auth credentials for HTTP sources.
+         */
+        SourceAuth: {
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
+        };
+        /**
          * SourceHealth
          * @description Health status for one source.
          */
@@ -962,6 +990,36 @@ export interface components {
              * @default 1
              */
             version: number;
+        };
+        /** SourceRemoveResponse */
+        SourceRemoveResponse: {
+            /** Removed */
+            removed: boolean;
+        };
+        /** SourceUpsertRequest */
+        SourceUpsertRequest: {
+            auth?: components["schemas"]["SourceAuth"] | null;
+            /** Base Url */
+            base_url?: string | null;
+            /** Db Path */
+            db_path?: string | null;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sqlite" | "http";
+            /** Label */
+            label?: string | null;
+            /**
+             * Preserve Existing Auth
+             * @default true
+             */
+            preserve_existing_auth: boolean;
         };
         /**
          * SummaryResponse
@@ -1466,6 +1524,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceHealth"][];
+                };
+            };
+        };
+    };
+    upsert_source_api_api_sources__source_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRegistryPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_source_api_api_sources__source_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRemoveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

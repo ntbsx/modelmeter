@@ -21,6 +21,7 @@ from fastapi.responses import (
     StreamingResponse,
 )
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, ValidationError
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.analytics import (
@@ -46,13 +47,17 @@ from modelmeter.core.models import (
     UpdateCheckResponse,
 )
 from modelmeter.core.sources import (
+    DataSourceConfig,
+    SourceAuth,
     SourceHealth,
     SourceRegistryError,
     SourceRegistryPublic,
     SourceScope,
     check_source_health,
     load_source_registry,
+    remove_source,
     to_public_registry,
+    upsert_source,
 )
 from modelmeter.core.updater import check_for_updates
 
@@ -65,6 +70,20 @@ LOCAL_CORS_ORIGINS = [
 
 AUTH_PROTECTED_PREFIXES = ("/api",)
 SSE_PATH_PREFIXES = ("/api/live/events",)
+
+
+class SourceUpsertRequest(BaseModel):
+    label: str | None = None
+    kind: Literal["sqlite", "http"]
+    enabled: bool = True
+    db_path: str | None = None
+    base_url: str | None = None
+    auth: SourceAuth | None = None
+    preserve_existing_auth: bool = True
+
+
+class SourceRemoveResponse(BaseModel):
+    removed: bool
 
 
 def _optional_path(value: str | None) -> Path | None:
@@ -201,6 +220,53 @@ def create_app(
             ]
         except SourceRegistryError as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    @app.put("/api/sources/{source_id}", response_model=SourceRegistryPublic)
+    def upsert_source_api(source_id: str, payload: SourceUpsertRequest) -> SourceRegistryPublic:
+        try:
+            registry = load_source_registry(settings=settings)
+            existing = next(
+                (item for item in registry.sources if item.source_id == source_id), None
+            )
+
+            auth = payload.auth
+            if (
+                payload.kind == "http"
+                and auth is None
+                and payload.preserve_existing_auth
+                and existing is not None
+                and existing.kind == "http"
+            ):
+                auth = existing.auth
+
+            source = DataSourceConfig(
+                source_id=source_id,
+                label=payload.label,
+                kind=payload.kind,
+                enabled=payload.enabled,
+                db_path=_optional_path(payload.db_path),
+                base_url=payload.base_url,
+                auth=auth,
+            )
+            upsert_source(settings=settings, source=source)
+            updated = load_source_registry(settings=settings)
+            return to_public_registry(updated)
+        except SourceRegistryError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        except (ValidationError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.delete("/api/sources/{source_id}", response_model=SourceRemoveResponse)
+    def remove_source_api(source_id: str) -> SourceRemoveResponse:
+        try:
+            removed = remove_source(settings=settings, source_id=source_id)
+        except SourceRegistryError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+        if not removed:
+            raise HTTPException(status_code=404, detail=f"No source found with id '{source_id}'.")
+
+        return SourceRemoveResponse(removed=True)
 
     @app.get("/api/auth/check")
     def auth_check() -> dict[str, str]:
