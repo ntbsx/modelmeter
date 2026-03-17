@@ -42,6 +42,8 @@ class SourceScope:
             return cls(kind=SourceScopeKind.ALL)
         if value.startswith("source:"):
             source_id = value[7:]
+            if not source_id:
+                raise ValueError("Invalid source scope: source id is required")
             return cls(kind=SourceScopeKind.SPECIFIC, source_id=source_id)
         raise ValueError(f"Invalid source scope: {value}")
 
@@ -293,8 +295,8 @@ def get_sources_for_scope(
     """Get sources matching the given scope, with health checks."""
     try:
         registry = load_source_registry(settings=settings)
-    except SourceRegistryError:
-        return [], []
+    except SourceRegistryError as exc:
+        return [], [SourceFailure(source_id="registry", error=str(exc), kind="sqlite")]
 
     enabled_sources = [s for s in registry.sources if s.enabled]
 

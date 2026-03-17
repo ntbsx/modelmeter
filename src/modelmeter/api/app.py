@@ -225,7 +225,7 @@ def create_app(
         ),
     ) -> SummaryResponse:
         try:
-            scope = SourceScope.parse(source_scope) if source_scope else None
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_summary(
                 settings=settings,
                 days=days,
@@ -253,7 +253,7 @@ def create_app(
         ),
     ) -> DailyResponse:
         try:
-            scope = SourceScope.parse(source_scope) if source_scope else None
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_daily(
                 settings=settings,
                 days=days,
@@ -264,6 +264,8 @@ def create_app(
                 pricing_file_override=_optional_path(pricing_file),
                 source_scope=scope,
             )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:
             _raise_http_error(exc)
         except ValueError as exc:
@@ -282,7 +284,7 @@ def create_app(
         ),
     ) -> ModelsResponse:
         try:
-            scope = SourceScope.parse(source_scope) if source_scope else None
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_models(
                 settings=settings,
                 days=days,
@@ -310,7 +312,7 @@ def create_app(
         ),
     ) -> ProvidersResponse:
         try:
-            scope = SourceScope.parse(source_scope) if source_scope else None
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_providers(
                 settings=settings,
                 days=days,
@@ -336,7 +338,7 @@ def create_app(
         ),
     ) -> ModelDetailResponse:
         try:
-            scope = SourceScope.parse(source_scope) if source_scope else None
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_model_detail(
                 settings=settings,
                 model_id=model_id,
@@ -345,6 +347,8 @@ def create_app(
                 pricing_file_override=_optional_path(pricing_file),
                 source_scope=scope,
             )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:
             _raise_http_error(exc)
         except ValueError as exc:
@@ -362,7 +366,7 @@ def create_app(
         ),
     ) -> ProjectsResponse:
         try:
-            scope = SourceScope.parse(source_scope) if source_scope else None
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_projects(
                 settings=settings,
                 days=days,

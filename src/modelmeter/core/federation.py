@@ -7,7 +7,9 @@
 
 from __future__ import annotations
 
+import base64
 import json
+import logging
 import urllib.request
 from datetime import date
 from typing import Any, cast
@@ -29,6 +31,15 @@ from modelmeter.core.sources import (
     DataSourceConfig,
     SourceFailure,
 )
+
+
+def _http_headers(source: DataSourceConfig) -> dict[str, str]:
+    headers = {"User-Agent": "modelmeter/federation"}
+    if source.auth is not None:
+        token_raw = f"{source.auth.username}:{source.auth.password}".encode()
+        token = base64.b64encode(token_raw).decode("ascii")
+        headers["Authorization"] = f"Basic {token}"
+    return headers
 
 
 def merge_token_usage(a: TokenUsage, b: TokenUsage) -> TokenUsage:
@@ -105,11 +116,10 @@ def _fetch_http_summary(
 ) -> dict[str, int | str | None]:
     """Fetch summary from an HTTP source."""
     assert source.base_url is not None
-    assert source.auth is not None
 
     params: dict[str, int | str | None] = {
         "token_source": token_source,
-        "session_count_source": session_count_source,
+        "session_source": session_count_source,
     }
     if days is not None:
         params["days"] = days
@@ -117,12 +127,9 @@ def _fetch_http_summary(
     query = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{source.base_url.rstrip('/')}/api/summary?{query}"
 
-    token_raw = f"{source.auth.username}:{source.auth.password}".encode()
-    token = __import__("base64").b64encode(token_raw).decode("ascii")
-
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "modelmeter/federation", "Authorization": f"Basic {token}"},
+        headers=_http_headers(source),
     )
 
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -137,13 +144,12 @@ def _fetch_http_daily(
     token_source: str,
     session_count_source: str,
 ) -> dict[str, object]:
-    """Fetch models from an HTTP source."""
+    """Fetch daily usage from an HTTP source."""
     assert source.base_url is not None
-    assert source.auth is not None
 
     params: dict[str, int | str | None] = {
         "token_source": token_source,
-        "session_count_source": session_count_source,
+        "session_source": session_count_source,
         "timezone_offset_minutes": timezone_offset_minutes,
     }
     if days is not None:
@@ -152,12 +158,9 @@ def _fetch_http_daily(
     query = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{source.base_url.rstrip('/')}/api/daily?{query}"
 
-    token_raw = f"{source.auth.username}:{source.auth.password}".encode()
-    token = __import__("base64").b64encode(token_raw).decode("ascii")
-
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "modelmeter/federation", "Authorization": f"Basic {token}"},
+        headers=_http_headers(source),
     )
 
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -176,26 +179,24 @@ def _fetch_http_models(
 ) -> dict[str, object]:
     """Fetch models from an HTTP source."""
     assert source.base_url is not None
-    assert source.auth is not None
 
     params: dict[str, int | str | None] = {
         "token_source": token_source,
-        "session_count_source": session_count_source,
+        "session_source": session_count_source,
         "offset": offset,
         "limit": limit,
     }
+    if days is not None:
+        params["days"] = days
     if provider is not None:
         params["provider"] = provider
 
     query = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{source.base_url.rstrip('/')}/api/models?{query}"
 
-    token_raw = f"{source.auth.username}:{source.auth.password}".encode()
-    token = __import__("base64").b64encode(token_raw).decode("ascii")
-
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "modelmeter/federation", "Authorization": f"Basic {token}"},
+        headers=_http_headers(source),
     )
 
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -213,11 +214,10 @@ def _fetch_http_providers(
 ) -> dict[str, object]:
     """Fetch providers from an HTTP source."""
     assert source.base_url is not None
-    assert source.auth is not None
 
     params: dict[str, int | str | None] = {
         "token_source": token_source,
-        "session_count_source": session_count_source,
+        "session_source": session_count_source,
         "offset": offset,
         "limit": limit,
     }
@@ -227,12 +227,9 @@ def _fetch_http_providers(
     query = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{source.base_url.rstrip('/')}/api/providers?{query}"
 
-    token_raw = f"{source.auth.username}:{source.auth.password}".encode()
-    token = __import__("base64").b64encode(token_raw).decode("ascii")
-
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "modelmeter/federation", "Authorization": f"Basic {token}"},
+        headers=_http_headers(source),
     )
 
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -250,11 +247,10 @@ def _fetch_http_projects(
 ) -> dict[str, object]:
     """Fetch projects from an HTTP source."""
     assert source.base_url is not None
-    assert source.auth is not None
 
     params: dict[str, int | str | None] = {
         "token_source": token_source,
-        "session_count_source": session_count_source,
+        "session_source": session_count_source,
         "offset": offset,
         "limit": limit,
     }
@@ -264,12 +260,9 @@ def _fetch_http_projects(
     query = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{source.base_url.rstrip('/')}/api/projects?{query}"
 
-    token_raw = f"{source.auth.username}:{source.auth.password}".encode()
-    token = __import__("base64").b64encode(token_raw).decode("ascii")
-
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "modelmeter/federation", "Authorization": f"Basic {token}"},
+        headers=_http_headers(source),
     )
 
     with urllib.request.urlopen(request, timeout=30) as response:
@@ -284,6 +277,7 @@ def execute_summary_federated(
     days: int | None = None,
     token_source: str = "auto",
     session_count_source: str = "auto",
+    scope_label: str = "all",
 ) -> tuple[SummaryResponse, list[SourceFailure]]:
     """Execute a federated summary query across multiple sources."""
     from modelmeter.core.analytics import get_summary as get_local_summary
@@ -295,26 +289,26 @@ def execute_summary_federated(
     pricing_source: str | None = None
 
     for source in sources:
-        if source.kind == "sqlite":
-            assert source.db_path is not None
-            paths = resolve_storage_paths(settings, db_path_override=source.db_path)
-            result = get_local_summary(
-                settings=settings,
-                days=days,
-                db_path_override=paths.sqlite_db_path,
-                token_source=token_source,  # type: ignore[arg-type]
-                session_count_source=session_count_source,  # type: ignore[arg-type]
-            )
-            total_usage = merge_token_usage(total_usage, result.usage)
-            total_sessions += result.total_sessions
-            if result.cost_usd is not None:
-                if total_cost is None:
-                    total_cost = 0.0
-                total_cost += result.cost_usd
-            if result.pricing_source:
-                pricing_source = result.pricing_source
-        else:
-            try:
+        try:
+            if source.kind == "sqlite":
+                assert source.db_path is not None
+                paths = resolve_storage_paths(settings, db_path_override=source.db_path)
+                result = get_local_summary(
+                    settings=settings,
+                    days=days,
+                    db_path_override=paths.sqlite_db_path,
+                    token_source=token_source,  # type: ignore[arg-type]
+                    session_count_source=session_count_source,  # type: ignore[arg-type]
+                )
+                total_usage = merge_token_usage(total_usage, result.usage)
+                total_sessions += result.total_sessions
+                if result.cost_usd is not None:
+                    if total_cost is None:
+                        total_cost = 0.0
+                    total_cost += result.cost_usd
+                if result.pricing_source:
+                    pricing_source = result.pricing_source
+            else:
                 data = _fetch_http_summary(
                     source,
                     days=days,
@@ -339,14 +333,14 @@ def execute_summary_federated(
                 pricing_val = data.get("pricing_source")
                 if isinstance(pricing_val, str):
                     pricing_source = pricing_val
-            except Exception as e:
-                failures.append(
-                    SourceFailure(
-                        source_id=source.source_id,
-                        error=str(e),
-                        kind="http",
-                    )
+        except Exception as e:
+            failures.append(
+                SourceFailure(
+                    source_id=source.source_id,
+                    error=str(e),
+                    kind="sqlite" if source.kind == "sqlite" else "http",
                 )
+            )
 
     return (
         SummaryResponse(
@@ -355,8 +349,7 @@ def execute_summary_federated(
             window_days=days,
             cost_usd=round(total_cost, 8) if total_cost is not None else None,
             pricing_source=pricing_source,
-            # Metadata about federation - placeholder values
-            source_scope="all",
+            source_scope=scope_label,
             sources_considered=[s.source_id for s in sources],
             sources_succeeded=[
                 s.source_id
@@ -378,6 +371,7 @@ def execute_daily_federated(
     timezone_offset_minutes: int = 0,
     token_source: str = "auto",
     session_count_source: str = "auto",
+    scope_label: str = "all",
 ) -> tuple[DailyResponse, list[SourceFailure]]:
     """Execute a federated daily query across multiple sources."""
     from modelmeter.core.analytics import get_daily as get_local_daily
@@ -390,40 +384,40 @@ def execute_daily_federated(
     pricing_source: str | None = None
 
     for source in sources:
-        if source.kind == "sqlite":
-            assert source.db_path is not None
-            paths = resolve_storage_paths(settings, db_path_override=source.db_path)
-            result = get_local_daily(
-                settings=settings,
-                days=days,
-                timezone_offset_minutes=timezone_offset_minutes,
-                db_path_override=paths.sqlite_db_path,
-                token_source=token_source,  # type: ignore[arg-type]
-                session_count_source=session_count_source,  # type: ignore[arg-type]
-            )
-            total_usage = merge_token_usage(total_usage, result.totals)
-            total_sessions += result.total_sessions
-            if result.total_cost_usd is not None:
-                if total_cost is None:
-                    total_cost = 0.0
-                total_cost += result.total_cost_usd
-            if result.pricing_source:
-                pricing_source = result.pricing_source
-            for daily_usage in result.daily:
-                if daily_usage.day in daily_map:
-                    existing = daily_map[daily_usage.day]
-                    daily_map[daily_usage.day] = DailyUsage(
-                        day=daily_usage.day,
-                        usage=merge_token_usage(existing.usage, daily_usage.usage),
-                        total_sessions=existing.total_sessions + daily_usage.total_sessions,
-                        cost_usd=((existing.cost_usd or 0.0) + (daily_usage.cost_usd or 0.0))
-                        if existing.cost_usd is not None or daily_usage.cost_usd is not None
-                        else None,
-                    )
-                else:
-                    daily_map[daily_usage.day] = daily_usage
-        else:
-            try:
+        try:
+            if source.kind == "sqlite":
+                assert source.db_path is not None
+                paths = resolve_storage_paths(settings, db_path_override=source.db_path)
+                result = get_local_daily(
+                    settings=settings,
+                    days=days,
+                    timezone_offset_minutes=timezone_offset_minutes,
+                    db_path_override=paths.sqlite_db_path,
+                    token_source=token_source,  # type: ignore[arg-type]
+                    session_count_source=session_count_source,  # type: ignore[arg-type]
+                )
+                total_usage = merge_token_usage(total_usage, result.totals)
+                total_sessions += result.total_sessions
+                if result.total_cost_usd is not None:
+                    if total_cost is None:
+                        total_cost = 0.0
+                    total_cost += result.total_cost_usd
+                if result.pricing_source:
+                    pricing_source = result.pricing_source
+                for daily_usage in result.daily:
+                    if daily_usage.day in daily_map:
+                        existing = daily_map[daily_usage.day]
+                        daily_map[daily_usage.day] = DailyUsage(
+                            day=daily_usage.day,
+                            usage=merge_token_usage(existing.usage, daily_usage.usage),
+                            total_sessions=existing.total_sessions + daily_usage.total_sessions,
+                            cost_usd=((existing.cost_usd or 0.0) + (daily_usage.cost_usd or 0.0))
+                            if existing.cost_usd is not None or daily_usage.cost_usd is not None
+                            else None,
+                        )
+                    else:
+                        daily_map[daily_usage.day] = daily_usage
+            else:
                 data = _fetch_http_daily(
                     source,
                     days=days,
@@ -479,14 +473,14 @@ def execute_daily_federated(
                         )
                     else:
                         daily_map[day] = daily_usage
-            except Exception as e:
-                failures.append(
-                    SourceFailure(
-                        source_id=source.source_id,
-                        error=str(e),
-                        kind="http",
-                    )
+        except Exception as e:
+            failures.append(
+                SourceFailure(
+                    source_id=source.source_id,
+                    error=str(e),
+                    kind="sqlite" if source.kind == "sqlite" else "http",
                 )
+            )
 
     daily_rows = sorted(daily_map.values(), key=lambda x: x.day)
 
@@ -498,7 +492,7 @@ def execute_daily_federated(
             total_cost_usd=round(total_cost, 8) if total_cost is not None else None,
             pricing_source=pricing_source,
             daily=daily_rows,
-            source_scope="all",
+            source_scope=scope_label,
             sources_considered=[s.source_id for s in sources],
             sources_succeeded=[
                 s.source_id
@@ -522,6 +516,7 @@ def execute_models_federated(
     provider: str | None = None,
     token_source: str = "auto",
     session_count_source: str = "auto",
+    scope_label: str = "all",
 ) -> tuple[ModelsResponse, list[SourceFailure]]:
     """Execute a federated models query across multiple sources."""
     from modelmeter.core.analytics import get_models as get_local_models
@@ -537,38 +532,43 @@ def execute_models_federated(
     unpriced_models = 0
 
     for source in sources:
-        if source.kind == "sqlite":
-            assert source.db_path is not None
-            paths = resolve_storage_paths(settings, db_path_override=source.db_path)
-            result = get_local_models(
-                settings=settings,
-                days=days,
-                db_path_override=paths.sqlite_db_path,
-                provider=provider,
-            )
-            typed_result: ModelsResponse = result
-            total_usage = merge_token_usage(total_usage, typed_result.totals)
-            total_sessions += typed_result.total_sessions
-            if typed_result.total_cost_usd is not None:
-                if total_cost is None:
-                    total_cost = 0.0
-                total_cost += typed_result.total_cost_usd
-            if typed_result.pricing_source:
-                pricing_source = typed_result.pricing_source
-            priced_models += typed_result.priced_models
-            unpriced_models += typed_result.unpriced_models
-            for model in typed_result.models:
-                if model.model_id in model_map:
-                    model_map[model.model_id] = merge_model_usage(model_map[model.model_id], model)
-                else:
-                    model_map[model.model_id] = model
-        else:
-            try:
+        try:
+            if source.kind == "sqlite":
+                assert source.db_path is not None
+                paths = resolve_storage_paths(settings, db_path_override=source.db_path)
+                result = get_local_models(
+                    settings=settings,
+                    days=days,
+                    db_path_override=paths.sqlite_db_path,
+                    provider=provider,
+                    offset=0,
+                    limit=0,
+                    token_source=token_source,
+                    session_count_source=session_count_source,
+                )
+                typed_result: ModelsResponse = result
+                total_usage = merge_token_usage(total_usage, typed_result.totals)
+                total_sessions += typed_result.total_sessions
+                if typed_result.total_cost_usd is not None:
+                    if total_cost is None:
+                        total_cost = 0.0
+                    total_cost += typed_result.total_cost_usd
+                if typed_result.pricing_source:
+                    pricing_source = typed_result.pricing_source
+                for model in typed_result.models:
+                    if model.model_id in model_map:
+                        model_map[model.model_id] = merge_model_usage(
+                            model_map[model.model_id], model
+                        )
+                    else:
+                        model_map[model.model_id] = model
+            else:
+                page_size = 1000
                 data = _fetch_http_models(
                     source,
                     days=days,
                     offset=0,
-                    limit=1000,
+                    limit=page_size,
                     provider=provider,
                     token_source=token_source,
                     session_count_source=session_count_source,
@@ -593,10 +593,28 @@ def execute_models_federated(
                 if isinstance(pricing_val, str):
                     pricing_source = pricing_val
 
-                models_list = cast("list[dict[str, Any]]", data.get("models", []))
-                if models_list and "has_pricing" not in models_list[0]:
-                    import logging
+                models_list = list(cast("list[dict[str, Any]]", data.get("models", [])))
+                total_remote_models = int(
+                    cast("int | None", data.get("total_models")) or len(models_list)
+                )
+                next_offset = len(models_list)
+                while next_offset < total_remote_models:
+                    page_data = _fetch_http_models(
+                        source,
+                        days=days,
+                        offset=next_offset,
+                        limit=page_size,
+                        provider=provider,
+                        token_source=token_source,
+                        session_count_source=session_count_source,
+                    )
+                    page_models = cast("list[dict[str, Any]]", page_data.get("models", []))
+                    if not page_models:
+                        break
+                    models_list.extend(page_models)
+                    next_offset += len(page_models)
 
+                if models_list and "has_pricing" not in models_list[0]:
                     logging.warning(
                         f"HTTP source {source.source_id} response missing 'has_pricing' field - "
                         "API contract may have changed"
@@ -620,24 +638,22 @@ def execute_models_federated(
                         cost_usd=model_item.get("cost_usd"),
                         has_pricing=model_item.get("has_pricing", False),
                     )
-                    if model_item.get("has_pricing", False):
-                        priced_models += 1
-                    else:
-                        unpriced_models += 1
                     if model_id in model_map:
                         model_map[model_id] = merge_model_usage(model_map[model_id], model)
                     else:
                         model_map[model_id] = model
-            except Exception as e:
-                failures.append(
-                    SourceFailure(
-                        source_id=source.source_id,
-                        error=str(e),
-                        kind="http",
-                    )
+        except Exception as e:
+            failures.append(
+                SourceFailure(
+                    source_id=source.source_id,
+                    error=str(e),
+                    kind="sqlite" if source.kind == "sqlite" else "http",
                 )
+            )
 
     total_models = len(model_map)
+    priced_models = sum(1 for model in model_map.values() if model.has_pricing)
+    unpriced_models = max(0, total_models - priced_models)
     models_rows = sorted(model_map.values(), key=lambda x: x.total_interactions, reverse=True)
 
     # Apply pagination after merge
@@ -658,7 +674,7 @@ def execute_models_federated(
             priced_models=priced_models,
             unpriced_models=unpriced_models,
             models=paginated_models,
-            source_scope="all",
+            source_scope=scope_label,
             sources_considered=[s.source_id for s in sources],
             sources_succeeded=[
                 s.source_id
@@ -681,6 +697,7 @@ def execute_providers_federated(
     limit: int = 20,
     token_source: str = "auto",
     session_count_source: str = "auto",
+    scope_label: str = "all",
 ) -> tuple[ProvidersResponse, list[SourceFailure]]:
     """Execute a federated providers query across multiple sources."""
     from modelmeter.core.analytics import get_providers as get_local_providers
@@ -693,39 +710,42 @@ def execute_providers_federated(
     pricing_source: str | None = None
 
     for source in sources:
-        if source.kind == "sqlite":
-            assert source.db_path is not None
-            paths = resolve_storage_paths(settings, db_path_override=source.db_path)
-            result = get_local_providers(
-                settings=settings,
-                days=days,
-                db_path_override=paths.sqlite_db_path,
-                offset=offset,
-                limit=limit,
-            )
-            typed_result: ProvidersResponse = result
-            total_usage = merge_token_usage(total_usage, typed_result.totals)
-            total_sessions += typed_result.total_sessions
-            if typed_result.total_cost_usd is not None:
-                if total_cost is None:
-                    total_cost = 0.0
-                total_cost += typed_result.total_cost_usd
-            if typed_result.pricing_source:
-                pricing_source = typed_result.pricing_source
-            for provider in typed_result.providers:
-                if provider.provider in provider_map:
-                    provider_map[provider.provider] = merge_provider_usage(
-                        provider_map[provider.provider], provider
-                    )
-                else:
-                    provider_map[provider.provider] = provider
-        else:
-            try:
+        try:
+            if source.kind == "sqlite":
+                assert source.db_path is not None
+                paths = resolve_storage_paths(settings, db_path_override=source.db_path)
+                result = get_local_providers(
+                    settings=settings,
+                    days=days,
+                    db_path_override=paths.sqlite_db_path,
+                    offset=0,
+                    limit=0,
+                    token_source=token_source,
+                    session_count_source=session_count_source,
+                )
+                typed_result: ProvidersResponse = result
+                total_usage = merge_token_usage(total_usage, typed_result.totals)
+                total_sessions += typed_result.total_sessions
+                if typed_result.total_cost_usd is not None:
+                    if total_cost is None:
+                        total_cost = 0.0
+                    total_cost += typed_result.total_cost_usd
+                if typed_result.pricing_source:
+                    pricing_source = typed_result.pricing_source
+                for provider in typed_result.providers:
+                    if provider.provider in provider_map:
+                        provider_map[provider.provider] = merge_provider_usage(
+                            provider_map[provider.provider], provider
+                        )
+                    else:
+                        provider_map[provider.provider] = provider
+            else:
+                page_size = 1000
                 data = _fetch_http_providers(
                     source,
                     days=days,
-                    offset=offset,
-                    limit=limit,
+                    offset=0,
+                    limit=page_size,
                     token_source=token_source,
                     session_count_source=session_count_source,
                 )
@@ -748,7 +768,28 @@ def execute_providers_federated(
                 pricing_val = data.get("pricing_source")
                 if isinstance(pricing_val, str):
                     pricing_source = pricing_val
-                for provider_item in cast("list[dict[str, Any]]", data.get("providers", [])):
+
+                provider_items = list(cast("list[dict[str, Any]]", data.get("providers", [])))
+                total_remote_providers = int(
+                    cast("int | None", data.get("total_providers")) or len(provider_items)
+                )
+                next_offset = len(provider_items)
+                while next_offset < total_remote_providers:
+                    page_data = _fetch_http_providers(
+                        source,
+                        days=days,
+                        offset=next_offset,
+                        limit=page_size,
+                        token_source=token_source,
+                        session_count_source=session_count_source,
+                    )
+                    page_providers = cast("list[dict[str, Any]]", page_data.get("providers", []))
+                    if not page_providers:
+                        break
+                    provider_items.extend(page_providers)
+                    next_offset += len(page_providers)
+
+                for provider_item in provider_items:
                     provider_name = str(provider_item["provider"])
                     usage_dict = cast("dict[str, Any]", provider_item.get("usage", {}))
                     provider = ProviderUsage(
@@ -770,18 +811,23 @@ def execute_providers_federated(
                         )
                     else:
                         provider_map[provider_name] = provider
-            except Exception as e:
-                failures.append(
-                    SourceFailure(
-                        source_id=source.source_id,
-                        error=str(e),
-                        kind="http",
-                    )
+        except Exception as e:
+            failures.append(
+                SourceFailure(
+                    source_id=source.source_id,
+                    error=str(e),
+                    kind="sqlite" if source.kind == "sqlite" else "http",
                 )
+            )
 
-    sorted_providers = sorted(provider_map.values(), key=lambda x: x.provider)
-    providers_returned = len(sorted_providers)
-    total_providers = providers_returned
+    sorted_providers = sorted(
+        provider_map.values(), key=lambda x: x.usage.total_tokens, reverse=True
+    )
+    total_providers = len(sorted_providers)
+    paginated_providers = (
+        sorted_providers[offset : offset + limit] if limit > 0 else sorted_providers[offset:]
+    )
+    providers_returned = len(paginated_providers)
 
     return (
         ProvidersResponse(
@@ -794,8 +840,8 @@ def execute_providers_federated(
             total_sessions=total_sessions,
             total_cost_usd=round(total_cost, 8) if total_cost is not None else None,
             pricing_source=pricing_source,
-            providers=sorted_providers,
-            source_scope="all",
+            providers=paginated_providers,
+            source_scope=scope_label,
             sources_considered=[s.source_id for s in sources],
             sources_succeeded=[
                 s.source_id
@@ -818,6 +864,7 @@ def execute_projects_federated(
     limit: int = 20,
     token_source: str = "auto",
     session_count_source: str = "auto",
+    scope_label: str = "all",
 ) -> tuple[ProjectsResponse, list[SourceFailure]]:
     """Execute a federated projects query across multiple sources."""
     from modelmeter.core.analytics import get_projects as get_local_projects
@@ -830,39 +877,42 @@ def execute_projects_federated(
     pricing_source: str | None = None
 
     for source in sources:
-        if source.kind == "sqlite":
-            assert source.db_path is not None
-            paths = resolve_storage_paths(settings, db_path_override=source.db_path)
-            result = get_local_projects(
-                settings=settings,
-                days=days,
-                db_path_override=paths.sqlite_db_path,
-                offset=offset,
-                limit=limit,
-            )
-            typed_result: ProjectsResponse = result
-            total_usage = merge_token_usage(total_usage, typed_result.totals)
-            total_sessions += typed_result.total_sessions
-            if typed_result.total_cost_usd is not None:
-                if total_cost is None:
-                    total_cost = 0.0
-                total_cost += typed_result.total_cost_usd
-            if typed_result.pricing_source:
-                pricing_source = typed_result.pricing_source
-            for project in typed_result.projects:
-                if project.project_id in project_map:
-                    project_map[project.project_id] = merge_project_usage(
-                        project_map[project.project_id], project
-                    )
-                else:
-                    project_map[project.project_id] = project
-        else:
-            try:
+        try:
+            if source.kind == "sqlite":
+                assert source.db_path is not None
+                paths = resolve_storage_paths(settings, db_path_override=source.db_path)
+                result = get_local_projects(
+                    settings=settings,
+                    days=days,
+                    db_path_override=paths.sqlite_db_path,
+                    offset=0,
+                    limit=0,
+                    token_source=token_source,
+                    session_count_source=session_count_source,
+                )
+                typed_result: ProjectsResponse = result
+                total_usage = merge_token_usage(total_usage, typed_result.totals)
+                total_sessions += typed_result.total_sessions
+                if typed_result.total_cost_usd is not None:
+                    if total_cost is None:
+                        total_cost = 0.0
+                    total_cost += typed_result.total_cost_usd
+                if typed_result.pricing_source:
+                    pricing_source = typed_result.pricing_source
+                for project in typed_result.projects:
+                    if project.project_id in project_map:
+                        project_map[project.project_id] = merge_project_usage(
+                            project_map[project.project_id], project
+                        )
+                    else:
+                        project_map[project.project_id] = project
+            else:
+                page_size = 1000
                 data = _fetch_http_projects(
                     source,
                     days=days,
-                    offset=offset,
-                    limit=limit,
+                    offset=0,
+                    limit=page_size,
                     token_source=token_source,
                     session_count_source=session_count_source,
                 )
@@ -885,7 +935,28 @@ def execute_projects_federated(
                 pricing_val = data.get("pricing_source")
                 if isinstance(pricing_val, str):
                     pricing_source = pricing_val
-                for project_item in cast("list[dict[str, Any]]", data.get("projects", [])):
+
+                project_items = list(cast("list[dict[str, Any]]", data.get("projects", [])))
+                total_remote_projects = int(
+                    cast("int | None", data.get("total_projects")) or len(project_items)
+                )
+                next_offset = len(project_items)
+                while next_offset < total_remote_projects:
+                    page_data = _fetch_http_projects(
+                        source,
+                        days=days,
+                        offset=next_offset,
+                        limit=page_size,
+                        token_source=token_source,
+                        session_count_source=session_count_source,
+                    )
+                    page_projects = cast("list[dict[str, Any]]", page_data.get("projects", []))
+                    if not page_projects:
+                        break
+                    project_items.extend(page_projects)
+                    next_offset += len(page_projects)
+
+                for project_item in project_items:
                     project_id = str(project_item["project_id"])
                     usage_dict = cast("dict[str, Any]", project_item.get("usage", {}))
                     project = ProjectUsage(
@@ -909,18 +980,21 @@ def execute_projects_federated(
                         )
                     else:
                         project_map[project_id] = project
-            except Exception as e:
-                failures.append(
-                    SourceFailure(
-                        source_id=source.source_id,
-                        error=str(e),
-                        kind="http",
-                    )
+        except Exception as e:
+            failures.append(
+                SourceFailure(
+                    source_id=source.source_id,
+                    error=str(e),
+                    kind="sqlite" if source.kind == "sqlite" else "http",
                 )
+            )
 
-    sorted_projects = sorted(project_map.values(), key=lambda x: x.project_name)
-    projects_returned = len(sorted_projects)
-    total_projects = projects_returned
+    sorted_projects = sorted(project_map.values(), key=lambda x: x.usage.total_tokens, reverse=True)
+    total_projects = len(sorted_projects)
+    paginated_projects = (
+        sorted_projects[offset : offset + limit] if limit > 0 else sorted_projects[offset:]
+    )
+    projects_returned = len(paginated_projects)
 
     return (
         ProjectsResponse(
@@ -933,8 +1007,8 @@ def execute_projects_federated(
             total_sessions=total_sessions,
             total_cost_usd=round(total_cost, 8) if total_cost is not None else None,
             pricing_source=pricing_source,
-            projects=sorted_projects,
-            source_scope="all",
+            projects=paginated_projects,
+            source_scope=scope_label,
             sources_considered=[s.source_id for s in sources],
             sources_succeeded=[
                 s.source_id

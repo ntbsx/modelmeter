@@ -52,6 +52,14 @@ def _resolve_sqlite_path(settings: AppSettings, db_path_override: Path | None = 
     return paths.sqlite_db_path
 
 
+def _scope_label(source_scope: SourceScope | None) -> str:
+    if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL:
+        return "local"
+    if source_scope.kind == SourceScopeKind.ALL:
+        return "all"
+    return f"source:{source_scope.source_id}"
+
+
 def get_summary(
     *,
     settings: AppSettings,
@@ -76,6 +84,7 @@ def get_summary(
             days=days,
             token_source=token_source,
             session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
         )
         return result
 
@@ -121,8 +130,12 @@ def get_summary(
         cost_usd=cost_usd,
         pricing_source=pricing_source,
         source_scope=source_scope.kind.value if source_scope else "local",
-        sources_considered=["local"] if source_scope is None else [],
-        sources_succeeded=["local"] if source_scope is None else [],
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
         sources_failed=[],
     )
 
@@ -153,6 +166,7 @@ def get_daily(
             timezone_offset_minutes=timezone_offset_minutes,
             token_source=token_source,
             session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
         )
         return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
@@ -238,8 +252,12 @@ def get_daily(
         pricing_source=pricing_source,
         daily=daily_rows,
         source_scope=source_scope.kind.value if source_scope else "local",
-        sources_considered=["local"] if source_scope is None else [],
-        sources_succeeded=["local"] if source_scope is None else [],
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
         sources_failed=[],
     )
 
@@ -273,6 +291,7 @@ def get_models(
             provider=provider,
             token_source=token_source,
             session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
         )
         return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
@@ -352,6 +371,14 @@ def get_models(
         priced_models=priced_models,
         unpriced_models=max(0, len(rows) - priced_models),
         models=usage_rows,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )
 
 
@@ -382,6 +409,7 @@ def get_providers(
             limit=limit,
             token_source=token_source,
             session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
         )
         return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
@@ -461,6 +489,14 @@ def get_providers(
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
         pricing_source=pricing_source,
         providers=provider_rows,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )
 
 
@@ -560,6 +596,7 @@ def get_projects(
             limit=limit,
             token_source=token_source,
             session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
         )
         return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
@@ -623,6 +660,14 @@ def get_projects(
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
         pricing_source=pricing_source,
         projects=usage_rows,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )
 
 
