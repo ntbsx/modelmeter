@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/api/auth/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Auth Check */
+        get: operations["auth_check_api_auth_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/daily": {
         parameters: {
             query?: never;
@@ -157,6 +174,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sources */
+        get: operations["sources_api_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sources/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sources Check */
+        get: operations["sources_check_api_sources_check_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/summary": {
         parameters: {
             query?: never;
@@ -253,6 +304,35 @@ export interface components {
              */
             total_sessions: number;
             usage: components["schemas"]["TokenUsage"];
+        };
+        /**
+         * DataSourcePublic
+         * @description Public view of a source config with credentials redacted.
+         */
+        DataSourcePublic: {
+            /** Base Url */
+            base_url?: string | null;
+            /** Db Path */
+            db_path?: string | null;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Has Auth
+             * @default false
+             */
+            has_auth: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sqlite" | "http";
+            /** Label */
+            label?: string | null;
+            /** Source Id */
+            source_id: string;
         };
         /**
          * DoctorReport
@@ -738,6 +818,38 @@ export interface components {
             tables_present?: string[];
         };
         /**
+         * SourceHealth
+         * @description Health status for one source.
+         */
+        SourceHealth: {
+            /** Detail */
+            detail?: string | null;
+            /** Error */
+            error?: string | null;
+            /** Is Reachable */
+            is_reachable: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sqlite" | "http";
+            /** Source Id */
+            source_id: string;
+        };
+        /**
+         * SourceRegistryPublic
+         * @description Public registry view with credentials stripped.
+         */
+        SourceRegistryPublic: {
+            /** Sources */
+            sources?: components["schemas"]["DataSourcePublic"][];
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+        };
+        /**
          * SummaryResponse
          * @description Top-level summary response contract.
          */
@@ -834,6 +946,28 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    auth_check_api_auth_check_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+    };
     daily_api_daily_get: {
         parameters: {
             query?: {
@@ -1149,6 +1283,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sources_api_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRegistryPublic"];
+                };
+            };
+        };
+    };
+    sources_check_api_sources_check_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceHealth"][];
                 };
             };
         };

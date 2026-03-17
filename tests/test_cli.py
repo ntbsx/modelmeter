@@ -1,4 +1,6 @@
+import json
 import re
+from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -111,3 +113,48 @@ def test_update_apply_dry_run_command(monkeypatch: pytest.MonkeyPatch) -> None:
     result = runner.invoke(app, ["update", "apply", "--dry-run"])
     assert result.exit_code == 0
     assert "Dry run complete" in result.stdout
+
+
+def test_sources_list_json_redacts_credentials(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runner = CliRunner()
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "sources": [
+                    {
+                        "source_id": "remote",
+                        "kind": "http",
+                        "base_url": "https://example.com",
+                        "auth": {"username": "user", "password": "s3cret"},
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    result = runner.invoke(app, ["sources", "list", "--json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["sources"][0]["has_auth"] is True
+    assert "auth" not in payload["sources"][0]
+    assert "s3cret" not in result.stdout
+
+
+def test_sources_list_reports_invalid_registry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runner = CliRunner()
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text("{invalid json")
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    result = runner.invoke(app, ["sources", "list"])
+
+    assert result.exit_code == 1
+    assert "Invalid source registry JSON" in result.stdout

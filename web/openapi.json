@@ -98,6 +98,73 @@
         "title": "DailyUsage",
         "type": "object"
       },
+      "DataSourcePublic": {
+        "description": "Public view of a source config with credentials redacted.",
+        "properties": {
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "db_path": {
+            "anyOf": [
+              {
+                "format": "path",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Db Path"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "has_auth": {
+            "default": false,
+            "title": "Has Auth",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "sqlite",
+              "http"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "kind"
+        ],
+        "title": "DataSourcePublic",
+        "type": "object"
+      },
       "DoctorReport": {
         "description": "Top-level health diagnostics payload.",
         "properties": {
@@ -1162,6 +1229,75 @@
         "title": "SQLiteDiagnostics",
         "type": "object"
       },
+      "SourceHealth": {
+        "description": "Health status for one source.",
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "is_reachable": {
+            "title": "Is Reachable",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "sqlite",
+              "http"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "kind",
+          "is_reachable"
+        ],
+        "title": "SourceHealth",
+        "type": "object"
+      },
+      "SourceRegistryPublic": {
+        "description": "Public registry view with credentials stripped.",
+        "properties": {
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/DataSourcePublic"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "title": "SourceRegistryPublic",
+        "type": "object"
+      },
       "SummaryResponse": {
         "description": "Top-level summary response contract.",
         "properties": {
@@ -1368,10 +1504,32 @@
   },
   "info": {
     "title": "ModelMeter",
-    "version": "2026.3.18"
+    "version": "2026.3.19"
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/auth/check": {
+      "get": {
+        "operationId": "auth_check_api_auth_check_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Auth Check Api Auth Check Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Auth Check"
+      }
+    },
     "/api/daily": {
       "get": {
         "operationId": "daily_api_daily_get",
@@ -2305,6 +2463,46 @@
           }
         },
         "summary": "Providers"
+      }
+    },
+    "/api/sources": {
+      "get": {
+        "operationId": "sources_api_sources_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRegistryPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sources"
+      }
+    },
+    "/api/sources/check": {
+      "get": {
+        "operationId": "sources_check_api_sources_check_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SourceHealth"
+                  },
+                  "title": "Response Sources Check Api Sources Check Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sources Check"
       }
     },
     "/api/summary": {

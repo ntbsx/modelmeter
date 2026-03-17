@@ -207,6 +207,110 @@ def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
     assert payload["selected_source"] == "sqlite"
 
 
+def test_sources_endpoint_returns_empty_registry_by_default() -> None:
+    client = _new_client()
+    client.cookies.set("ignore", "1")
+    response = client.get("/api/sources", headers={"X-Ignore": "1"})
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["version"] == 1
+    assert payload["sources"] == []
+
+
+def test_sources_endpoint_redacts_credentials(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "sources": [
+                    {
+                        "source_id": "remote",
+                        "kind": "http",
+                        "base_url": "http://example.com",
+                        "auth": {"username": "user", "password": "s3cret"},
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    client = _new_client()
+    response = client.get("/api/sources")
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    source = payload["sources"][0]
+    assert source["has_auth"] is True
+    assert "auth" not in source
+    assert "password" not in json.dumps(source)
+
+
+def test_sources_check_endpoint_reports_reachability(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "sources": [
+                    {
+                        "source_id": "local",
+                        "kind": "sqlite",
+                        "db_path": str(db_path),
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    client = _new_client()
+    response = client.get("/api/sources/check")
+
+    assert response.status_code == 200
+    payload = cast(list[dict[str, Any]], response.json())
+    assert payload[0]["source_id"] == "local"
+    assert payload[0]["is_reachable"] is True
+
+
+def test_sources_endpoint_reports_invalid_registry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text("{invalid json")
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    client = _new_client()
+    response = client.get("/api/sources")
+
+    assert response.status_code == 500
+    payload = _get_json(response)
+    assert "Invalid source registry JSON" in payload["detail"]
+
+
+def test_auth_check_endpoint_requires_credentials_when_auth_enabled() -> None:
+    client = _new_client(server_password="secret")
+
+    unauthorized = client.get("/api/auth/check")
+    authorized = client.get(
+        "/api/auth/check",
+        headers=_basic_auth_headers("modelmeter", "secret"),
+    )
+
+    assert unauthorized.status_code == 401
+    assert authorized.status_code == 200
+    payload = _get_json(authorized)
+    assert payload["status"] == "ok"
+
+
 def test_update_check_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     def _mock_update_check(*, settings: AppSettings) -> UpdateCheckResponse:
         _ = settings
