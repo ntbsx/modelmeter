@@ -275,6 +275,25 @@ export interface components {
             daily: components["schemas"]["DailyUsage"][];
             /** Pricing Source */
             pricing_source?: string | null;
+            /** Source Scope */
+            source_scope?: string | null;
+            /**
+             * Sources Considered
+             * @default []
+             */
+            sources_considered: string[];
+            /**
+             * Sources Failed
+             * @default []
+             */
+            sources_failed: {
+                [key: string]: string;
+            }[];
+            /**
+             * Sources Succeeded
+             * @default []
+             */
+            sources_succeeded: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -487,6 +506,25 @@ export interface components {
             pricing_source?: string | null;
             /** Provider */
             provider: string;
+            /** Source Scope */
+            source_scope?: string | null;
+            /**
+             * Sources Considered
+             * @default []
+             */
+            sources_considered: string[];
+            /**
+             * Sources Failed
+             * @default []
+             */
+            sources_failed: {
+                [key: string]: string;
+            }[];
+            /**
+             * Sources Succeeded
+             * @default []
+             */
+            sources_succeeded: string[];
             /**
              * Total Interactions
              * @default 0
@@ -556,6 +594,25 @@ export interface components {
             priced_models: number;
             /** Pricing Source */
             pricing_source?: string | null;
+            /** Source Scope */
+            source_scope?: string | null;
+            /**
+             * Sources Considered
+             * @default []
+             */
+            sources_considered: string[];
+            /**
+             * Sources Failed
+             * @default []
+             */
+            sources_failed: {
+                [key: string]: string;
+            }[];
+            /**
+             * Sources Succeeded
+             * @default []
+             */
+            sources_succeeded: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -607,6 +664,25 @@ export interface components {
              * @default 0
              */
             sessions_returned: number;
+            /** Source Scope */
+            source_scope?: string | null;
+            /**
+             * Sources Considered
+             * @default []
+             */
+            sources_considered: string[];
+            /**
+             * Sources Failed
+             * @default []
+             */
+            sources_failed: {
+                [key: string]: string;
+            }[];
+            /**
+             * Sources Succeeded
+             * @default []
+             */
+            sources_succeeded: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -707,6 +783,25 @@ export interface components {
              * @default 0
              */
             projects_returned: number;
+            /** Source Scope */
+            source_scope?: string | null;
+            /**
+             * Sources Considered
+             * @default []
+             */
+            sources_considered: string[];
+            /**
+             * Sources Failed
+             * @default []
+             */
+            sources_failed: {
+                [key: string]: string;
+            }[];
+            /**
+             * Sources Succeeded
+             * @default []
+             */
+            sources_succeeded: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -773,6 +868,25 @@ export interface components {
              * @default 0
              */
             providers_returned: number;
+            /** Source Scope */
+            source_scope?: string | null;
+            /**
+             * Sources Considered
+             * @default []
+             */
+            sources_considered: string[];
+            /**
+             * Sources Failed
+             * @default []
+             */
+            sources_failed: {
+                [key: string]: string;
+            }[];
+            /**
+             * Sources Succeeded
+             * @default []
+             */
+            sources_succeeded: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -858,6 +972,25 @@ export interface components {
             cost_usd?: number | null;
             /** Pricing Source */
             pricing_source?: string | null;
+            /** Source Scope */
+            source_scope?: string | null;
+            /**
+             * Sources Considered
+             * @default []
+             */
+            sources_considered: string[];
+            /**
+             * Sources Failed
+             * @default []
+             */
+            sources_failed: {
+                [key: string]: string;
+            }[];
+            /**
+             * Sources Succeeded
+             * @default []
+             */
+            sources_succeeded: string[];
             /**
              * Total Sessions
              * @default 0

@@ -44,6 +44,10 @@ class SummaryResponse(BaseModel):
     window_days: int | None = Field(default=None, ge=1)
     cost_usd: float | None = None
     pricing_source: str | None = None
+    source_scope: str | None = None
+    sources_considered: list[str] = []
+    sources_succeeded: list[str] = []
+    sources_failed: list[dict[str, str]] = []
 
 
 class DailyResponse(BaseModel):
@@ -55,6 +59,10 @@ class DailyResponse(BaseModel):
     total_cost_usd: float | None = None
     pricing_source: str | None = None
     daily: list[DailyUsage] = []
+    source_scope: str | None = None
+    sources_considered: list[str] = []
+    sources_succeeded: list[str] = []
+    sources_failed: list[dict[str, str]] = []
 
 
 class ModelUsage(BaseModel):
@@ -83,6 +91,10 @@ class ModelsResponse(BaseModel):
     priced_models: int = Field(default=0, ge=0)
     unpriced_models: int = Field(default=0, ge=0)
     models: list[ModelUsage] = []
+    source_scope: str | None = None
+    sources_considered: list[str] = []
+    sources_succeeded: list[str] = []
+    sources_failed: list[dict[str, str]] = []
 
 
 class ModelDetailResponse(BaseModel):
@@ -97,6 +109,10 @@ class ModelDetailResponse(BaseModel):
     cost_usd: float | None = None
     pricing_source: str | None = None
     daily: list[DailyUsage] = []
+    source_scope: str | None = None
+    sources_considered: list[str] = []
+    sources_succeeded: list[str] = []
+    sources_failed: list[dict[str, str]] = []
 
 
 class ProviderUsage(BaseModel):
@@ -123,6 +139,10 @@ class ProvidersResponse(BaseModel):
     total_cost_usd: float | None = None
     pricing_source: str | None = None
     providers: list[ProviderUsage] = []
+    source_scope: str | None = None
+    sources_considered: list[str] = []
+    sources_succeeded: list[str] = []
+    sources_failed: list[dict[str, str]] = []
 
 
 class ProjectUsage(BaseModel):
@@ -151,6 +171,10 @@ class ProjectsResponse(BaseModel):
     total_cost_usd: float | None = None
     pricing_source: str | None = None
     projects: list[ProjectUsage] = []
+    source_scope: str | None = None
+    sources_considered: list[str] = []
+    sources_succeeded: list[str] = []
+    sources_failed: list[dict[str, str]] = []
 
 
 class ProjectSessionUsage(BaseModel):
@@ -182,6 +206,10 @@ class ProjectDetailResponse(BaseModel):
     total_cost_usd: float | None = None
     pricing_source: str | None = None
     sessions: list[ProjectSessionUsage] = []
+    source_scope: str | None = None
+    sources_considered: list[str] = []
+    sources_succeeded: list[str] = []
+    sources_failed: list[dict[str, str]] = []
 
 
 class LiveModelUsage(BaseModel):

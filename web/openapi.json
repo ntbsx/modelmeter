@@ -23,6 +23,44 @@
             ],
             "title": "Pricing Source"
           },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
+          },
           "total_cost_usd": {
             "anyOf": [
               {
@@ -497,6 +535,44 @@
             "title": "Provider",
             "type": "string"
           },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
+          },
           "total_interactions": {
             "default": 0,
             "minimum": 0.0,
@@ -631,6 +707,44 @@
             ],
             "title": "Pricing Source"
           },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
+          },
           "total_cost_usd": {
             "anyOf": [
               {
@@ -746,6 +860,44 @@
             "minimum": 0.0,
             "title": "Sessions Returned",
             "type": "integer"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_cost_usd": {
             "anyOf": [
@@ -970,6 +1122,44 @@
             "title": "Projects Returned",
             "type": "integer"
           },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
+          },
           "total_cost_usd": {
             "anyOf": [
               {
@@ -1106,6 +1296,44 @@
             "minimum": 0.0,
             "title": "Providers Returned",
             "type": "integer"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_cost_usd": {
             "anyOf": [
@@ -1322,6 +1550,44 @@
               }
             ],
             "title": "Pricing Source"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_sessions": {
             "default": 0,

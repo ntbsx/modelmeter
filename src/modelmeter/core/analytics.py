@@ -120,6 +120,10 @@ def get_summary(
         window_days=days,
         cost_usd=cost_usd,
         pricing_source=pricing_source,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"] if source_scope is None else [],
+        sources_succeeded=["local"] if source_scope is None else [],
+        sources_failed=[],
     )
 
 
@@ -135,6 +139,8 @@ def get_daily(
     source_scope: SourceScope | None = None,
 ) -> DailyResponse:
     """Return daily usage time-series and totals."""
+    from modelmeter.core.sources import SourceScopeKind
+
     if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
         raise NotImplementedError("Federated daily analytics not yet implemented")
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
@@ -219,6 +225,10 @@ def get_daily(
         total_cost_usd=total_cost_usd,
         pricing_source=pricing_source,
         daily=daily_rows,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"] if source_scope is None else [],
+        sources_succeeded=["local"] if source_scope is None else [],
+        sources_failed=[],
     )
 
 
