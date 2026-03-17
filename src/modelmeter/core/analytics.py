@@ -139,10 +139,22 @@ def get_daily(
     source_scope: SourceScope | None = None,
 ) -> DailyResponse:
     """Return daily usage time-series and totals."""
-    from modelmeter.core.sources import SourceScopeKind
+    from modelmeter.core.sources import SourceScopeKind, get_sources_for_scope
 
     if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
-        raise NotImplementedError("Federated daily analytics not yet implemented")
+        from modelmeter.core.federation import execute_daily_federated
+
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_daily_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            timezone_offset_minutes=timezone_offset_minutes,
+            token_source=token_source,
+            session_count_source=session_count_source,
+        )
+        return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     resolved_source = repository.resolve_token_source(days=days, token_source=token_source)
@@ -241,11 +253,28 @@ def get_models(
     provider: str | None = None,
     offset: int = 0,
     limit: int = 20,
+    token_source: str = "auto",
+    session_count_source: str = "auto",
     source_scope: SourceScope | None = None,
 ) -> ModelsResponse:
     """Return top model usage aggregates."""
     if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
-        raise NotImplementedError("Federated models analytics not yet implemented")
+        from modelmeter.core.federation import execute_models_federated
+        from modelmeter.core.sources import get_sources_for_scope
+
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_models_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            offset=offset,
+            limit=limit,
+            provider=provider,
+            token_source=token_source,
+            session_count_source=session_count_source,
+        )
+        return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     rows = repository.fetch_model_usage_detail(days=days)
@@ -334,11 +363,27 @@ def get_providers(
     pricing_file_override: Path | None = None,
     offset: int = 0,
     limit: int = 20,
+    token_source: str = "auto",
+    session_count_source: str = "auto",
     source_scope: SourceScope | None = None,
 ) -> ProvidersResponse:
     """Return usage aggregates grouped by provider."""
     if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
-        raise NotImplementedError("Federated providers analytics not yet implemented")
+        from modelmeter.core.federation import execute_providers_federated
+        from modelmeter.core.sources import get_sources_for_scope
+
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_providers_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            offset=offset,
+            limit=limit,
+            token_source=token_source,
+            session_count_source=session_count_source,
+        )
+        return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     model_rows = repository.fetch_model_usage_detail(days=days)
@@ -496,11 +541,27 @@ def get_projects(
     pricing_file_override: Path | None = None,
     offset: int = 0,
     limit: int = 20,
+    token_source: str = "auto",
+    session_count_source: str = "auto",
     source_scope: SourceScope | None = None,
 ) -> ProjectsResponse:
     """Return top project usage aggregates."""
     if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
-        raise NotImplementedError("Federated projects analytics not yet implemented")
+        from modelmeter.core.federation import execute_projects_federated
+        from modelmeter.core.sources import get_sources_for_scope
+
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_projects_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            offset=offset,
+            limit=limit,
+            token_source=token_source,
+            session_count_source=session_count_source,
+        )
+        return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     rows = repository.fetch_project_usage_detail(days=days)
