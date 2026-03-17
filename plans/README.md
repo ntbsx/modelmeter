@@ -30,6 +30,7 @@ This folder contains feature-sliced plans for building ModelMeter (OpenCode usag
 - [ ] `phase-4-distributed-and-lifecycle/16-federation-core.md`
 - [ ] `phase-4-distributed-and-lifecycle/17-provider-analytics.md`
 - [ ] `phase-4-distributed-and-lifecycle/18-auto-update-and-release-awareness.md`
+- [ ] `phase-4-distributed-and-lifecycle/19-dashboard-source-management-and-filtering.md`
 - [ ] `phase-4-distributed-and-lifecycle/TRACKING.md`
 
 Use `00-roadmap-index.md` as the high-level map.
@@ -48,6 +49,7 @@ Use `00-roadmap-index.md` as the high-level map.
 - `16-federation-core` -> depends on `03`, `04`, `06`, and `10`
 - `17-provider-analytics` -> depends on `03`, `06`, and `16`
 - `18-auto-update-and-release-awareness` -> depends on `14` and `15`
+- `19-dashboard-source-management-and-filtering` -> depends on `07`, `10`, `11`, and `16`
 
 ## Parallelization Strategy
 After `01` is complete:

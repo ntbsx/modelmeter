@@ -21,6 +21,10 @@
 | 18B | `18-auto-update-and-release-awareness.md` | CLI Update Commands | TBD | TBD | TBD | not_started | |
 | 18C | `18-auto-update-and-release-awareness.md` | Passive Release Awareness | TBD | TBD | TBD | not_started | |
 | 18D | `18-auto-update-and-release-awareness.md` | Docs and Release Runbook Alignment | TBD | TBD | TBD | not_started | |
+| 19A | `19-dashboard-source-management-and-filtering.md` | Source-Aware Contracts and API Surface | TBD | TBD | TBD | not_started | |
+| 19B | `19-dashboard-source-management-and-filtering.md` | Federated Dashboard Query Layer | TBD | TBD | TBD | not_started | |
+| 19C | `19-dashboard-source-management-and-filtering.md` | Web Source Management UX | TBD | TBD | TBD | not_started | |
+| 19D | `19-dashboard-source-management-and-filtering.md` | Global Scope UX and Attribution | TBD | TBD | TBD | not_started | |
 
 ## Phase Milestones
 
@@ -32,6 +36,7 @@
 | M4: Provider Analytics Available | 17A, 17B, 17C, 17D | TBD | not_started | |
 | M5: Update Check/Apply Available | 18A, 18B | TBD | not_started | |
 | M6: Release Awareness + Docs Complete | 18C, 18D | TBD | not_started | |
+| M7: Dashboard Source Management and Attribution Complete | 19A, 19B, 19C, 19D | TBD | not_started | |
 
 ## Weekly Checkpoint
 
