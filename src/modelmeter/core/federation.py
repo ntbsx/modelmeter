@@ -174,7 +174,7 @@ def _fetch_http_models(
     token_source: str,
     session_count_source: str,
 ) -> dict[str, object]:
-    """Fetch providers from an HTTP source."""
+    """Fetch models from an HTTP source."""
     assert source.base_url is not None
     assert source.auth is not None
 
@@ -184,8 +184,8 @@ def _fetch_http_models(
         "offset": offset,
         "limit": limit,
     }
-    if days is not None:
-        params["days"] = days
+    if provider is not None:
+        params["provider"] = provider
 
     query = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{source.base_url.rstrip('/')}/api/models?{query}"
