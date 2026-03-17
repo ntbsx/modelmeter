@@ -227,6 +227,8 @@ def check_sources(
             result.error or "",
         )
     Console().print(table)
+
+
 def _render_update_check(console: Console, result: UpdateCheckResponse) -> None:
     console.print(f"Current version: {result.current_version}")
     if result.error is not None:

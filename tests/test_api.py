@@ -280,6 +280,7 @@ def test_sources_check_endpoint_reports_reachability(
     assert payload[0]["source_id"] == "local"
     assert payload[0]["is_reachable"] is True
 
+
 def test_update_check_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
     def _mock_update_check(*, settings: AppSettings) -> UpdateCheckResponse:
         _ = settings
