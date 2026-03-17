@@ -603,6 +603,10 @@ def execute_models_federated(
                         cost_usd=model_item.get("cost_usd"),
                         has_pricing=model_item.get("has_pricing", False),
                     )
+                    if model_item.get("has_pricing", False):
+                        priced_models += 1
+                    else:
+                        unpriced_models += 1
                     if model_id in model_map:
                         model_map[model_id] = merge_model_usage(model_map[model_id], model)
                     else:
