@@ -25,7 +25,10 @@ from modelmeter.core.models import (
     TokenUsage,
 )
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
-from modelmeter.core.providers import provider_from_model_id
+from modelmeter.core.providers import (
+    provider_from_model_id,
+    provider_from_model_id_and_provider_field,
+)
 from modelmeter.core.sources import SourceScope, SourceScopeKind
 from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.data.storage import resolve_storage_paths
@@ -527,7 +530,8 @@ def get_models(
         filtered_rows: list[Any] = []
         for row in rows:
             model_id = str(row["model_id"])
-            if provider_from_model_id(model_id) == provider:
+            provider_id = row["provider_id"]
+            if provider_from_model_id_and_provider_field(model_id, provider_id) == provider:
                 filtered_rows.append(row)  # type: ignore
         rows = filtered_rows
 
@@ -706,7 +710,8 @@ def get_providers(
 
     for row in model_rows:
         model_id = str(row["model_id"])
-        provider = provider_from_model_id(model_id)
+        provider_id = row["provider_id"]
+        provider = provider_from_model_id_and_provider_field(model_id, provider_id)
         usage = _token_usage_from_row(row)
 
         model_cost: float | None = None

@@ -297,6 +297,11 @@ class SQLiteUsageRepository:
                     json_extract(data, '$.model.modelID'),
                     'unknown'
                 ) AS model_id,
+                COALESCE(
+                    json_extract(data, '$.providerID'),
+                    json_extract(data, '$.model.providerID'),
+                    NULL
+                ) AS provider_id,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.input'), 0) > 0
                     THEN json_extract(data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.output'), 0) > 0
@@ -310,7 +315,7 @@ class SQLiteUsageRepository:
               AND json_extract(data, '$.role') = 'assistant'
               AND COALESCE(json_extract(data, '$.time.created'), 0) > 0
               {time_filter}
-            GROUP BY day, model_id
+            GROUP BY day, model_id, provider_id
             ORDER BY day ASC
         """
 
@@ -330,6 +335,11 @@ class SQLiteUsageRepository:
                     json_extract(data, '$.model.modelID'),
                     'unknown'
                 ) AS model_id,
+                COALESCE(
+                    json_extract(data, '$.providerID'),
+                    json_extract(data, '$.model.providerID'),
+                    NULL
+                ) AS provider_id,
                 COUNT(*) AS total_interactions,
                 COUNT(DISTINCT session_id) AS total_sessions,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.input'), 0) > 0
@@ -344,7 +354,7 @@ class SQLiteUsageRepository:
             WHERE json_valid(data) = 1
               AND json_extract(data, '$.role') = 'assistant'
               {time_filter}
-            GROUP BY model_id
+            GROUP BY model_id, provider_id
             ORDER BY input_tokens + output_tokens + cache_read + cache_write DESC
         """
 
@@ -471,6 +481,11 @@ class SQLiteUsageRepository:
                     json_extract(m.data, '$.model.modelID'),
                     'unknown'
                 ) AS model_id,
+                COALESCE(
+                    json_extract(m.data, '$.providerID'),
+                    json_extract(m.data, '$.model.providerID'),
+                    NULL
+                ) AS provider_id,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.input'), 0) > 0
                     THEN json_extract(m.data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.output'), 0) > 0
@@ -557,6 +572,11 @@ class SQLiteUsageRepository:
                     json_extract(m.data, '$.model.modelID'),
                     'unknown'
                 ) AS model_id,
+                COALESCE(
+                    json_extract(m.data, '$.providerID'),
+                    json_extract(m.data, '$.model.providerID'),
+                    NULL
+                ) AS provider_id,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.input'), 0) > 0
                     THEN json_extract(m.data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.output'), 0) > 0
@@ -658,6 +678,11 @@ class SQLiteUsageRepository:
                     json_extract(data, '$.model.modelID'),
                     'unknown'
                 ) AS model_id,
+                COALESCE(
+                    json_extract(data, '$.providerID'),
+                    json_extract(data, '$.model.providerID'),
+                    NULL
+                ) AS provider_id,
                 COUNT(*) AS total_interactions,
                 COUNT(DISTINCT session_id) AS total_sessions,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.input'), 0) > 0
@@ -672,7 +697,7 @@ class SQLiteUsageRepository:
             WHERE json_valid(data) = 1
               AND json_extract(data, '$.role') = 'assistant'
               AND COALESCE(json_extract(data, '$.time.created'), 0) >= ?
-            GROUP BY model_id
+            GROUP BY model_id, provider_id
             ORDER BY input_tokens + output_tokens + cache_read + cache_write DESC
             LIMIT ?
         """
