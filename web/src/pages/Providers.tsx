@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
@@ -6,11 +5,11 @@ import { formatTokens, formatUsd } from '../lib/utils'
 import type { ProvidersResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
-import TimeRangeFilter from '../components/TimeRangeFilter'
 import { useSourceScope } from '../hooks/useSourceScope'
+import { useDaysFilter } from '../hooks/useDaysFilter'
 
 export default function Providers() {
-  const [days, setDays] = useState<1 | 7 | 30 | 90>(7)
+  const { days } = useDaysFilter()
   const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ProvidersResponse>({
@@ -33,11 +32,10 @@ export default function Providers() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Providers</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
             Usage breakdown by provider ({days === 1 ? 'last 24 hours' : `last ${days} days`})
           </p>
         </div>
-        <TimeRangeFilter days={days} onChange={setDays} />
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">

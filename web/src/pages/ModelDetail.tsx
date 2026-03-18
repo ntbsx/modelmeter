@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
@@ -18,7 +17,7 @@ import type { ModelDetailResponse } from '../types'
 import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
 import { PageEmptyState, PageErrorState } from '../components/PageState'
-import DateRangeFilter from '../components/DateRangeFilter'
+import { useDaysFilter } from '../hooks/useDaysFilter'
 
 function StatCard({ title, value, subtitle }: { title: string; value: string; subtitle?: string }) {
   return (
@@ -33,7 +32,7 @@ function StatCard({ title, value, subtitle }: { title: string; value: string; su
 export default function ModelDetail() {
   const { modelId } = useParams()
   const decodedModelId = decodeURIComponent(modelId ?? '')
-  const [days, setDays] = useState(7)
+  const { days } = useDaysFilter()
 
   const { theme } = useTheme()
   const isDark =
@@ -143,7 +142,6 @@ export default function ModelDetail() {
               Model usage for the {days === 1 ? 'last 24 hours' : `last ${days} days`}
             </p>
           </div>
-          <DateRangeFilter days={days} onChange={setDays} />
         </div>
       </div>
 
