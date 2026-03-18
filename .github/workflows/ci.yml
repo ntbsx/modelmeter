@@ -81,13 +81,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Install dependencies
+      - name: Install Python dependencies
+        run: uv sync --frozen --all-groups
+      - name: Install frontend dependencies
         run: npm ci --prefix web
       - name: TypeScript types check
         run: npm run --prefix web check:types
