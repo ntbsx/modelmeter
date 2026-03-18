@@ -18,6 +18,9 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
+  # ============================================================================
+  # STAGE 1: Lint (Fast errors first)
+  # ============================================================================
   lint_backend:
     runs-on: ubuntu-latest
     steps:
@@ -55,7 +58,11 @@ jobs:
       - name: ESLint
         run: npm run --prefix web lint
 
+  # ============================================================================
+  # STAGE 2: Type Check & Contracts (Depends on lint)
+  # ============================================================================
   check_backend:
+    needs: [lint_backend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -76,7 +83,8 @@ jobs:
       - name: Version check
         run: make version-check
 
-  check_frontend:
+  gen_types:
+    needs: [lint_backend, lint_frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -100,29 +108,11 @@ jobs:
         run: uv sync --frozen --all-groups
       - name: Install frontend dependencies
         run: npm ci --prefix web
-      - name: TypeScript types check
-        run: npm run --prefix web check:types
+      - name: Generate TypeScript types
+        run: npm run --prefix web gen:types
 
-  test_backend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-      - name: Pytest
-        run: uv run python -m pytest -n auto
-
-  test_frontend:
+  check_frontend:
+    needs: [gen_types]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -135,42 +125,11 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install dependencies
         run: npm ci --prefix web
-      - name: Vitest
-        run: npm run --prefix web test -- --run
+      - name: TypeScript types check
+        run: git diff --exit-code -- web/src/generated/api.ts web/src/generated/openapi.sha256
 
-  security_deps:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-      - name: Run pip-audit
-        run: uv run pip-audit --skip-editable
-
-  security_secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Run trufflehog
-        run: |
-          docker run --rm -v "${{ github.workspace }}:/workspace" \
-            trufflesecurity/trufflehog:latest filesystem /workspace \
-            --no-update
-
-  contract-policy:
+  contract_policy:
+    needs: [lint_backend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -202,3 +161,78 @@ jobs:
           else
             uv run python scripts/check_contract_version_policy.py --base-ref "origin/${{ github.event.repository.default_branch }}"
           fi
+
+  # ============================================================================
+  # STAGE 3: Tests (Depends on type checks)
+  # ============================================================================
+  test_backend:
+    needs: [check_backend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Pytest
+        run: uv run python -m pytest -n auto
+
+  test_frontend:
+    needs: [check_frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci --prefix web
+      - name: Vitest
+        run: npm run --prefix web test -- --run
+
+  # ============================================================================
+  # STAGE 4: Security (Independent - runs in parallel)
+  # ============================================================================
+  security_deps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Run pip-audit
+        run: uv run pip-audit --skip-editable
+
+  security_secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Run trufflehog
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/workspace" \
+            trufflesecurity/trufflehog:latest filesystem /workspace \
+            --no-update
