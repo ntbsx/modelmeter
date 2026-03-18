@@ -16,8 +16,8 @@ import type { DailyResponse, SummaryResponse } from '../types'
 import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
-import DateRangeFilter from '../components/DateRangeFilter'
 import { useSourceScope } from '../hooks/useSourceScope'
+import { useDaysFilter } from '../hooks/useDaysFilter'
 
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
   return (
@@ -30,7 +30,7 @@ function StatCard({ title, value, subtitle }: { title: string, value: string, su
 }
 
 export default function Overview() {
-  const [days, setDays] = useState(7)
+  const { days } = useDaysFilter()
   const [showTokens, setShowTokens] = useState(true)
   const [showSessions, setShowSessions] = useState(true)
   const [showCost, setShowCost] = useState(true)
@@ -104,7 +104,6 @@ export default function Overview() {
             {days === 1 ? 'Last 24 hours' : `Last ${days} days`} of OpenCode usage
           </p>
         </div>
-        <DateRangeFilter days={days} onChange={setDays} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">

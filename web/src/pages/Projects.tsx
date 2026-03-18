@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { fetchApi } from '../lib/api'
@@ -6,11 +5,11 @@ import { formatTokens, formatUsd } from '../lib/utils'
 import type { ProjectsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
-import TimeRangeFilter from '../components/TimeRangeFilter'
 import { useSourceScope } from '../hooks/useSourceScope'
+import { useDaysFilter } from '../hooks/useDaysFilter'
 
 export default function Projects() {
-  const [days, setDays] = useState<1 | 7 | 30 | 90>(7)
+  const { days } = useDaysFilter()
   const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ProjectsResponse>({
@@ -38,7 +37,6 @@ export default function Projects() {
               Usage breakdown by project workspace ({days === 1 ? 'last 24 hours' : `last ${days} days`})
             </p>
           </div>
-          <TimeRangeFilter days={days} onChange={setDays} />
         </div>
       </div>
 

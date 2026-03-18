@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -7,12 +6,12 @@ import { formatTokens, formatUsd } from '../lib/utils'
 import type { ModelsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
-import DateRangeFilter from '../components/DateRangeFilter'
 import { useSourceScope } from '../hooks/useSourceScope'
+import { useDaysFilter } from '../hooks/useDaysFilter'
 
 export default function Models() {
   const { providerId } = useParams<{ providerId: string }>()
-  const [days, setDays] = useState(7)
+  const { days } = useDaysFilter()
   const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ModelsResponse>({
@@ -55,7 +54,6 @@ export default function Models() {
               Usage breakdown by model ({days === 1 ? 'last 24 hours' : `last ${days} days`})
             </p>
           </div>
-          <DateRangeFilter days={days} onChange={setDays} />
         </div>
       </div>
 

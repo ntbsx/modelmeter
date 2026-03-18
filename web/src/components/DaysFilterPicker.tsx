@@ -1,27 +1,22 @@
 import { useState, useRef, useEffect } from 'react'
 import { Calendar } from 'lucide-react'
+import { useDaysFilter } from '../hooks/useDaysFilter'
 
 const PRESET_OPTIONS = [
-  { days: 1, label: '24h' },
+  { days: 1, label: '1d' },
   { days: 7, label: '7d' },
   { days: 30, label: '30d' },
   { days: 90, label: '90d' },
 ] as const
 
-type DateRangeFilterProps = {
-  days: number
-  onChange: (days: number) => void
-}
-
-export default function DateRangeFilter({ days, onChange }: DateRangeFilterProps) {
+export default function DaysFilterPicker() {
+  const { days, setDays } = useDaysFilter()
   const [showPicker, setShowPicker] = useState(false)
-  const [customDays, setCustomDays] = useState<string>('')
+  const [customDays, setCustomDays] = useState('')
   const pickerRef = useRef<HTMLDivElement>(null)
 
-  // Check if current days matches a preset
   const isCustom = !PRESET_OPTIONS.some((opt) => opt.days === days)
 
-  // Close picker when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
@@ -35,7 +30,7 @@ export default function DateRangeFilter({ days, onChange }: DateRangeFilterProps
   const handlePresetClick = (presetDays: number) => {
     setShowPicker(false)
     setCustomDays('')
-    onChange(presetDays)
+    setDays(presetDays)
   }
 
   const handleCustomClick = () => {
@@ -47,53 +42,29 @@ export default function DateRangeFilter({ days, onChange }: DateRangeFilterProps
     const parsed = parseInt(customDays, 10)
     if (!isNaN(parsed) && parsed >= 1) {
       setShowPicker(false)
-      onChange(parsed)
+      setDays(parsed)
     }
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleApplyCustomDays()
+    } else if (e.key === 'Escape') {
+      setShowPicker(false)
     }
   }
 
-  // Format the custom label
-  const customLabel = isCustom ? `${days}d` : 'Custom'
+  const displayLabel = isCustom ? `${days}d` : `${days}d`
 
   return (
-    <div className="flex items-center gap-2 relative" ref={pickerRef}>
-      <span className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Window</span>
-
-      {/* Mobile select */}
-      <select
-        aria-label="Select time range"
-        className="sm:hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2.5 py-1.5 text-xs text-gray-700 dark:text-gray-200"
-        onChange={(event) => {
-          const value = event.target.value
-          if (value === 'custom') {
-            handleCustomClick()
-          } else {
-            handlePresetClick(Number(value))
-          }
-        }}
-        value={isCustom ? 'custom' : days}
-      >
-        {PRESET_OPTIONS.map((option) => (
-          <option key={option.days} value={option.days}>
-            {option.label}
-          </option>
-        ))}
-        <option value="custom">Custom...</option>
-      </select>
-
-      {/* Desktop buttons */}
-      <div className="hidden sm:inline-flex rounded-xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 p-1 gap-1 shadow-sm">
+    <div className="relative" ref={pickerRef}>
+      <div className="hidden sm:inline-flex rounded-xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 p-0.5 gap-0.5 shadow-sm">
         {PRESET_OPTIONS.map((option) => {
-          const active = option.days === days
+          const active = option.days === days && !isCustom
           return (
             <button
               key={option.days}
-              className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+              className={`px-2.5 py-1.5 text-xs rounded-lg font-medium transition-colors ${
                 active
                   ? 'bg-blue-600 text-white'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -106,7 +77,7 @@ export default function DateRangeFilter({ days, onChange }: DateRangeFilterProps
           )
         })}
         <button
-          className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors inline-flex items-center gap-1.5 ${
+          className={`px-2.5 py-1.5 text-xs rounded-lg font-medium transition-colors inline-flex items-center gap-1 ${
             isCustom
               ? 'bg-blue-600 text-white'
               : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
@@ -114,12 +85,32 @@ export default function DateRangeFilter({ days, onChange }: DateRangeFilterProps
           onClick={handleCustomClick}
           type="button"
         >
-          <Calendar className="w-3.5 h-3.5" />
-          {customLabel}
+          <Calendar className="w-3 h-3" />
+          {displayLabel}
         </button>
       </div>
 
-      {/* Custom days picker dropdown */}
+      <select
+        aria-label="Select time range"
+        className="sm:hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200"
+        onChange={(event) => {
+          const value = event.target.value
+          if (value === 'custom') {
+            handleCustomClick()
+          } else {
+            setDays(Number(value))
+          }
+        }}
+        value={isCustom ? 'custom' : days}
+      >
+        {PRESET_OPTIONS.map((option) => (
+          <option key={option.days} value={option.days}>
+            {option.label}
+          </option>
+        ))}
+        <option value="custom">Custom...</option>
+      </select>
+
       {showPicker && (
         <div className="absolute top-full right-0 mt-2 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg p-4 min-w-[200px]">
           <div className="space-y-3">

@@ -1,4 +1,4 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useMemo } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
 import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server } from 'lucide-react'
@@ -6,6 +6,7 @@ import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
 import SourceScopePicker from './components/SourceScopePicker'
+import DaysFilterPicker from './components/DaysFilterPicker'
 import { useAuth } from './hooks/useAuth'
 
 const queryClient = new QueryClient()
@@ -147,6 +148,15 @@ function MobileNav() {
 
 function AuthGate() {
   const { authRequired, isAuthenticated } = useAuth()
+  const location = useLocation()
+
+  const showDaysFilter = useMemo(() => {
+    const path = location.pathname
+    return path === '/' || 
+           path === '/models' || 
+           path.startsWith('/models/') || 
+           path === '/projects'
+  }, [location.pathname])
 
   if (authRequired === null) {
     return (
@@ -171,6 +181,7 @@ function AuthGate() {
           </div>
           <div className="flex items-center gap-3">
             <SourceScopePicker />
+            {showDaysFilter && <DaysFilterPicker />}
             <div className="md:hidden">
               <LogoutButton compact />
             </div>
