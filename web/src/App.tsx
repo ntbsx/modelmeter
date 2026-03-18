@@ -1,10 +1,11 @@
 import { Suspense, lazy } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Activity, BarChart2, FolderGit2, Building2, LogOut } from 'lucide-react'
+import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server } from 'lucide-react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
+import SourceScopePicker from './components/SourceScopePicker'
 import { useAuth } from './hooks/useAuth'
 
 const queryClient = new QueryClient()
@@ -16,6 +17,7 @@ const Projects = lazy(() => import('./pages/Projects'))
 const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
 const Providers = lazy(() => import('./pages/Providers'))
 const Live = lazy(() => import('./pages/Live'))
+const Sources = lazy(() => import('./pages/Sources'))
 const Login = lazy(() => import('./pages/Login'))
 
 type HealthResponse = {
@@ -50,6 +52,7 @@ const links = [
   { to: '/models', icon: Building2, label: 'Providers' },
   { to: '/projects', icon: FolderGit2, label: 'Projects' },
   { to: '/live', icon: Activity, label: 'Live' },
+  { to: '/sources', icon: Server, label: 'Sources' },
 ]
 
 function LogoutButton({ compact = false }: { compact?: boolean }) {
@@ -167,6 +170,7 @@ function AuthGate() {
             ModelMeter
           </div>
           <div className="flex items-center gap-3">
+            <SourceScopePicker />
             <div className="md:hidden">
               <LogoutButton compact />
             </div>
@@ -188,6 +192,7 @@ function AuthGate() {
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:projectId" element={<ProjectDetail />} />
               <Route path="/live" element={<Live />} />
+              <Route path="/sources" element={<Sources />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>

@@ -14,3 +14,7 @@ export type ProjectSessionUsage = components['schemas']['ProjectSessionUsage']
 export type ProjectDetailResponse = components['schemas']['ProjectDetailResponse']
 export type LiveSnapshotResponse = components['schemas']['LiveSnapshotResponse']
 export type ModelDetailResponse = components['schemas']['ModelDetailResponse']
+export type DataSourcePublic = components['schemas']['DataSourcePublic']
+export type SourceRegistryPublic = components['schemas']['SourceRegistryPublic']
+export type SourceHealth = components['schemas']['SourceHealth']
+export type SourceFailure = Record<string, string>

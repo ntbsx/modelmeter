@@ -5,7 +5,6 @@
         "description": "Daily time-series response contract.",
         "properties": {
           "daily": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/DailyUsage"
             },
@@ -22,6 +21,41 @@
               }
             ],
             "title": "Pricing Source"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_cost_usd": {
             "anyOf": [
@@ -392,7 +426,6 @@
             "type": "string"
           },
           "top_models": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/LiveModelUsage"
             },
@@ -400,7 +433,6 @@
             "type": "array"
           },
           "top_tools": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/LiveToolUsage"
             },
@@ -471,7 +503,6 @@
             "title": "Cost Usd"
           },
           "daily": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/DailyUsage"
             },
@@ -496,6 +527,41 @@
           "provider": {
             "title": "Provider",
             "type": "string"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_interactions": {
             "default": 0,
@@ -583,7 +649,6 @@
         "description": "Top models usage response contract.",
         "properties": {
           "models": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ModelUsage"
             },
@@ -630,6 +695,41 @@
               }
             ],
             "title": "Pricing Source"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_cost_usd": {
             "anyOf": [
@@ -716,7 +816,6 @@
             "title": "Project Path"
           },
           "sessions": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ProjectSessionUsage"
             },
@@ -746,6 +845,41 @@
             "minimum": 0.0,
             "title": "Sessions Returned",
             "type": "integer"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_cost_usd": {
             "anyOf": [
@@ -900,6 +1034,13 @@
             ],
             "title": "Project Path"
           },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
           "total_interactions": {
             "default": 0,
             "minimum": 0.0,
@@ -939,7 +1080,6 @@
             "title": "Pricing Source"
           },
           "projects": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ProjectUsage"
             },
@@ -969,6 +1109,41 @@
             "minimum": 0.0,
             "title": "Projects Returned",
             "type": "integer"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_cost_usd": {
             "anyOf": [
@@ -1076,7 +1251,6 @@
             "title": "Pricing Source"
           },
           "providers": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ProviderUsage"
             },
@@ -1106,6 +1280,41 @@
             "minimum": 0.0,
             "title": "Providers Returned",
             "type": "integer"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_cost_usd": {
             "anyOf": [
@@ -1229,6 +1438,25 @@
         "title": "SQLiteDiagnostics",
         "type": "object"
       },
+      "SourceAuth": {
+        "description": "Optional basic auth credentials for HTTP sources.",
+        "properties": {
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "SourceAuth",
+        "type": "object"
+      },
       "SourceHealth": {
         "description": "Health status for one source.",
         "properties": {
@@ -1298,6 +1526,89 @@
         "title": "SourceRegistryPublic",
         "type": "object"
       },
+      "SourceRemoveResponse": {
+        "properties": {
+          "removed": {
+            "title": "Removed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "removed"
+        ],
+        "title": "SourceRemoveResponse",
+        "type": "object"
+      },
+      "SourceUpsertRequest": {
+        "properties": {
+          "auth": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SourceAuth"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "base_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base Url"
+          },
+          "db_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Db Path"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "sqlite",
+              "http"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "preserve_existing_auth": {
+            "default": true,
+            "title": "Preserve Existing Auth",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "title": "SourceUpsertRequest",
+        "type": "object"
+      },
       "SummaryResponse": {
         "description": "Top-level summary response contract.",
         "properties": {
@@ -1322,6 +1633,41 @@
               }
             ],
             "title": "Pricing Source"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
           },
           "total_sessions": {
             "default": 0,
@@ -1504,7 +1850,7 @@
   },
   "info": {
     "title": "ModelMeter",
-    "version": "2026.3.19"
+    "version": "2026.3.20"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -1624,6 +1970,24 @@
                 }
               ],
               "title": "Pricing File"
+            }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
             }
           }
         ],
@@ -1803,6 +2167,24 @@
               ],
               "title": "Pricing File"
             }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
+            }
           }
         ],
         "responses": {
@@ -1910,6 +2292,24 @@
                 }
               ],
               "title": "Pricing File"
+            }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
             }
           }
         ],
@@ -2029,6 +2429,24 @@
               ],
               "title": "Pricing File"
             }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
+            }
           }
         ],
         "responses": {
@@ -2117,6 +2535,24 @@
                 }
               ],
               "title": "Pricing File"
+            }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
             }
           }
         ],
@@ -2219,6 +2655,24 @@
                 }
               ],
               "title": "Pricing File"
+            }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
             }
           }
         ],
@@ -2336,6 +2790,24 @@
               ],
               "title": "Pricing File"
             }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
+            }
           }
         ],
         "responses": {
@@ -2438,6 +2910,24 @@
               ],
               "title": "Pricing File"
             }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
+            }
           }
         ],
         "responses": {
@@ -2503,6 +2993,92 @@
           }
         },
         "summary": "Sources Check"
+      }
+    },
+    "/api/sources/{source_id}": {
+      "delete": {
+        "operationId": "remove_source_api_api_sources__source_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRemoveResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Source Api"
+      },
+      "put": {
+        "operationId": "upsert_source_api_api_sources__source_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "source_id",
+            "required": true,
+            "schema": {
+              "title": "Source Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SourceUpsertRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SourceRegistryPublic"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upsert Source Api"
       }
     },
     "/api/summary": {
@@ -2587,6 +3163,24 @@
                 }
               ],
               "title": "Pricing File"
+            }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
             }
           }
         ],

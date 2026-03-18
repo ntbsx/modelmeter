@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import urllib.error
 from pathlib import Path
 from typing import Any, cast
@@ -49,7 +48,7 @@ def test_save_source_registry_uses_private_file_permissions(tmp_path: Path) -> N
     assert registry_path.stat().st_mode & 0o777 == 0o600
 
 
-def test_check_source_health_uses_authenticated_endpoint(
+def test_check_source_health_does_not_send_auth_header(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}
@@ -73,10 +72,10 @@ def test_check_source_health_uses_authenticated_endpoint(
     )
 
     assert health.is_reachable is True
-    assert captured["url"] == "https://example.com/api/auth/check"
+    assert captured["url"] == "https://example.com/health"
     assert captured["timeout"] == 7
-    expected = "Basic " + base64.b64encode(b"user:s3cret").decode("ascii")
-    assert captured["auth"] == expected
+    # Health endpoint is auth-exempt, so no auth header should be sent
+    assert captured["auth"] is None
 
 
 def test_check_source_health_reports_http_auth_failures(
@@ -85,7 +84,7 @@ def test_check_source_health_reports_http_auth_failures(
     def _mock_urlopen(request: Any, timeout: int) -> _MockResponse:
         _ = (request, timeout)
         raise urllib.error.HTTPError(
-            url="https://example.com/api/auth/check",
+            url="https://example.com/health",
             code=401,
             msg="Unauthorized",
             hdrs=cast(Any, None),

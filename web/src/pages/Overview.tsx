@@ -17,6 +17,7 @@ import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import DateRangeFilter from '../components/DateRangeFilter'
+import { useSourceScope } from '../hooks/useSourceScope'
 
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
   return (
@@ -34,6 +35,7 @@ export default function Overview() {
   const [showSessions, setShowSessions] = useState(true)
   const [showCost, setShowCost] = useState(true)
   const timezoneOffsetMinutes = -new Date().getTimezoneOffset()
+  const { sourceScope } = useSourceScope()
 
   const { theme } = useTheme()
   const isDark =
@@ -41,13 +43,18 @@ export default function Overview() {
     (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
   const { data: summary, isLoading: loadingSummary } = useQuery<SummaryResponse>({
-    queryKey: ['summary', days],
-    queryFn: () => fetchApi('/summary', { days })
+    queryKey: ['summary', days, sourceScope],
+    queryFn: () => fetchApi('/summary', { days, source_scope: sourceScope })
   })
 
   const { data: daily, isLoading: loadingDaily } = useQuery<DailyResponse>({
-    queryKey: ['daily', days],
-    queryFn: () => fetchApi('/daily', { days, timezone_offset_minutes: timezoneOffsetMinutes })
+    queryKey: ['daily', days, sourceScope],
+    queryFn: () =>
+      fetchApi('/daily', {
+        days,
+        timezone_offset_minutes: timezoneOffsetMinutes,
+        source_scope: sourceScope,
+      })
   })
 
   if (loadingSummary || loadingDaily) {
@@ -63,7 +70,7 @@ export default function Overview() {
     )
   }
 
-  const chartData = daily.daily.map((entry) => {
+  const chartData = (daily.daily ?? []).map((entry) => {
       const [year, month, day] = entry.day.split('-').map(Number)
       const parsed = new Date(year, (month || 1) - 1, day || 1)
       return {

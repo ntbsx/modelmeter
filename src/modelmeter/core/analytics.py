@@ -26,6 +26,7 @@ from modelmeter.core.models import (
 )
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
 from modelmeter.core.providers import provider_from_model_id
+from modelmeter.core.sources import SourceScope, SourceScopeKind
 from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.data.storage import resolve_storage_paths
 
@@ -51,6 +52,97 @@ def _resolve_sqlite_path(settings: AppSettings, db_path_override: Path | None = 
     return paths.sqlite_db_path
 
 
+def _scope_label(source_scope: SourceScope | None) -> str:
+    if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL:
+        return "local"
+    if source_scope.kind == SourceScopeKind.ALL:
+        return "all"
+    return f"source:{source_scope.source_id}"
+
+
+def _merge_daily_rows(
+    local_rows: list[DailyUsage], federated_rows: list[DailyUsage]
+) -> list[DailyUsage]:
+    merged: dict[date, DailyUsage] = {}
+    for row in local_rows + federated_rows:
+        existing = merged.get(row.day)
+        if existing is None:
+            merged[row.day] = DailyUsage(
+                day=row.day,
+                usage=TokenUsage(
+                    input_tokens=row.usage.input_tokens,
+                    output_tokens=row.usage.output_tokens,
+                    cache_read_tokens=row.usage.cache_read_tokens,
+                    cache_write_tokens=row.usage.cache_write_tokens,
+                ),
+                total_sessions=row.total_sessions,
+                cost_usd=row.cost_usd,
+            )
+            continue
+        existing.usage.input_tokens += row.usage.input_tokens
+        existing.usage.output_tokens += row.usage.output_tokens
+        existing.usage.cache_read_tokens += row.usage.cache_read_tokens
+        existing.usage.cache_write_tokens += row.usage.cache_write_tokens
+        existing.total_sessions += row.total_sessions
+        if existing.cost_usd is not None or row.cost_usd is not None:
+            existing.cost_usd = round((existing.cost_usd or 0.0) + (row.cost_usd or 0.0), 8)
+    return sorted(merged.values(), key=lambda item: item.day)
+
+
+def _merge_model_rows(
+    local_rows: list[ModelUsage], federated_rows: list[ModelUsage]
+) -> list[ModelUsage]:
+    from modelmeter.core.federation import merge_model_usage
+
+    merged: dict[str, ModelUsage] = {}
+    for row in local_rows + federated_rows:
+        existing = merged.get(row.model_id)
+        if existing is None:
+            merged[row.model_id] = row
+        else:
+            merged[row.model_id] = merge_model_usage(existing, row)
+    return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
+
+
+def _merge_provider_rows(
+    local_rows: list[ProviderUsage], federated_rows: list[ProviderUsage]
+) -> list[ProviderUsage]:
+    from modelmeter.core.federation import merge_provider_usage
+
+    merged: dict[str, ProviderUsage] = {}
+    for row in local_rows + federated_rows:
+        existing = merged.get(row.provider)
+        if existing is None:
+            merged[row.provider] = row
+        else:
+            merged[row.provider] = merge_provider_usage(existing, row)
+    return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
+
+
+def _merge_project_rows(
+    local_rows: list[ProjectUsage], federated_rows: list[ProjectUsage]
+) -> list[ProjectUsage]:
+    from modelmeter.core.federation import merge_project_usage
+
+    merged: dict[str, ProjectUsage] = {}
+    for row in local_rows + federated_rows:
+        existing = merged.get(row.project_id)
+        if existing is None:
+            merged[row.project_id] = row
+        else:
+            merged[row.project_id] = merge_project_usage(existing, row)
+    return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
+
+
+def _paginate_rows[T](rows: list[T], *, offset: int, limit: int) -> list[T]:
+    page = rows
+    if offset > 0:
+        page = page[offset:]
+    if limit > 0:
+        page = page[:limit]
+    return page
+
+
 def get_summary(
     *,
     settings: AppSettings,
@@ -59,8 +151,66 @@ def get_summary(
     pricing_file_override: Path | None = None,
     token_source: Literal["auto", "message", "steps"] = "auto",
     session_count_source: Literal["auto", "activity", "session"] = "auto",
+    source_scope: SourceScope | None = None,
 ) -> SummaryResponse:
     """Return summary usage totals."""
+    from modelmeter.core.federation import execute_summary_federated, merge_token_usage
+    from modelmeter.core.sources import SourceScopeKind, get_sources_for_scope
+
+    if source_scope is not None and source_scope.kind == SourceScopeKind.ALL:
+        local_failed = False
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_summary_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        try:
+            local_result = get_summary(
+                settings=settings,
+                days=days,
+                db_path_override=db_path_override,
+                pricing_file_override=pricing_file_override,
+                token_source=token_source,
+                session_count_source=session_count_source,
+                source_scope=None,
+            )
+            result.usage = merge_token_usage(local_result.usage, result.usage)
+            result.total_sessions = local_result.total_sessions + result.total_sessions
+            if local_result.cost_usd is not None or result.cost_usd is not None:
+                result.cost_usd = (local_result.cost_usd or 0) + (result.cost_usd or 0)
+            if local_result.pricing_source:
+                result.pricing_source = local_result.pricing_source
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_succeeded = ["local"] + result.sources_succeeded
+        except RuntimeError as exc:
+            local_failed = True
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_failed = [
+                {"source_id": "local", "error": str(exc)}
+            ] + result.sources_failed
+
+        if local_failed and not result.sources_succeeded:
+            raise RuntimeError(result.sources_failed[0]["error"])
+        return result
+
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_summary_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        return result
+
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     resolved_source = repository.resolve_token_source(days=days, token_source=token_source)
@@ -102,6 +252,14 @@ def get_summary(
         window_days=days,
         cost_usd=cost_usd,
         pricing_source=pricing_source,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )
 
 
@@ -114,8 +272,71 @@ def get_daily(
     pricing_file_override: Path | None = None,
     token_source: Literal["auto", "message", "steps"] = "auto",
     session_count_source: Literal["auto", "activity", "session"] = "auto",
+    source_scope: SourceScope | None = None,
 ) -> DailyResponse:
     """Return daily usage time-series and totals."""
+    from modelmeter.core.federation import execute_daily_federated, merge_token_usage
+    from modelmeter.core.sources import SourceScopeKind, get_sources_for_scope
+
+    if source_scope is not None and source_scope.kind == SourceScopeKind.ALL:
+        local_failed = False
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_daily_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            timezone_offset_minutes=timezone_offset_minutes,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        try:
+            local_result = get_daily(
+                settings=settings,
+                days=days,
+                timezone_offset_minutes=timezone_offset_minutes,
+                db_path_override=db_path_override,
+                pricing_file_override=pricing_file_override,
+                token_source=token_source,
+                session_count_source=session_count_source,
+                source_scope=None,
+            )
+            result.totals = merge_token_usage(local_result.totals, result.totals)
+            result.total_sessions = local_result.total_sessions + result.total_sessions
+            if local_result.total_cost_usd is not None or result.total_cost_usd is not None:
+                result.total_cost_usd = (local_result.total_cost_usd or 0) + (
+                    result.total_cost_usd or 0
+                )
+            if local_result.pricing_source:
+                result.pricing_source = local_result.pricing_source
+            result.daily = _merge_daily_rows(local_result.daily, result.daily)
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_succeeded = ["local"] + result.sources_succeeded
+        except RuntimeError as exc:
+            local_failed = True
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_failed = [
+                {"source_id": "local", "error": str(exc)}
+            ] + result.sources_failed
+
+        if local_failed and not result.sources_succeeded:
+            raise RuntimeError(result.sources_failed[0]["error"])
+        return result
+
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_daily_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            timezone_offset_minutes=timezone_offset_minutes,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     resolved_source = repository.resolve_token_source(days=days, token_source=token_source)
@@ -198,6 +419,14 @@ def get_daily(
         total_cost_usd=total_cost_usd,
         pricing_source=pricing_source,
         daily=daily_rows,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )
 
 
@@ -210,8 +439,86 @@ def get_models(
     provider: str | None = None,
     offset: int = 0,
     limit: int = 20,
+    token_source: str = "auto",
+    session_count_source: str = "auto",
+    source_scope: SourceScope | None = None,
 ) -> ModelsResponse:
     """Return top model usage aggregates."""
+    from modelmeter.core.federation import execute_models_federated, merge_token_usage
+    from modelmeter.core.sources import SourceScopeKind, get_sources_for_scope
+
+    if source_scope is not None and source_scope.kind == SourceScopeKind.ALL:
+        local_failed = False
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_models_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            offset=0,
+            limit=0,
+            provider=provider,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        try:
+            local_result = get_models(
+                settings=settings,
+                days=days,
+                db_path_override=db_path_override,
+                pricing_file_override=pricing_file_override,
+                provider=provider,
+                offset=0,
+                limit=0,
+                token_source=token_source,
+                session_count_source=session_count_source,
+                source_scope=None,
+            )
+            result.totals = merge_token_usage(local_result.totals, result.totals)
+            result.total_sessions = local_result.total_sessions + result.total_sessions
+            if local_result.total_cost_usd is not None or result.total_cost_usd is not None:
+                result.total_cost_usd = (local_result.total_cost_usd or 0) + (
+                    result.total_cost_usd or 0
+                )
+            if local_result.pricing_source:
+                result.pricing_source = local_result.pricing_source
+            merged_rows = _merge_model_rows(local_result.models, result.models)
+            result.total_models = len(merged_rows)
+            result.priced_models = sum(1 for item in merged_rows if item.has_pricing)
+            result.unpriced_models = max(0, result.total_models - result.priced_models)
+            result.models = _paginate_rows(merged_rows, offset=offset, limit=limit)
+            result.models_offset = offset
+            result.models_limit = limit
+            result.models_returned = len(result.models)
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_succeeded = ["local"] + result.sources_succeeded
+        except RuntimeError as exc:
+            local_failed = True
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_failed = [
+                {"source_id": "local", "error": str(exc)}
+            ] + result.sources_failed
+
+        if local_failed and not result.sources_succeeded:
+            raise RuntimeError(result.sources_failed[0]["error"])
+        return result
+
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_models_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            offset=offset,
+            limit=limit,
+            provider=provider,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     rows = repository.fetch_model_usage_detail(days=days)
@@ -279,7 +586,7 @@ def get_models(
     return ModelsResponse(
         window_days=days,
         models_offset=offset,
-        models_limit=limit,
+        models_limit=limit if limit > 0 else None,
         models_returned=len(usage_rows),
         total_models=total_models,
         totals=totals,
@@ -289,6 +596,14 @@ def get_models(
         priced_models=priced_models,
         unpriced_models=max(0, len(rows) - priced_models),
         models=usage_rows,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )
 
 
@@ -300,8 +615,81 @@ def get_providers(
     pricing_file_override: Path | None = None,
     offset: int = 0,
     limit: int = 20,
+    token_source: str = "auto",
+    session_count_source: str = "auto",
+    source_scope: SourceScope | None = None,
 ) -> ProvidersResponse:
     """Return usage aggregates grouped by provider."""
+    from modelmeter.core.federation import execute_providers_federated, merge_token_usage
+    from modelmeter.core.sources import SourceScopeKind, get_sources_for_scope
+
+    if source_scope is not None and source_scope.kind == SourceScopeKind.ALL:
+        local_failed = False
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_providers_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            offset=0,
+            limit=0,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        try:
+            local_result = get_providers(
+                settings=settings,
+                days=days,
+                db_path_override=db_path_override,
+                pricing_file_override=pricing_file_override,
+                offset=0,
+                limit=0,
+                token_source=token_source,
+                session_count_source=session_count_source,
+                source_scope=None,
+            )
+            result.totals = merge_token_usage(local_result.totals, result.totals)
+            result.total_sessions = local_result.total_sessions + result.total_sessions
+            if local_result.total_cost_usd is not None or result.total_cost_usd is not None:
+                result.total_cost_usd = (local_result.total_cost_usd or 0) + (
+                    result.total_cost_usd or 0
+                )
+            if local_result.pricing_source:
+                result.pricing_source = local_result.pricing_source
+            merged_rows = _merge_provider_rows(local_result.providers, result.providers)
+            result.total_providers = len(merged_rows)
+            result.providers = _paginate_rows(merged_rows, offset=offset, limit=limit)
+            result.providers_offset = offset
+            result.providers_limit = limit
+            result.providers_returned = len(result.providers)
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_succeeded = ["local"] + result.sources_succeeded
+        except RuntimeError as exc:
+            local_failed = True
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_failed = [
+                {"source_id": "local", "error": str(exc)}
+            ] + result.sources_failed
+
+        if local_failed and not result.sources_succeeded:
+            raise RuntimeError(result.sources_failed[0]["error"])
+        return result
+
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_providers_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            offset=offset,
+            limit=limit,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     model_rows = repository.fetch_model_usage_detail(days=days)
@@ -371,7 +759,7 @@ def get_providers(
     return ProvidersResponse(
         window_days=days,
         providers_offset=offset,
-        providers_limit=limit,
+        providers_limit=limit if limit > 0 else None,
         providers_returned=len(provider_rows),
         total_providers=total_providers,
         totals=_token_usage_from_row(summary_row),
@@ -379,6 +767,14 @@ def get_providers(
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
         pricing_source=pricing_source,
         providers=provider_rows,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )
 
 
@@ -389,8 +785,11 @@ def get_model_detail(
     days: int | None = None,
     db_path_override: Path | None = None,
     pricing_file_override: Path | None = None,
+    source_scope: SourceScope | None = None,
 ) -> ModelDetailResponse:
     """Return usage details for one model."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated model detail analytics not yet implemented")
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
 
@@ -456,8 +855,81 @@ def get_projects(
     pricing_file_override: Path | None = None,
     offset: int = 0,
     limit: int = 20,
+    token_source: str = "auto",
+    session_count_source: str = "auto",
+    source_scope: SourceScope | None = None,
 ) -> ProjectsResponse:
     """Return top project usage aggregates."""
+    from modelmeter.core.federation import execute_projects_federated, merge_token_usage
+    from modelmeter.core.sources import SourceScopeKind, get_sources_for_scope
+
+    if source_scope is not None and source_scope.kind == SourceScopeKind.ALL:
+        local_failed = False
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_projects_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            offset=0,
+            limit=0,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        try:
+            local_result = get_projects(
+                settings=settings,
+                days=days,
+                db_path_override=db_path_override,
+                pricing_file_override=pricing_file_override,
+                offset=0,
+                limit=0,
+                token_source=token_source,
+                session_count_source=session_count_source,
+                source_scope=None,
+            )
+            result.totals = merge_token_usage(local_result.totals, result.totals)
+            result.total_sessions = local_result.total_sessions + result.total_sessions
+            if local_result.total_cost_usd is not None or result.total_cost_usd is not None:
+                result.total_cost_usd = (local_result.total_cost_usd or 0) + (
+                    result.total_cost_usd or 0
+                )
+            if local_result.pricing_source:
+                result.pricing_source = local_result.pricing_source
+            merged_rows = _merge_project_rows(local_result.projects, result.projects)
+            result.total_projects = len(merged_rows)
+            result.projects = _paginate_rows(merged_rows, offset=offset, limit=limit)
+            result.projects_offset = offset
+            result.projects_limit = limit
+            result.projects_returned = len(result.projects)
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_succeeded = ["local"] + result.sources_succeeded
+        except RuntimeError as exc:
+            local_failed = True
+            result.sources_considered = ["local"] + result.sources_considered
+            result.sources_failed = [
+                {"source_id": "local", "error": str(exc)}
+            ] + result.sources_failed
+
+        if local_failed and not result.sources_succeeded:
+            raise RuntimeError(result.sources_failed[0]["error"])
+        return result
+
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        sources, failures = get_sources_for_scope(settings=settings, scope=source_scope)
+        result, _ = execute_projects_federated(
+            sources,
+            failures,
+            settings=settings,
+            days=days,
+            offset=offset,
+            limit=limit,
+            token_source=token_source,
+            session_count_source=session_count_source,
+            scope_label=_scope_label(source_scope),
+        )
+        return result
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
     rows = repository.fetch_project_usage_detail(days=days)
@@ -498,6 +970,7 @@ def get_projects(
                 total_interactions=int(row["total_interactions"]),
                 cost_usd=round(project_cost, 8) if project_cost is not None else None,
                 has_pricing=project_cost is not None,
+                sources=["local"],
             )
         )
 
@@ -511,7 +984,7 @@ def get_projects(
     return ProjectsResponse(
         window_days=days,
         projects_offset=offset,
-        projects_limit=limit,
+        projects_limit=limit if limit > 0 else None,
         projects_returned=len(usage_rows),
         total_projects=total_projects,
         totals=_token_usage_from_row(summary_row),
@@ -519,6 +992,14 @@ def get_projects(
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
         pricing_source=pricing_source,
         projects=usage_rows,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )
 
 
@@ -531,8 +1012,11 @@ def get_project_detail(
     session_limit: int | None = None,
     db_path_override: Path | None = None,
     pricing_file_override: Path | None = None,
+    source_scope: SourceScope | None = None,
 ) -> ProjectDetailResponse:
     """Return session-level usage details for one project."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated project detail analytics not yet implemented")
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
 
@@ -612,4 +1096,12 @@ def get_project_detail(
         total_cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
         pricing_source=pricing_source,
         sessions=sliced_sessions,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_succeeded=["local"]
+        if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
+        else [],
+        sources_failed=[],
     )

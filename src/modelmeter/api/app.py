@@ -21,6 +21,7 @@ from fastapi.responses import (
     StreamingResponse,
 )
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, ValidationError
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.analytics import (
@@ -46,12 +47,17 @@ from modelmeter.core.models import (
     UpdateCheckResponse,
 )
 from modelmeter.core.sources import (
+    DataSourceConfig,
+    SourceAuth,
     SourceHealth,
     SourceRegistryError,
     SourceRegistryPublic,
+    SourceScope,
     check_source_health,
     load_source_registry,
+    remove_source,
     to_public_registry,
+    upsert_source,
 )
 from modelmeter.core.updater import check_for_updates
 
@@ -64,6 +70,20 @@ LOCAL_CORS_ORIGINS = [
 
 AUTH_PROTECTED_PREFIXES = ("/api",)
 SSE_PATH_PREFIXES = ("/api/live/events",)
+
+
+class SourceUpsertRequest(BaseModel):
+    label: str | None = None
+    kind: Literal["sqlite", "http"]
+    enabled: bool = True
+    db_path: str | None = None
+    base_url: str | None = None
+    auth: SourceAuth | None = None
+    preserve_existing_auth: bool = True
+
+
+class SourceRemoveResponse(BaseModel):
+    removed: bool
 
 
 def _optional_path(value: str | None) -> Path | None:
@@ -201,6 +221,53 @@ def create_app(
         except SourceRegistryError as exc:
             raise HTTPException(status_code=500, detail=str(exc)) from exc
 
+    @app.put("/api/sources/{source_id}", response_model=SourceRegistryPublic)
+    def upsert_source_api(source_id: str, payload: SourceUpsertRequest) -> SourceRegistryPublic:
+        try:
+            registry = load_source_registry(settings=settings)
+            existing = next(
+                (item for item in registry.sources if item.source_id == source_id), None
+            )
+
+            auth = payload.auth
+            if (
+                payload.kind == "http"
+                and auth is None
+                and payload.preserve_existing_auth
+                and existing is not None
+                and existing.kind == "http"
+            ):
+                auth = existing.auth
+
+            source = DataSourceConfig(
+                source_id=source_id,
+                label=payload.label,
+                kind=payload.kind,
+                enabled=payload.enabled,
+                db_path=_optional_path(payload.db_path),
+                base_url=payload.base_url,
+                auth=auth,
+            )
+            upsert_source(settings=settings, source=source)
+            updated = load_source_registry(settings=settings)
+            return to_public_registry(updated)
+        except SourceRegistryError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        except (ValidationError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.delete("/api/sources/{source_id}", response_model=SourceRemoveResponse)
+    def remove_source_api(source_id: str) -> SourceRemoveResponse:
+        try:
+            removed = remove_source(settings=settings, source_id=source_id)
+        except SourceRegistryError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+        if not removed:
+            raise HTTPException(status_code=404, detail=f"No source found with id '{source_id}'.")
+
+        return SourceRemoveResponse(removed=True)
+
     @app.get("/api/auth/check")
     def auth_check() -> dict[str, str]:
         return {
@@ -219,8 +286,12 @@ def create_app(
         session_source: Literal["auto", "activity", "session"] = Query(default="auto"),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> SummaryResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_summary(
                 settings=settings,
                 days=days,
@@ -228,9 +299,12 @@ def create_app(
                 session_count_source=session_source,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/daily", response_model=DailyResponse)
     def daily(
@@ -240,8 +314,12 @@ def create_app(
         session_source: Literal["auto", "activity", "session"] = Query(default="auto"),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> DailyResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_daily(
                 settings=settings,
                 days=days,
@@ -250,9 +328,14 @@ def create_app(
                 session_count_source=session_source,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/models", response_model=ModelsResponse)
     def models(
@@ -262,8 +345,12 @@ def create_app(
         provider: str | None = Query(default=None),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ModelsResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_models(
                 settings=settings,
                 days=days,
@@ -272,9 +359,12 @@ def create_app(
                 provider=provider,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/providers", response_model=ProvidersResponse)
     def providers(
@@ -283,8 +373,12 @@ def create_app(
         limit: int = Query(default=20, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ProvidersResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_providers(
                 settings=settings,
                 days=days,
@@ -292,9 +386,12 @@ def create_app(
                 limit=limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/models/{model_id:path}", response_model=ModelDetailResponse)
     def model_detail(
@@ -302,17 +399,26 @@ def create_app(
         days: int | None = Query(default=7, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ModelDetailResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_model_detail(
                 settings=settings,
                 model_id=model_id,
                 days=days,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/projects", response_model=ProjectsResponse)
     def projects(
@@ -321,8 +427,12 @@ def create_app(
         limit: int = Query(default=20, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ProjectsResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_projects(
                 settings=settings,
                 days=days,
@@ -330,9 +440,12 @@ def create_app(
                 limit=limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/projects/{project_id}", response_model=ProjectDetailResponse)
     def project_detail(
@@ -342,8 +455,12 @@ def create_app(
         session_limit: int | None = Query(default=None, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> ProjectDetailResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_project_detail(
                 settings=settings,
                 project_id=project_id,
@@ -352,9 +469,14 @@ def create_app(
                 session_limit=session_limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/live/snapshot", response_model=LiveSnapshotResponse)
     def live_snapshot(
@@ -364,8 +486,12 @@ def create_app(
         tools_limit: int = Query(default=8, ge=1),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> LiveSnapshotResponse:
         try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
             return get_live_snapshot(
                 settings=settings,
                 window_minutes=window_minutes,
@@ -374,9 +500,14 @@ def create_app(
                 tools_limit=tools_limit,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
             )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:
             _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/live/events")
     async def live_events(
@@ -389,6 +520,9 @@ def create_app(
         once: bool = Query(default=False),
         db_path: str | None = Query(default=None),
         pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
     ) -> StreamingResponse:
         async def event_generator():
             try:
@@ -397,6 +531,9 @@ def create_app(
                         break
 
                     try:
+                        scope = (
+                            SourceScope.parse(source_scope) if source_scope is not None else None
+                        )
                         snapshot = get_live_snapshot(
                             settings=settings,
                             window_minutes=window_minutes,
@@ -405,9 +542,17 @@ def create_app(
                             tools_limit=tools_limit,
                             db_path_override=_optional_path(db_path),
                             pricing_file_override=_optional_path(pricing_file),
+                            source_scope=scope,
                         )
                         payload = json.dumps(snapshot.model_dump(mode="json"))
                         yield f"event: live.snapshot\ndata: {payload}\n\n"
+                    except (NotImplementedError, ValueError) as exc:
+                        payload = json.dumps({"detail": str(exc)})
+                        yield f"event: live.error\ndata: {payload}\n\n"
+                        if once:
+                            break
+                        await asyncio.sleep(interval_seconds)
+                        continue
                     except RuntimeError as exc:
                         payload = json.dumps({"detail": str(exc)})
                         yield f"event: live.error\ndata: {payload}\n\n"

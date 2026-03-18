@@ -208,6 +208,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sources/{source_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upsert Source Api */
+        put: operations["upsert_source_api_api_sources__source_id__put"];
+        post?: never;
+        /** Remove Source Api */
+        delete: operations["remove_source_api_api_sources__source_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/summary": {
         parameters: {
             query?: never;
@@ -268,13 +286,20 @@ export interface components {
          * @description Daily time-series response contract.
          */
         DailyResponse: {
-            /**
-             * Daily
-             * @default []
-             */
-            daily: components["schemas"]["DailyUsage"][];
+            /** Daily */
+            daily?: components["schemas"]["DailyUsage"][];
             /** Pricing Source */
             pricing_source?: string | null;
+            /** Source Scope */
+            source_scope?: string | null;
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
+                [key: string]: string;
+            }[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -429,16 +454,10 @@ export interface components {
             pricing_source?: string | null;
             /** Token Source */
             token_source: string;
-            /**
-             * Top Models
-             * @default []
-             */
-            top_models: components["schemas"]["LiveModelUsage"][];
-            /**
-             * Top Tools
-             * @default []
-             */
-            top_tools: components["schemas"]["LiveToolUsage"][];
+            /** Top Models */
+            top_models?: components["schemas"]["LiveModelUsage"][];
+            /** Top Tools */
+            top_tools?: components["schemas"]["LiveToolUsage"][];
             /**
              * Total Interactions
              * @default 0
@@ -476,17 +495,24 @@ export interface components {
         ModelDetailResponse: {
             /** Cost Usd */
             cost_usd?: number | null;
-            /**
-             * Daily
-             * @default []
-             */
-            daily: components["schemas"]["DailyUsage"][];
+            /** Daily */
+            daily?: components["schemas"]["DailyUsage"][];
             /** Model Id */
             model_id: string;
             /** Pricing Source */
             pricing_source?: string | null;
             /** Provider */
             provider: string;
+            /** Source Scope */
+            source_scope?: string | null;
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
+                [key: string]: string;
+            }[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /**
              * Total Interactions
              * @default 0
@@ -532,11 +558,8 @@ export interface components {
          * @description Top models usage response contract.
          */
         ModelsResponse: {
-            /**
-             * Models
-             * @default []
-             */
-            models: components["schemas"]["ModelUsage"][];
+            /** Models */
+            models?: components["schemas"]["ModelUsage"][];
             /** Models Limit */
             models_limit?: number | null;
             /**
@@ -556,6 +579,16 @@ export interface components {
             priced_models: number;
             /** Pricing Source */
             pricing_source?: string | null;
+            /** Source Scope */
+            source_scope?: string | null;
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
+                [key: string]: string;
+            }[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -590,11 +623,8 @@ export interface components {
             project_name: string;
             /** Project Path */
             project_path?: string | null;
-            /**
-             * Sessions
-             * @default []
-             */
-            sessions: components["schemas"]["ProjectSessionUsage"][];
+            /** Sessions */
+            sessions?: components["schemas"]["ProjectSessionUsage"][];
             /** Sessions Limit */
             sessions_limit?: number | null;
             /**
@@ -607,6 +637,16 @@ export interface components {
              * @default 0
              */
             sessions_returned: number;
+            /** Source Scope */
+            source_scope?: string | null;
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
+                [key: string]: string;
+            }[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -671,6 +711,8 @@ export interface components {
             project_name: string;
             /** Project Path */
             project_path?: string | null;
+            /** Sources */
+            sources?: string[];
             /**
              * Total Interactions
              * @default 0
@@ -690,11 +732,8 @@ export interface components {
         ProjectsResponse: {
             /** Pricing Source */
             pricing_source?: string | null;
-            /**
-             * Projects
-             * @default []
-             */
-            projects: components["schemas"]["ProjectUsage"][];
+            /** Projects */
+            projects?: components["schemas"]["ProjectUsage"][];
             /** Projects Limit */
             projects_limit?: number | null;
             /**
@@ -707,6 +746,16 @@ export interface components {
              * @default 0
              */
             projects_returned: number;
+            /** Source Scope */
+            source_scope?: string | null;
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
+                [key: string]: string;
+            }[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -756,11 +805,8 @@ export interface components {
         ProvidersResponse: {
             /** Pricing Source */
             pricing_source?: string | null;
-            /**
-             * Providers
-             * @default []
-             */
-            providers: components["schemas"]["ProviderUsage"][];
+            /** Providers */
+            providers?: components["schemas"]["ProviderUsage"][];
             /** Providers Limit */
             providers_limit?: number | null;
             /**
@@ -773,6 +819,16 @@ export interface components {
              * @default 0
              */
             providers_returned: number;
+            /** Source Scope */
+            source_scope?: string | null;
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
+                [key: string]: string;
+            }[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -818,6 +874,16 @@ export interface components {
             tables_present?: string[];
         };
         /**
+         * SourceAuth
+         * @description Optional basic auth credentials for HTTP sources.
+         */
+        SourceAuth: {
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
+        };
+        /**
          * SourceHealth
          * @description Health status for one source.
          */
@@ -849,6 +915,36 @@ export interface components {
              */
             version: number;
         };
+        /** SourceRemoveResponse */
+        SourceRemoveResponse: {
+            /** Removed */
+            removed: boolean;
+        };
+        /** SourceUpsertRequest */
+        SourceUpsertRequest: {
+            auth?: components["schemas"]["SourceAuth"] | null;
+            /** Base Url */
+            base_url?: string | null;
+            /** Db Path */
+            db_path?: string | null;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sqlite" | "http";
+            /** Label */
+            label?: string | null;
+            /**
+             * Preserve Existing Auth
+             * @default true
+             */
+            preserve_existing_auth: boolean;
+        };
         /**
          * SummaryResponse
          * @description Top-level summary response contract.
@@ -858,6 +954,16 @@ export interface components {
             cost_usd?: number | null;
             /** Pricing Source */
             pricing_source?: string | null;
+            /** Source Scope */
+            source_scope?: string | null;
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
+                [key: string]: string;
+            }[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /**
              * Total Sessions
              * @default 0
@@ -977,6 +1083,8 @@ export interface operations {
                 session_source?: "auto" | "activity" | "session";
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1046,6 +1154,8 @@ export interface operations {
                 once?: boolean;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1082,6 +1192,8 @@ export interface operations {
                 tools_limit?: number;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1118,6 +1230,8 @@ export interface operations {
                 provider?: string | null;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1151,6 +1265,8 @@ export interface operations {
                 days?: number | null;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path: {
@@ -1188,6 +1304,8 @@ export interface operations {
                 limit?: number;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1223,6 +1341,8 @@ export interface operations {
                 session_limit?: number | null;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path: {
@@ -1260,6 +1380,8 @@ export interface operations {
                 limit?: number;
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;
@@ -1327,6 +1449,72 @@ export interface operations {
             };
         };
     };
+    upsert_source_api_api_sources__source_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRegistryPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_source_api_api_sources__source_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceRemoveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     summary_api_summary_get: {
         parameters: {
             query?: {
@@ -1335,6 +1523,8 @@ export interface operations {
                 session_source?: "auto" | "activity" | "session";
                 db_path?: string | null;
                 pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
             };
             header?: never;
             path?: never;

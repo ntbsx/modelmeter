@@ -1,7 +1,7 @@
 const API_BASE = import.meta.env.DEV ? '/api' : '/api'
 const AUTH_STORAGE_KEY = 'modelmeter-auth'
 
-function getAuthHeaders(): HeadersInit {
+function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem(AUTH_STORAGE_KEY)
   if (token) {
     return { Authorization: `Basic ${token}` }
@@ -22,11 +22,33 @@ export function buildApiUrl(endpoint: string, params?: Record<string, string | n
   return url.toString()
 }
 
-export async function fetchApi<T>(endpoint: string, params?: Record<string, string | number>): Promise<T> {
+type FetchApiOptions = {
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  body?: unknown
+}
+
+export async function fetchApi<T>(
+  endpoint: string,
+  params?: Record<string, string | number>,
+  options?: FetchApiOptions
+): Promise<T> {
   const url = buildApiUrl(endpoint, params)
+  const method = options?.method ?? 'GET'
+
+  const headers: Record<string, string> = {
+    ...getAuthHeaders(),
+  }
+
+  let body: string | undefined
+  if (options?.body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+    body = JSON.stringify(options.body)
+  }
 
   const response = await fetch(url.toString(), {
-    headers: getAuthHeaders(),
+    method,
+    headers,
+    body,
   })
 
   if (response.status === 401) {

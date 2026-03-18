@@ -6,6 +6,7 @@ import { formatTokens, formatUsd, cn } from '../lib/utils'
 import type { LiveSnapshotResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
+import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function Live() {
   const [streamData, setStreamData] = useState<LiveSnapshotResponse | null>(null)
@@ -17,10 +18,12 @@ export default function Live() {
   )
   const [reconnectCountdownSeconds, setReconnectCountdownSeconds] = useState<number | null>(null)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
+  const { sourceScope } = useSourceScope()
+  const liveScope = sourceScope === 'self' ? sourceScope : 'self'
 
   const { data: polledData, isError: pollingError } = useQuery<LiveSnapshotResponse>({
-    queryKey: ['live'],
-    queryFn: () => fetchApi('/live/snapshot', { window_minutes: 60 }),
+    queryKey: ['live', liveScope],
+    queryFn: () => fetchApi('/live/snapshot', { window_minutes: 60, source_scope: liveScope }),
     refetchInterval: 3000,
     enabled: streamMode === 'polling' && !isPaused,
   })
@@ -39,7 +42,11 @@ export default function Live() {
     }
 
     const authToken = getAuthToken()
-    const eventsParams: Record<string, string | number> = { window_minutes: 60, interval_seconds: 3 }
+    const eventsParams: Record<string, string | number> = {
+      window_minutes: 60,
+      interval_seconds: 3,
+      source_scope: liveScope,
+    }
     if (authToken) {
       // NOTE: Token in query string is visible in browser history and server logs.
       // This is an inherent limitation of EventSource which cannot set custom headers.
@@ -76,7 +83,7 @@ export default function Live() {
       source.removeEventListener('live.error', onError)
       source.close()
     }
-  }, [isPaused, reconnectAttempt, streamMode])
+  }, [isPaused, reconnectAttempt, liveScope, streamMode])
 
   useEffect(() => {
     if (isPaused || streamMode !== 'polling' || reconnectCountdownSeconds === null) {
@@ -231,13 +238,13 @@ export default function Live() {
             <Box className="w-4 h-4" /> Models
           </div>
           <div className="p-0">
-            {data.top_models.map(m => (
+            {(data.top_models ?? []).map(m => (
                 <div key={m.model_id} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
                   <div className="font-medium text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{m.model_id}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{formatTokens(m.usage.total_tokens)}</div>
                 </div>
               ))}
-            {data.top_models.length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No model activity</div>}
+            {(data.top_models ?? []).length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No model activity</div>}
           </div>
         </div>
 
@@ -246,13 +253,13 @@ export default function Live() {
             <Terminal className="w-4 h-4" /> Tools
           </div>
           <div className="p-0">
-            {data.top_tools.map(t => (
+            {(data.top_tools ?? []).map(t => (
                 <div key={t.tool_name} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
                   <div className="font-medium text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{t.tool_name}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{t.total_calls} calls</div>
                 </div>
               ))}
-            {data.top_tools.length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No tool activity</div>}
+            {(data.top_tools ?? []).length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No tool activity</div>}
           </div>
         </div>
       </div>

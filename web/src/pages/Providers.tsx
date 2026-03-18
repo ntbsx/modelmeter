@@ -7,13 +7,15 @@ import type { ProvidersResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import TimeRangeFilter from '../components/TimeRangeFilter'
+import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function Providers() {
   const [days, setDays] = useState<1 | 7 | 30 | 90>(7)
+  const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ProvidersResponse>({
-    queryKey: ['providers', days],
-    queryFn: () => fetchApi('/providers', { days }),
+    queryKey: ['providers', days, sourceScope],
+    queryFn: () => fetchApi('/providers', { days, source_scope: sourceScope }),
   })
 
   if (isLoading) return <PageLoading title="Providers" subtitle="Loading provider usage" cards={3} />
@@ -51,7 +53,7 @@ export default function Providers() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data.providers.map((provider) => (
+              {(data.providers ?? []).map((provider) => (
                 <tr key={provider.provider} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                   <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium whitespace-nowrap">
                     <Link
@@ -75,7 +77,7 @@ export default function Providers() {
                   </td>
                 </tr>
               ))}
-              {data.providers.length === 0 && (
+              {(data.providers ?? []).length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     No provider usage found in this period.

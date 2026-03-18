@@ -1,19 +1,58 @@
-"""Source registry and health checks for multi-source analytics."""
+"""Source registry, health checks, and federation for multi-source analytics."""
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import sqlite3
 import urllib.error
 import urllib.request
+from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Literal, cast
 
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from modelmeter.config.settings import AppSettings
+
+
+class SourceScopeKind(StrEnum):
+    """Source scope kind for analytics queries."""
+
+    LOCAL = "local"
+    ALL = "all"
+    SPECIFIC = "source"
+
+
+@dataclass
+class SourceScope:
+    """Parsed source scope for analytics queries."""
+
+    kind: SourceScopeKind
+    source_id: str | None = None
+
+    @classmethod
+    def parse(cls, value: str | None) -> SourceScope:
+        """Parse a source scope string into a SourceScope."""
+        if value is None or value in ("local", "self"):
+            return cls(kind=SourceScopeKind.LOCAL)
+        if value == "all":
+            return cls(kind=SourceScopeKind.ALL)
+        if value.startswith("source:"):
+            source_id = value[7:]
+            if not source_id:
+                raise ValueError("Invalid source scope: source id is required")
+            return cls(kind=SourceScopeKind.SPECIFIC, source_id=source_id)
+        raise ValueError(f"Invalid source scope: {value}")
+
+
+class SourceFailure(BaseModel):
+    """Metadata about a failed source in a federated query."""
+
+    source_id: str
+    error: str
+    kind: Literal["sqlite", "http"]
 
 
 class SourceAuth(BaseModel):
@@ -185,13 +224,8 @@ def _check_sqlite_source(source: DataSourceConfig) -> SourceHealth:
 
 def _check_http_source(source: DataSourceConfig, *, timeout_seconds: int) -> SourceHealth:
     assert source.base_url is not None
-    health_url = source.base_url.rstrip("/") + "/api/auth/check"
+    health_url = source.base_url.rstrip("/") + "/health"
     request = urllib.request.Request(health_url, headers={"User-Agent": "modelmeter/health-check"})
-
-    if source.auth is not None:
-        token_raw = f"{source.auth.username}:{source.auth.password}".encode()
-        token = base64.b64encode(token_raw).decode("ascii")
-        request.add_header("Authorization", f"Basic {token}")
 
     try:
         with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
@@ -245,3 +279,62 @@ def check_source_health(*, source: DataSourceConfig, settings: AppSettings) -> S
     if source.kind == "sqlite":
         return _check_sqlite_source(source)
     return _check_http_source(source, timeout_seconds=settings.source_http_timeout_seconds)
+
+
+def get_sources_for_scope(
+    *,
+    settings: AppSettings,
+    scope: SourceScope,
+) -> tuple[list[DataSourceConfig], list[SourceFailure]]:
+    """Get sources matching the given scope, with health checks."""
+    try:
+        registry = load_source_registry(settings=settings)
+    except SourceRegistryError as exc:
+        return [], [SourceFailure(source_id="registry", error=str(exc), kind="sqlite")]
+
+    enabled_sources = [s for s in registry.sources if s.enabled]
+
+    if scope.kind == SourceScopeKind.LOCAL:
+        return [], []
+
+    if scope.kind == SourceScopeKind.SPECIFIC:
+        matched = [s for s in enabled_sources if s.source_id == scope.source_id]
+        if not matched:
+            source_id = scope.source_id or "unknown"
+            registered = next((s for s in registry.sources if s.source_id == source_id), None)
+            return [], [
+                SourceFailure(
+                    source_id=source_id,
+                    error=f"Source '{source_id}' not found or disabled",
+                    kind=registered.kind if registered is not None else "http",
+                )
+            ]
+        source = matched[0]
+        health = check_source_health(source=source, settings=settings)
+        if health.is_reachable:
+            return [source], []
+        return [], [
+            SourceFailure(
+                source_id=source.source_id,
+                error=health.error or health.detail or "unreachable",
+                kind=source.kind,
+            )
+        ]
+
+    sources: list[DataSourceConfig] = []
+    failures: list[SourceFailure] = []
+
+    for source in enabled_sources:
+        health = check_source_health(source=source, settings=settings)
+        if health.is_reachable:
+            sources.append(source)
+        else:
+            failures.append(
+                SourceFailure(
+                    source_id=source.source_id,
+                    error=health.error or health.detail or "unreachable",
+                    kind=source.kind,
+                )
+            )
+
+    return sources, failures

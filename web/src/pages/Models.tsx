@@ -8,14 +8,22 @@ import type { ModelsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import DateRangeFilter from '../components/DateRangeFilter'
+import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function Models() {
   const { providerId } = useParams<{ providerId: string }>()
   const [days, setDays] = useState(7)
+  const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ModelsResponse>({
-    queryKey: ['models', days, providerId],
-    queryFn: () => fetchApi('/models', providerId ? { days, provider: providerId } : { days })
+    queryKey: ['models', days, providerId, sourceScope],
+    queryFn: () =>
+      fetchApi(
+        '/models',
+        providerId
+          ? { days, provider: providerId, source_scope: sourceScope }
+          : { days, source_scope: sourceScope }
+      )
   })
 
   if (isLoading) return <PageLoading title="Models" subtitle="Loading model usage" cards={3} />
@@ -66,7 +74,7 @@ export default function Models() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data.models.map((m) => (
+              {(data.models ?? []).map((m) => (
                 <tr key={m.model_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                   <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium whitespace-nowrap">
                     <Link
@@ -84,7 +92,7 @@ export default function Models() {
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">{m.cost_usd ? formatUsd(m.cost_usd) : '-'}</td>
                 </tr>
               ))}
-              {data.models.length === 0 && (
+              {(data.models ?? []).length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">No model usage found in this period.</td>
                 </tr>

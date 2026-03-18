@@ -207,7 +207,11 @@ def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
     assert payload["selected_source"] == "sqlite"
 
 
-def test_sources_endpoint_returns_empty_registry_by_default() -> None:
+def test_sources_endpoint_returns_empty_registry_by_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
     client = _new_client()
     client.cookies.set("ignore", "1")
     response = client.get("/api/sources", headers={"X-Ignore": "1"})
@@ -279,6 +283,100 @@ def test_sources_check_endpoint_reports_reachability(
     payload = cast(list[dict[str, Any]], response.json())
     assert payload[0]["source_id"] == "local"
     assert payload[0]["is_reachable"] is True
+
+
+def test_sources_upsert_endpoint_saves_sqlite_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    client = _new_client()
+    response = client.put(
+        "/api/sources/work-laptop",
+        json={
+            "kind": "sqlite",
+            "label": "Work laptop",
+            "db_path": str(tmp_path / "opencode.db"),
+            "enabled": True,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["sources"][0]["source_id"] == "work-laptop"
+    assert payload["sources"][0]["kind"] == "sqlite"
+    assert payload["sources"][0]["db_path"] == str(tmp_path / "opencode.db")
+
+
+def test_sources_upsert_endpoint_preserves_existing_http_auth(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "sources": [
+                    {
+                        "source_id": "remote",
+                        "kind": "http",
+                        "base_url": "https://example.com",
+                        "auth": {"username": "user", "password": "s3cret"},
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    client = _new_client()
+    response = client.put(
+        "/api/sources/remote",
+        json={
+            "kind": "http",
+            "base_url": "https://example.com",
+            "label": "Remote",
+            "enabled": True,
+            "preserve_existing_auth": True,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["sources"][0]["has_auth"] is True
+
+
+def test_sources_remove_endpoint_deletes_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "sources": [
+                    {
+                        "source_id": "old-source",
+                        "kind": "sqlite",
+                        "db_path": str(tmp_path / "opencode.db"),
+                    }
+                ],
+            }
+        )
+    )
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    client = _new_client()
+    response = client.delete("/api/sources/old-source")
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["removed"] is True
+
+    list_response = client.get("/api/sources")
+    list_payload = _get_json(list_response)
+    assert list_payload["sources"] == []
 
 
 def test_sources_endpoint_reports_invalid_registry(

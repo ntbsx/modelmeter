@@ -7,6 +7,42 @@ from datetime import date
 from pydantic import BaseModel, Field, computed_field
 
 
+def _default_str_list() -> list[str]:
+    return []
+
+
+def _default_dict_str_list() -> list[dict[str, str]]:
+    return []
+
+
+def _default_daily_usage_list() -> list[DailyUsage]:
+    return []
+
+
+def _default_model_usage_list() -> list[ModelUsage]:
+    return []
+
+
+def _default_provider_usage_list() -> list[ProviderUsage]:
+    return []
+
+
+def _default_project_usage_list() -> list[ProjectUsage]:
+    return []
+
+
+def _default_project_session_usage_list() -> list[ProjectSessionUsage]:
+    return []
+
+
+def _default_live_model_usage_list() -> list[LiveModelUsage]:
+    return []
+
+
+def _default_live_tool_usage_list() -> list[LiveToolUsage]:
+    return []
+
+
 class TokenUsage(BaseModel):
     """Token usage counters."""
 
@@ -44,6 +80,10 @@ class SummaryResponse(BaseModel):
     window_days: int | None = Field(default=None, ge=1)
     cost_usd: float | None = None
     pricing_source: str | None = None
+    source_scope: str | None = None
+    sources_considered: list[str] = Field(default_factory=_default_str_list)
+    sources_succeeded: list[str] = Field(default_factory=_default_str_list)
+    sources_failed: list[dict[str, str]] = Field(default_factory=_default_dict_str_list)
 
 
 class DailyResponse(BaseModel):
@@ -54,7 +94,11 @@ class DailyResponse(BaseModel):
     total_sessions: int = Field(default=0, ge=0)
     total_cost_usd: float | None = None
     pricing_source: str | None = None
-    daily: list[DailyUsage] = []
+    daily: list[DailyUsage] = Field(default_factory=_default_daily_usage_list)
+    source_scope: str | None = None
+    sources_considered: list[str] = Field(default_factory=_default_str_list)
+    sources_succeeded: list[str] = Field(default_factory=_default_str_list)
+    sources_failed: list[dict[str, str]] = Field(default_factory=_default_dict_str_list)
 
 
 class ModelUsage(BaseModel):
@@ -82,7 +126,11 @@ class ModelsResponse(BaseModel):
     pricing_source: str | None = None
     priced_models: int = Field(default=0, ge=0)
     unpriced_models: int = Field(default=0, ge=0)
-    models: list[ModelUsage] = []
+    models: list[ModelUsage] = Field(default_factory=_default_model_usage_list)
+    source_scope: str | None = None
+    sources_considered: list[str] = Field(default_factory=_default_str_list)
+    sources_succeeded: list[str] = Field(default_factory=_default_str_list)
+    sources_failed: list[dict[str, str]] = Field(default_factory=_default_dict_str_list)
 
 
 class ModelDetailResponse(BaseModel):
@@ -96,7 +144,11 @@ class ModelDetailResponse(BaseModel):
     total_interactions: int = Field(default=0, ge=0)
     cost_usd: float | None = None
     pricing_source: str | None = None
-    daily: list[DailyUsage] = []
+    daily: list[DailyUsage] = Field(default_factory=_default_daily_usage_list)
+    source_scope: str | None = None
+    sources_considered: list[str] = Field(default_factory=_default_str_list)
+    sources_succeeded: list[str] = Field(default_factory=_default_str_list)
+    sources_failed: list[dict[str, str]] = Field(default_factory=_default_dict_str_list)
 
 
 class ProviderUsage(BaseModel):
@@ -122,7 +174,11 @@ class ProvidersResponse(BaseModel):
     total_sessions: int = Field(default=0, ge=0)
     total_cost_usd: float | None = None
     pricing_source: str | None = None
-    providers: list[ProviderUsage] = []
+    providers: list[ProviderUsage] = Field(default_factory=_default_provider_usage_list)
+    source_scope: str | None = None
+    sources_considered: list[str] = Field(default_factory=_default_str_list)
+    sources_succeeded: list[str] = Field(default_factory=_default_str_list)
+    sources_failed: list[dict[str, str]] = Field(default_factory=_default_dict_str_list)
 
 
 class ProjectUsage(BaseModel):
@@ -136,6 +192,7 @@ class ProjectUsage(BaseModel):
     total_interactions: int = Field(default=0, ge=0)
     cost_usd: float | None = None
     has_pricing: bool = False
+    sources: list[str] = Field(default_factory=_default_str_list)
 
 
 class ProjectsResponse(BaseModel):
@@ -150,7 +207,11 @@ class ProjectsResponse(BaseModel):
     total_sessions: int = Field(default=0, ge=0)
     total_cost_usd: float | None = None
     pricing_source: str | None = None
-    projects: list[ProjectUsage] = []
+    projects: list[ProjectUsage] = Field(default_factory=_default_project_usage_list)
+    source_scope: str | None = None
+    sources_considered: list[str] = Field(default_factory=_default_str_list)
+    sources_succeeded: list[str] = Field(default_factory=_default_str_list)
+    sources_failed: list[dict[str, str]] = Field(default_factory=_default_dict_str_list)
 
 
 class ProjectSessionUsage(BaseModel):
@@ -181,7 +242,11 @@ class ProjectDetailResponse(BaseModel):
     total_interactions: int = Field(default=0, ge=0)
     total_cost_usd: float | None = None
     pricing_source: str | None = None
-    sessions: list[ProjectSessionUsage] = []
+    sessions: list[ProjectSessionUsage] = Field(default_factory=_default_project_session_usage_list)
+    source_scope: str | None = None
+    sources_considered: list[str] = Field(default_factory=_default_str_list)
+    sources_succeeded: list[str] = Field(default_factory=_default_str_list)
+    sources_failed: list[dict[str, str]] = Field(default_factory=_default_dict_str_list)
 
 
 class LiveModelUsage(BaseModel):
@@ -225,8 +290,8 @@ class LiveSnapshotResponse(BaseModel):
     cost_usd: float | None = None
     pricing_source: str | None = None
     active_session: LiveActiveSession | None = None
-    top_models: list[LiveModelUsage] = []
-    top_tools: list[LiveToolUsage] = []
+    top_models: list[LiveModelUsage] = Field(default_factory=_default_live_model_usage_list)
+    top_tools: list[LiveToolUsage] = Field(default_factory=_default_live_tool_usage_list)
 
 
 class UpdateCheckResponse(BaseModel):
