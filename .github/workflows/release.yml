@@ -142,7 +142,7 @@ jobs:
           curl --fail http://127.0.0.1:18080/health
 
       - name: Publish GitHub release assets
-        uses: softprops/action-gh-release@v2.5.0
+        uses: softprops/action-gh-release@v2.6.1
         with:
           name: ${{ github.ref_name }}
           prerelease: ${{ steps.release_meta.outputs.prerelease }}
