@@ -18,7 +18,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
-  lint:
+  lint:backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -32,24 +32,30 @@ jobs:
         with:
           version: "0.8.17"
           enable-cache: true
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: uv sync --frozen --all-groups
-      - name: Install frontend dependencies
-        run: npm ci --prefix web
       - name: Ruff format check
         run: uv run ruff format --check
       - name: Ruff lint
         run: uv run ruff check
+
+  lint:frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci --prefix web
       - name: ESLint
         run: npm run --prefix web lint
 
-  check:
+  check:backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -63,24 +69,30 @@ jobs:
         with:
           version: "0.8.17"
           enable-cache: true
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: uv sync --frozen --all-groups
-      - name: Install frontend dependencies
-        run: npm ci --prefix web
       - name: Pyright
         run: uv run python -m pyright
       - name: Version check
         run: make version-check
+
+  check:frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install dependencies
+        run: npm ci --prefix web
       - name: TypeScript types check
         run: npm run --prefix web check:types
 
-  test:
+  test:backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -94,41 +106,53 @@ jobs:
         with:
           version: "0.8.17"
           enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Pytest
+        run: uv run python -m pytest -n auto
+
+  test:frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Install Python dependencies
-        run: uv sync --frozen --all-groups
-      - name: Install frontend dependencies
+      - name: Install dependencies
         run: npm ci --prefix web
-      - name: Pytest
-        run: uv run python -m pytest -n auto
       - name: Vitest
         run: npm run --prefix web test -- --run
 
-  security:
+  security:deps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Run pip-audit
+        run: uv run pip-audit --skip-editable
+
+  security:secrets:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-          enable-cache: true
-      - name: Install Python dependencies
-        run: uv sync --frozen --all-groups
-      - name: Run pip-audit
-        run: uv run pip-audit
       - name: Run trufflehog
         run: |
           docker run --rm -v "${{ github.workspace }}:/workspace" \
@@ -151,7 +175,7 @@ jobs:
         with:
           version: "0.8.17"
           enable-cache: true
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: uv sync --frozen --all-groups
       - name: Fetch comparison branch
         run: |
