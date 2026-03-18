@@ -53,8 +53,21 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: web/package-lock.json
-      - name: Install dependencies
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
+      - name: Install Python dependencies
+        run: uv sync --frozen --all-groups
+      - name: Install frontend dependencies
         run: npm ci --prefix web
+      - name: Generate TypeScript types
+        run: npm run --prefix web gen:types
       - name: ESLint
         run: npm run --prefix web lint
 
@@ -167,7 +180,6 @@ jobs:
   # Tests (depend on type checks)
   # ============================================================================
   test_backend:
-    needs: [lint_backend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -187,7 +199,6 @@ jobs:
         run: uv run python -m pytest -n auto
 
   test_frontend:
-    needs: [lint_frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
