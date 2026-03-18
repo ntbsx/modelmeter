@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 const LOCAL_STORAGE_KEY = 'modelmeter_days_filter'
 const DEFAULT_DAYS = 7
 const MIN_DAYS = 1
-const MAX_DAYS = 9999
+const MAX_DAYS = 365
 
 function getStoredDays(): number {
   try {
