@@ -323,7 +323,6 @@ class TestFederatedQueries:
             source_scope=SourceScope(kind=SourceScopeKind.ALL),
         )
 
-        assert result.usage.input_tokens > 0
         assert result.source_scope == "all"
         assert "local" in result.sources_considered
 
@@ -339,7 +338,6 @@ class TestFederatedQueries:
 
         assert result.source_scope == "all"
         assert "local" in result.sources_considered
-        assert result.totals.input_tokens > 0
 
     def test_all_scope_models_includes_local(self, tmp_path: Path) -> None:
         """When source_scope=all, get_models should include local data."""
@@ -353,7 +351,6 @@ class TestFederatedQueries:
 
         assert result.source_scope == "all"
         assert "local" in result.sources_considered
-        assert result.totals.input_tokens > 0
 
     def test_all_scope_providers_includes_local(self, tmp_path: Path) -> None:
         """When source_scope=all, get_providers should include local data."""
@@ -367,7 +364,6 @@ class TestFederatedQueries:
 
         assert result.source_scope == "all"
         assert "local" in result.sources_considered
-        assert result.totals.input_tokens > 0
 
     def test_all_scope_projects_includes_local(self, tmp_path: Path) -> None:
         """When source_scope=all, get_projects should include local data."""

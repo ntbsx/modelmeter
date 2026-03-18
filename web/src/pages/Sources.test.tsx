@@ -35,7 +35,7 @@ describe('Sources page', () => {
   })
 
   it('runs source health checks and displays status', async () => {
-    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, _init) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input)
       if (url.includes('/api/sources/check')) {
         return {
