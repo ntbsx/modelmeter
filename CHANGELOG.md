@@ -7,7 +7,19 @@ The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.
 ## [Unreleased]
 
 ### Added
-- Placeholder for upcoming changes.
+- Federated source scoping for analytics responses using `local`, `all`, and `source:<id>` semantics.
+- Source management in the web dashboard, including source listing, add/remove flows, and source health checks.
+- Shared web source-scope state and selector behavior across Overview, Providers, Models, Projects, Project Detail, and Live pages.
+- Project-level source attribution in dashboard project views.
+
+### Changed
+- Improved federation merge behavior and pagination correctness for `all` scope aggregation.
+- Updated OpenAPI snapshot and generated TypeScript client types for source-aware API contracts.
+
+### Fixed
+- Corrected `sources_considered` completeness in federated responses.
+- Resolved frontend TypeScript strict-nullability issues on analytics pages.
+- Replaced environment-dependent federation tests with CI-safe test behavior.
 
 ## [2026.3.18] - 2026-03-16
 

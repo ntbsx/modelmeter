@@ -224,12 +224,29 @@ OpenCode custom command in this repo:
 
 ## 13) Release Safety Protocol
 - For any release request, ensure release tag/version alignment before tagging:
-  - `vYYYY.M.x` (or prerelease `vYYYY.M.xrcN`) tag must equal `pyproject.toml` `[project].version`
-  - `web/package.json` `version` must match backend version
+  - Stable tag `vYYYY.M.x` must equal `pyproject.toml` `[project].version`
+  - Stable tag `vYYYY.M.x` must equal `web/package.json` `version`
+  - Prerelease tag `vYYYY.M.xrcN` must match base version `YYYY.M.x` in `pyproject.toml` and `web/package.json`; CI applies `rcN` in workspace before packaging
 - Preferred sequence:
   1. `make version-stamp` (or `make version-sync` when a version bump is not needed)
   2. `make release-check`
   3. Commit release metadata/version updates
-  4. Create annotated tag from `pyproject.toml` version
+  4. Create annotated tag (`vYYYY.M.x` for stable, `vYYYY.M.xrcN` for prerelease)
   5. Push commit and tag (triggers `.github/workflows/release.yml`)
 - Never tag first and bump versions later.
+
+## 14) Federation and Source Scope Notes
+- Supported source scopes:
+  - `local` = current server source only
+  - `all` = merge successful local+remote sources with partial failure metadata
+  - `source:<id>` = target a single configured source id
+- Source-aware endpoints should expose response metadata where applicable:
+  - `source_scope`
+  - `sources_considered`
+  - `sources_succeeded`
+  - `sources_failed`
+- Web scope behavior should remain consistent across Overview, Providers, Models, Projects, Project Detail, and Live.
+- For federation changes, prioritize focused verification before full suite:
+  - `uv run pytest tests/test_federation.py tests/test_sources.py tests/test_api.py`
+  - `npm run --prefix web test -- --run`
+  - `make release-check` before handoff/PR.

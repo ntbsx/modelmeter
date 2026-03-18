@@ -218,6 +218,12 @@ ModelMeter uses a **single product version** for backend, CLI, and frontend.
 - Runtime display version appends git short hash when available (`YYYY.M.x+<shortsha>`)
 - OpenAPI schema version stays on canonical CalVer (without hash) for snapshot stability
 
+Release tag/version alignment:
+
+- Stable release tags use `vYYYY.M.x` and must match `pyproject.toml` and `web/package.json`.
+- Prerelease tags use `vYYYY.M.xrcN`.
+- For prereleases, `pyproject.toml` and `web/package.json` stay on base version (`YYYY.M.x`) in git; the release workflow applies the `rc` suffix in CI before packaging.
+
 Common version commands:
 
 ```bash
@@ -235,6 +241,9 @@ make contract-policy-check
 
 # Full pre-release quality gate
 make release-check
+
+# Build release artifacts (wheel/sdist with bundled web assets)
+make package-build
 ```
 
 Contract policy (no API path versioning yet):
