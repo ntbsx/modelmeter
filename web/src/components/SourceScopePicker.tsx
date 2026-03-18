@@ -37,6 +37,14 @@ export default function SourceScopePicker() {
     return [...base, ...specific]
   }, [enabledSources, hasMultipleSources])
 
+  if (!hasMultipleSources) {
+    return (
+      <span className="inline-flex rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2.5 py-1.5 text-xs font-medium">
+        🏠 This Server
+      </span>
+    )
+  }
+
   return (
     <div className="relative inline-block">
       <select
