@@ -357,6 +357,10 @@ def execute_summary_federated(
                 )
             )
 
+    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
+    _all_source_ids = list(dict.fromkeys(
+        [s.source_id for s in sources] + [f.source_id for f in failures]
+    ))
     return (
         SummaryResponse(
             usage=total_usage,
@@ -365,12 +369,8 @@ def execute_summary_federated(
             cost_usd=round(total_cost, 8) if total_cost is not None else None,
             pricing_source=pricing_source,
             source_scope=scope_label,
-            sources_considered=[s.source_id for s in sources],
-            sources_succeeded=[
-                s.source_id
-                for s in sources
-                if not any(f.source_id == s.source_id for f in failures)
-            ],
+            sources_considered=_all_source_ids,
+            sources_succeeded=list(_succeeded_ids),
             sources_failed=[{"source_id": f.source_id, "error": f.error} for f in failures],
         ),
         failures,
@@ -507,6 +507,10 @@ def execute_daily_federated(
 
     daily_rows = sorted(daily_map.values(), key=lambda x: x.day)
 
+    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
+    _all_source_ids = list(dict.fromkeys(
+        [s.source_id for s in sources] + [f.source_id for f in failures]
+    ))
     return (
         DailyResponse(
             window_days=days,
@@ -516,12 +520,8 @@ def execute_daily_federated(
             pricing_source=pricing_source,
             daily=daily_rows,
             source_scope=scope_label,
-            sources_considered=[s.source_id for s in sources],
-            sources_succeeded=[
-                s.source_id
-                for s in sources
-                if not any(f.source_id == s.source_id for f in failures)
-            ],
+            sources_considered=_all_source_ids,
+            sources_succeeded=list(_succeeded_ids),
             sources_failed=[{"source_id": f.source_id, "error": f.error} for f in failures],
         ),
         failures,
@@ -693,15 +693,19 @@ def execute_models_federated(
     unpriced_models = max(0, total_models - priced_models)
     models_rows = sorted(model_map.values(), key=lambda x: x.total_interactions, reverse=True)
 
-    # Apply pagination after merge
-    paginated_models = models_rows[offset : offset + limit]
+    # Apply pagination after merge (limit=0 means no limit)
+    paginated_models = models_rows[offset : offset + limit] if limit > 0 else models_rows[offset:]
     models_returned = len(paginated_models)
 
+    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
+    _all_source_ids = list(dict.fromkeys(
+        [s.source_id for s in sources] + [f.source_id for f in failures]
+    ))
     return (
         ModelsResponse(
             window_days=days,
             models_offset=offset,
-            models_limit=limit,
+            models_limit=limit if limit > 0 else None,
             models_returned=models_returned,
             total_models=total_models,
             totals=total_usage,
@@ -712,12 +716,8 @@ def execute_models_federated(
             unpriced_models=unpriced_models,
             models=paginated_models,
             source_scope=scope_label,
-            sources_considered=[s.source_id for s in sources],
-            sources_succeeded=[
-                s.source_id
-                for s in sources
-                if not any(f.source_id == s.source_id for f in failures)
-            ],
+            sources_considered=_all_source_ids,
+            sources_succeeded=list(_succeeded_ids),
             sources_failed=[{"source_id": f.source_id, "error": f.error} for f in failures],
         ),
         failures,
@@ -882,11 +882,15 @@ def execute_providers_federated(
     )
     providers_returned = len(paginated_providers)
 
+    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
+    _all_source_ids = list(dict.fromkeys(
+        [s.source_id for s in sources] + [f.source_id for f in failures]
+    ))
     return (
         ProvidersResponse(
             window_days=days,
             providers_offset=offset,
-            providers_limit=limit,
+            providers_limit=limit if limit > 0 else None,
             providers_returned=providers_returned,
             total_providers=total_providers,
             totals=total_usage,
@@ -895,12 +899,8 @@ def execute_providers_federated(
             pricing_source=pricing_source,
             providers=paginated_providers,
             source_scope=scope_label,
-            sources_considered=[s.source_id for s in sources],
-            sources_succeeded=[
-                s.source_id
-                for s in sources
-                if not any(f.source_id == s.source_id for f in failures)
-            ],
+            sources_considered=_all_source_ids,
+            sources_succeeded=list(_succeeded_ids),
             sources_failed=[{"source_id": f.source_id, "error": f.error} for f in failures],
         ),
         failures,
@@ -1075,11 +1075,15 @@ def execute_projects_federated(
     )
     projects_returned = len(paginated_projects)
 
+    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
+    _all_source_ids = list(dict.fromkeys(
+        [s.source_id for s in sources] + [f.source_id for f in failures]
+    ))
     return (
         ProjectsResponse(
             window_days=days,
             projects_offset=offset,
-            projects_limit=limit,
+            projects_limit=limit if limit > 0 else None,
             projects_returned=projects_returned,
             total_projects=total_projects,
             totals=total_usage,
@@ -1088,12 +1092,8 @@ def execute_projects_federated(
             pricing_source=pricing_source,
             projects=paginated_projects,
             source_scope=scope_label,
-            sources_considered=[s.source_id for s in sources],
-            sources_succeeded=[
-                s.source_id
-                for s in sources
-                if not any(f.source_id == s.source_id for f in failures)
-            ],
+            sources_considered=_all_source_ids,
+            sources_succeeded=list(_succeeded_ids),
             sources_failed=[{"source_id": f.source_id, "error": f.error} for f in failures],
         ),
         failures,
