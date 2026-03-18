@@ -56,7 +56,7 @@ export default function Projects() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {data.projects.map((p) => (
+              {(data.projects ?? []).map((p) => (
                 <tr key={p.project_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <Link
@@ -89,7 +89,7 @@ export default function Projects() {
                   </td>
                 </tr>
               ))}
-              {data.projects.length === 0 && (
+              {(data.projects ?? []).length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">No project usage found in this period.</td>
                 </tr>

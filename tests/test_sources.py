@@ -48,7 +48,7 @@ def test_save_source_registry_uses_private_file_permissions(tmp_path: Path) -> N
     assert registry_path.stat().st_mode & 0o777 == 0o600
 
 
-def test_check_source_health_uses_authenticated_endpoint(
+def test_check_source_health_does_not_send_auth_header(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured: dict[str, Any] = {}

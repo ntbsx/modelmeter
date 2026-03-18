@@ -238,13 +238,13 @@ export default function Live() {
             <Box className="w-4 h-4" /> Models
           </div>
           <div className="p-0">
-            {data.top_models.map(m => (
+            {(data.top_models ?? []).map(m => (
                 <div key={m.model_id} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
                   <div className="font-medium text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{m.model_id}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{formatTokens(m.usage.total_tokens)}</div>
                 </div>
               ))}
-            {data.top_models.length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No model activity</div>}
+            {(data.top_models ?? []).length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No model activity</div>}
           </div>
         </div>
 
@@ -253,13 +253,13 @@ export default function Live() {
             <Terminal className="w-4 h-4" /> Tools
           </div>
           <div className="p-0">
-            {data.top_tools.map(t => (
+            {(data.top_tools ?? []).map(t => (
                 <div key={t.tool_name} className="flex justify-between items-center gap-4 px-4 sm:px-6 py-3 border-b border-gray-50 dark:border-gray-800/50 last:border-0">
                   <div className="font-medium text-sm text-gray-900 dark:text-gray-100 flex-1 min-w-0 truncate">{t.tool_name}</div>
                   <div className="text-sm text-gray-500 dark:text-gray-400 font-mono shrink-0">{t.total_calls} calls</div>
                 </div>
               ))}
-            {data.top_tools.length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No tool activity</div>}
+            {(data.top_tools ?? []).length === 0 && <div className="p-6 text-sm text-gray-500 dark:text-gray-400 text-center">No tool activity</div>}
           </div>
         </div>
       </div>

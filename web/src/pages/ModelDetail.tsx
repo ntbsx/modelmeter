@@ -104,7 +104,7 @@ export default function ModelDetail() {
     )
   }
 
-  const chartData = data.daily.map((entry) => {
+  const chartData = (data.daily ?? []).map((entry) => {
     const [year, month, day] = entry.day.split('-').map(Number)
     const parsed = new Date(year, (month || 1) - 1, day || 1)
     return {

@@ -94,7 +94,7 @@ export default function ProjectDetail() {
       : looksLikePath
         ? data.project_name.split(/[\\/]/).filter(Boolean).pop() || data.project_name
         : data.project_name
-  const visibleSessions = data.sessions
+  const visibleSessions = (data.sessions ?? [])
     .filter((session) => {
       if (normalizedSearch.length === 0) {
         return true
