@@ -30,6 +30,7 @@ modelmeter = "modelmeter.cli.main:main"
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
+    "pip-audit>=2.9.0",
     "pre-commit>=4.3.0",
     "pyright>=1.1.405",
     "pytest>=8.4.2",
