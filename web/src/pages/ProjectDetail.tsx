@@ -13,16 +13,17 @@ export default function ProjectDetail() {
   const { projectId } = useParams()
   const decodedProjectId = decodeURIComponent(projectId ?? '')
   const { sourceScope } = useSourceScope()
+  const detailScope = sourceScope === 'self' ? sourceScope : 'self'
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'last_updated' | 'tokens' | 'cost' | 'interactions'>(
     'last_updated'
   )
 
   const { data, isLoading, error } = useQuery<ProjectDetailResponse>({
-    queryKey: ['project-detail', decodedProjectId, sourceScope],
+    queryKey: ['project-detail', decodedProjectId, detailScope],
     queryFn: () =>
       fetchApi(`/projects/${encodeURIComponent(decodedProjectId)}`, {
-        source_scope: sourceScope,
+        source_scope: detailScope,
       }),
     enabled: decodedProjectId.length > 0,
   })
@@ -143,6 +144,12 @@ export default function ProjectDetail() {
           </p>
         </div>
       </div>
+
+      {sourceScope !== 'self' ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300">
+          Project detail currently supports This Server only. Showing local data for this view.
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">

@@ -5,7 +5,6 @@
         "description": "Daily time-series response contract.",
         "properties": {
           "daily": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/DailyUsage"
             },
@@ -35,7 +34,6 @@
             "title": "Source Scope"
           },
           "sources_considered": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -43,7 +41,6 @@
             "type": "array"
           },
           "sources_failed": {
-            "default": [],
             "items": {
               "additionalProperties": {
                 "type": "string"
@@ -54,7 +51,6 @@
             "type": "array"
           },
           "sources_succeeded": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -430,7 +426,6 @@
             "type": "string"
           },
           "top_models": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/LiveModelUsage"
             },
@@ -438,7 +433,6 @@
             "type": "array"
           },
           "top_tools": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/LiveToolUsage"
             },
@@ -509,7 +503,6 @@
             "title": "Cost Usd"
           },
           "daily": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/DailyUsage"
             },
@@ -547,7 +540,6 @@
             "title": "Source Scope"
           },
           "sources_considered": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -555,7 +547,6 @@
             "type": "array"
           },
           "sources_failed": {
-            "default": [],
             "items": {
               "additionalProperties": {
                 "type": "string"
@@ -566,7 +557,6 @@
             "type": "array"
           },
           "sources_succeeded": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -659,7 +649,6 @@
         "description": "Top models usage response contract.",
         "properties": {
           "models": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ModelUsage"
             },
@@ -719,7 +708,6 @@
             "title": "Source Scope"
           },
           "sources_considered": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -727,7 +715,6 @@
             "type": "array"
           },
           "sources_failed": {
-            "default": [],
             "items": {
               "additionalProperties": {
                 "type": "string"
@@ -738,7 +725,6 @@
             "type": "array"
           },
           "sources_succeeded": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -830,7 +816,6 @@
             "title": "Project Path"
           },
           "sessions": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ProjectSessionUsage"
             },
@@ -873,7 +858,6 @@
             "title": "Source Scope"
           },
           "sources_considered": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -881,7 +865,6 @@
             "type": "array"
           },
           "sources_failed": {
-            "default": [],
             "items": {
               "additionalProperties": {
                 "type": "string"
@@ -892,7 +875,6 @@
             "type": "array"
           },
           "sources_succeeded": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -1098,7 +1080,6 @@
             "title": "Pricing Source"
           },
           "projects": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ProjectUsage"
             },
@@ -1141,7 +1122,6 @@
             "title": "Source Scope"
           },
           "sources_considered": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -1149,7 +1129,6 @@
             "type": "array"
           },
           "sources_failed": {
-            "default": [],
             "items": {
               "additionalProperties": {
                 "type": "string"
@@ -1160,7 +1139,6 @@
             "type": "array"
           },
           "sources_succeeded": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -1273,7 +1251,6 @@
             "title": "Pricing Source"
           },
           "providers": {
-            "default": [],
             "items": {
               "$ref": "#/components/schemas/ProviderUsage"
             },
@@ -1316,7 +1293,6 @@
             "title": "Source Scope"
           },
           "sources_considered": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -1324,7 +1300,6 @@
             "type": "array"
           },
           "sources_failed": {
-            "default": [],
             "items": {
               "additionalProperties": {
                 "type": "string"
@@ -1335,7 +1310,6 @@
             "type": "array"
           },
           "sources_succeeded": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -1672,7 +1646,6 @@
             "title": "Source Scope"
           },
           "sources_considered": {
-            "default": [],
             "items": {
               "type": "string"
             },
@@ -1680,7 +1653,6 @@
             "type": "array"
           },
           "sources_failed": {
-            "default": [],
             "items": {
               "additionalProperties": {
                 "type": "string"
@@ -1691,7 +1663,6 @@
             "type": "array"
           },
           "sources_succeeded": {
-            "default": [],
             "items": {
               "type": "string"
             },

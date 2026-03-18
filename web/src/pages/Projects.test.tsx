@@ -71,7 +71,7 @@ describe('Projects page', () => {
     expect(await screen.findByText('My Project')).toBeInTheDocument()
     expect(screen.getByText('Shared Project')).toBeInTheDocument()
     
-    expect(screen.getAllByText('local')).toHaveLength(2)
+    expect(screen.getAllByText('This Server')).toHaveLength(2)
     expect(screen.getAllByText('remote-prod')).toHaveLength(1)
     
     expect(fetchMock).toHaveBeenCalledWith(

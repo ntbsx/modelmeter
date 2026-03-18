@@ -404,6 +404,7 @@ class TestFederatedQueries:
         assert result.totals.input_tokens == 100
         assert result.totals.output_tokens == 50
         assert "local" in result.sources_considered
+        assert len(result.daily) > 0
 
     def test_all_scope_models_includes_local(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -425,6 +426,8 @@ class TestFederatedQueries:
         assert result.totals.input_tokens == 100
         assert result.totals.output_tokens == 50
         assert "local" in result.sources_considered
+        assert result.total_models >= 1
+        assert len(result.models) >= 1
 
     def test_all_scope_providers_includes_local(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -446,6 +449,8 @@ class TestFederatedQueries:
         assert result.totals.input_tokens == 100
         assert result.totals.output_tokens == 50
         assert "local" in result.sources_considered
+        assert result.total_providers >= 1
+        assert len(result.providers) >= 1
 
     def test_all_scope_projects_includes_local(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
@@ -467,6 +472,52 @@ class TestFederatedQueries:
         assert result.totals.input_tokens == 100
         assert result.totals.output_tokens == 50
         assert "local" in result.sources_considered
+        assert result.total_projects >= 1
+        assert len(result.projects) >= 1
+
+    def test_all_scope_degrades_when_local_sqlite_unavailable(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """ALL scope should still work with remote sources even if local SQLite is unavailable."""
+        db1 = tmp_path / "db1.db"
+        _create_simple_usage_fixture(db1, model_prefix="claude-1")
+
+        registry_path = tmp_path / "sources.json"
+        settings = AppSettings(source_registry_file=registry_path)
+
+        registry = SourceRegistry(
+            sources=[
+                DataSourceConfig(
+                    source_id="source1",
+                    kind="sqlite",
+                    db_path=db1,
+                    enabled=True,
+                ),
+            ]
+        )
+        save_source_registry(settings=settings, registry=registry)
+
+        def _raise_local_unavailable(
+            _settings: AppSettings, db_path_override: Path | None = None
+        ) -> Path:
+            if db_path_override is not None:
+                return db_path_override
+            raise RuntimeError("SQLite data source is unavailable or incompatible")
+
+        monkeypatch.setattr(
+            "modelmeter.core.analytics._resolve_sqlite_path", _raise_local_unavailable
+        )
+
+        result = get_summary(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.usage.input_tokens == 100
+        assert result.usage.output_tokens == 50
+        assert "source1" in result.sources_succeeded
+        assert any(f["source_id"] == "local" for f in result.sources_failed)
 
 
 class TestSourceRegistry:
@@ -596,3 +647,29 @@ class TestSourceRegistry:
         assert len(sources) == 1
         assert sources[0].source_id == "source2"
         assert failures == []
+
+    def test_get_sources_for_scope_specific_unreachable(self, tmp_path: Path) -> None:
+        registry_path = tmp_path / "sources.json"
+        settings = AppSettings(source_registry_file=registry_path)
+
+        registry = SourceRegistry(
+            sources=[
+                DataSourceConfig(
+                    source_id="remote-unreachable",
+                    kind="http",
+                    base_url="http://127.0.0.1:1",
+                    enabled=True,
+                ),
+            ]
+        )
+        save_source_registry(settings=settings, registry=registry)
+
+        sources, failures = get_sources_for_scope(
+            settings=settings,
+            scope=SourceScope(kind=SourceScopeKind.SPECIFIC, source_id="remote-unreachable"),
+        )
+
+        assert sources == []
+        assert len(failures) == 1
+        assert failures[0].source_id == "remote-unreachable"
+        assert failures[0].kind == "http"

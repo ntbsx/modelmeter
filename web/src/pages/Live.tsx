@@ -19,10 +19,11 @@ export default function Live() {
   const [reconnectCountdownSeconds, setReconnectCountdownSeconds] = useState<number | null>(null)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
   const { sourceScope } = useSourceScope()
+  const liveScope = sourceScope === 'self' ? sourceScope : 'self'
 
   const { data: polledData, isError: pollingError } = useQuery<LiveSnapshotResponse>({
-    queryKey: ['live', sourceScope],
-    queryFn: () => fetchApi('/live/snapshot', { window_minutes: 60, source_scope: sourceScope }),
+    queryKey: ['live', liveScope],
+    queryFn: () => fetchApi('/live/snapshot', { window_minutes: 60, source_scope: liveScope }),
     refetchInterval: 3000,
     enabled: streamMode === 'polling' && !isPaused,
   })
@@ -44,7 +45,7 @@ export default function Live() {
     const eventsParams: Record<string, string | number> = {
       window_minutes: 60,
       interval_seconds: 3,
-      source_scope: sourceScope,
+      source_scope: liveScope,
     }
     if (authToken) {
       // NOTE: Token in query string is visible in browser history and server logs.
@@ -82,7 +83,7 @@ export default function Live() {
       source.removeEventListener('live.error', onError)
       source.close()
     }
-  }, [isPaused, reconnectAttempt, sourceScope, streamMode])
+  }, [isPaused, reconnectAttempt, liveScope, streamMode])
 
   useEffect(() => {
     if (isPaused || streamMode !== 'polling' || reconnectCountdownSeconds === null) {

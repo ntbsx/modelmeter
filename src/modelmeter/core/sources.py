@@ -301,14 +301,25 @@ def get_sources_for_scope(
         matched = [s for s in enabled_sources if s.source_id == scope.source_id]
         if not matched:
             source_id = scope.source_id or "unknown"
+            registered = next((s for s in registry.sources if s.source_id == source_id), None)
             return [], [
                 SourceFailure(
                     source_id=source_id,
                     error=f"Source '{source_id}' not found or disabled",
-                    kind="sqlite",
+                    kind=registered.kind if registered is not None else "http",
                 )
             ]
-        return matched, []
+        source = matched[0]
+        health = check_source_health(source=source, settings=settings)
+        if health.is_reachable:
+            return [source], []
+        return [], [
+            SourceFailure(
+                source_id=source.source_id,
+                error=health.error or health.detail or "unreachable",
+                kind=source.kind,
+            )
+        ]
 
     sources: list[DataSourceConfig] = []
     failures: list[SourceFailure] = []

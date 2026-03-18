@@ -82,7 +82,7 @@ export default function Projects() {
                           className="inline-flex rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 text-xs font-medium"
                           title={src}
                         >
-                          {src === 'self' ? 'This Server' : src}
+                          {src === 'self' || src === 'local' ? 'This Server' : src}
                         </span>
                       ))}
                     </div>

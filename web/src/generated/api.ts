@@ -286,32 +286,20 @@ export interface components {
          * @description Daily time-series response contract.
          */
         DailyResponse: {
-            /**
-             * Daily
-             * @default []
-             */
-            daily: components["schemas"]["DailyUsage"][];
+            /** Daily */
+            daily?: components["schemas"]["DailyUsage"][];
             /** Pricing Source */
             pricing_source?: string | null;
             /** Source Scope */
             source_scope?: string | null;
-            /**
-             * Sources Considered
-             * @default []
-             */
-            sources_considered: string[];
-            /**
-             * Sources Failed
-             * @default []
-             */
-            sources_failed: {
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
                 [key: string]: string;
             }[];
-            /**
-             * Sources Succeeded
-             * @default []
-             */
-            sources_succeeded: string[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -466,16 +454,10 @@ export interface components {
             pricing_source?: string | null;
             /** Token Source */
             token_source: string;
-            /**
-             * Top Models
-             * @default []
-             */
-            top_models: components["schemas"]["LiveModelUsage"][];
-            /**
-             * Top Tools
-             * @default []
-             */
-            top_tools: components["schemas"]["LiveToolUsage"][];
+            /** Top Models */
+            top_models?: components["schemas"]["LiveModelUsage"][];
+            /** Top Tools */
+            top_tools?: components["schemas"]["LiveToolUsage"][];
             /**
              * Total Interactions
              * @default 0
@@ -513,11 +495,8 @@ export interface components {
         ModelDetailResponse: {
             /** Cost Usd */
             cost_usd?: number | null;
-            /**
-             * Daily
-             * @default []
-             */
-            daily: components["schemas"]["DailyUsage"][];
+            /** Daily */
+            daily?: components["schemas"]["DailyUsage"][];
             /** Model Id */
             model_id: string;
             /** Pricing Source */
@@ -526,23 +505,14 @@ export interface components {
             provider: string;
             /** Source Scope */
             source_scope?: string | null;
-            /**
-             * Sources Considered
-             * @default []
-             */
-            sources_considered: string[];
-            /**
-             * Sources Failed
-             * @default []
-             */
-            sources_failed: {
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
                 [key: string]: string;
             }[];
-            /**
-             * Sources Succeeded
-             * @default []
-             */
-            sources_succeeded: string[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /**
              * Total Interactions
              * @default 0
@@ -588,11 +558,8 @@ export interface components {
          * @description Top models usage response contract.
          */
         ModelsResponse: {
-            /**
-             * Models
-             * @default []
-             */
-            models: components["schemas"]["ModelUsage"][];
+            /** Models */
+            models?: components["schemas"]["ModelUsage"][];
             /** Models Limit */
             models_limit?: number | null;
             /**
@@ -614,23 +581,14 @@ export interface components {
             pricing_source?: string | null;
             /** Source Scope */
             source_scope?: string | null;
-            /**
-             * Sources Considered
-             * @default []
-             */
-            sources_considered: string[];
-            /**
-             * Sources Failed
-             * @default []
-             */
-            sources_failed: {
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
                 [key: string]: string;
             }[];
-            /**
-             * Sources Succeeded
-             * @default []
-             */
-            sources_succeeded: string[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -665,11 +623,8 @@ export interface components {
             project_name: string;
             /** Project Path */
             project_path?: string | null;
-            /**
-             * Sessions
-             * @default []
-             */
-            sessions: components["schemas"]["ProjectSessionUsage"][];
+            /** Sessions */
+            sessions?: components["schemas"]["ProjectSessionUsage"][];
             /** Sessions Limit */
             sessions_limit?: number | null;
             /**
@@ -684,23 +639,14 @@ export interface components {
             sessions_returned: number;
             /** Source Scope */
             source_scope?: string | null;
-            /**
-             * Sources Considered
-             * @default []
-             */
-            sources_considered: string[];
-            /**
-             * Sources Failed
-             * @default []
-             */
-            sources_failed: {
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
                 [key: string]: string;
             }[];
-            /**
-             * Sources Succeeded
-             * @default []
-             */
-            sources_succeeded: string[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -786,11 +732,8 @@ export interface components {
         ProjectsResponse: {
             /** Pricing Source */
             pricing_source?: string | null;
-            /**
-             * Projects
-             * @default []
-             */
-            projects: components["schemas"]["ProjectUsage"][];
+            /** Projects */
+            projects?: components["schemas"]["ProjectUsage"][];
             /** Projects Limit */
             projects_limit?: number | null;
             /**
@@ -805,23 +748,14 @@ export interface components {
             projects_returned: number;
             /** Source Scope */
             source_scope?: string | null;
-            /**
-             * Sources Considered
-             * @default []
-             */
-            sources_considered: string[];
-            /**
-             * Sources Failed
-             * @default []
-             */
-            sources_failed: {
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
                 [key: string]: string;
             }[];
-            /**
-             * Sources Succeeded
-             * @default []
-             */
-            sources_succeeded: string[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -871,11 +805,8 @@ export interface components {
         ProvidersResponse: {
             /** Pricing Source */
             pricing_source?: string | null;
-            /**
-             * Providers
-             * @default []
-             */
-            providers: components["schemas"]["ProviderUsage"][];
+            /** Providers */
+            providers?: components["schemas"]["ProviderUsage"][];
             /** Providers Limit */
             providers_limit?: number | null;
             /**
@@ -890,23 +821,14 @@ export interface components {
             providers_returned: number;
             /** Source Scope */
             source_scope?: string | null;
-            /**
-             * Sources Considered
-             * @default []
-             */
-            sources_considered: string[];
-            /**
-             * Sources Failed
-             * @default []
-             */
-            sources_failed: {
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
                 [key: string]: string;
             }[];
-            /**
-             * Sources Succeeded
-             * @default []
-             */
-            sources_succeeded: string[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /** Total Cost Usd */
             total_cost_usd?: number | null;
             /**
@@ -1034,23 +956,14 @@ export interface components {
             pricing_source?: string | null;
             /** Source Scope */
             source_scope?: string | null;
-            /**
-             * Sources Considered
-             * @default []
-             */
-            sources_considered: string[];
-            /**
-             * Sources Failed
-             * @default []
-             */
-            sources_failed: {
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
                 [key: string]: string;
             }[];
-            /**
-             * Sources Succeeded
-             * @default []
-             */
-            sources_succeeded: string[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
             /**
              * Total Sessions
              * @default 0
