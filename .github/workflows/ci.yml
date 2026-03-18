@@ -19,7 +19,7 @@ env:
 
 jobs:
   # ============================================================================
-  # STAGE 1: Lint (Fast errors first)
+  # Lint (no dependencies - run immediately)
   # ============================================================================
   lint_backend:
     runs-on: ubuntu-latest
@@ -59,30 +59,8 @@ jobs:
         run: npm run --prefix web lint
 
   # ============================================================================
-  # STAGE 2: Type Check & Contracts (Depends on lint)
+  # Type Generation (depends on lint - don't generate if lint fails)
   # ============================================================================
-  check_backend:
-    needs: [lint_backend]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-      - name: Pyright
-        run: uv run python -m pyright
-      - name: Version check
-        run: make version-check
-
   gen_types:
     needs: [lint_backend, lint_frontend]
     runs-on: ubuntu-latest
@@ -111,6 +89,30 @@ jobs:
       - name: Generate TypeScript types
         run: npm run --prefix web gen:types
 
+  # ============================================================================
+  # Type Checks (check_backend parallel, check_frontend depends on gen_types)
+  # ============================================================================
+  check_backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
+      - name: Install dependencies
+        run: uv sync --frozen --all-groups
+      - name: Pyright
+        run: uv run python -m pyright
+      - name: Version check
+        run: make version-check
+
   check_frontend:
     needs: [gen_types]
     runs-on: ubuntu-latest
@@ -129,7 +131,6 @@ jobs:
         run: git diff --exit-code -- web/src/generated/api.ts web/src/generated/openapi.sha256
 
   contract_policy:
-    needs: [lint_backend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -163,7 +164,7 @@ jobs:
           fi
 
   # ============================================================================
-  # STAGE 3: Tests (Depends on type checks)
+  # Tests (depend on type checks)
   # ============================================================================
   test_backend:
     needs: [check_backend]
@@ -203,7 +204,7 @@ jobs:
         run: npm run --prefix web test -- --run
 
   # ============================================================================
-  # STAGE 4: Security (Independent - runs in parallel)
+  # Security (no dependencies - run immediately)
   # ============================================================================
   security_deps:
     runs-on: ubuntu-latest
