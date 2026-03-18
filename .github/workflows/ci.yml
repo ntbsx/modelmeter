@@ -59,10 +59,9 @@ jobs:
         run: npm run --prefix web lint
 
   # ============================================================================
-  # Type Generation (depends on lint - don't generate if lint fails)
+  # Type Generation (run in parallel with lint for faster feedback)
   # ============================================================================
   gen_types:
-    needs: [lint_backend, lint_frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -90,9 +89,10 @@ jobs:
         run: npm run --prefix web gen:types
 
   # ============================================================================
-  # Type Checks (check_backend parallel, check_frontend depends on gen_types)
+  # Type Checks (both parallel after lint)
   # ============================================================================
   check_backend:
+    needs: [lint_backend, lint_frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -167,7 +167,7 @@ jobs:
   # Tests (depend on type checks)
   # ============================================================================
   test_backend:
-    needs: [check_backend]
+    needs: [lint_backend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -187,7 +187,7 @@ jobs:
         run: uv run python -m pytest -n auto
 
   test_frontend:
-    needs: [check_frontend]
+    needs: [lint_frontend]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
