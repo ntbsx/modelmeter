@@ -5,8 +5,16 @@ import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
+
 from modelmeter.config.settings import AppSettings
-from modelmeter.core.analytics import get_summary
+from modelmeter.core.analytics import (
+    get_daily,
+    get_models,
+    get_projects,
+    get_providers,
+    get_summary,
+)
 from modelmeter.core.federation import (
     merge_model_usage,
     merge_project_usage,
@@ -29,6 +37,17 @@ from modelmeter.core.sources import (
     load_source_registry,
     save_source_registry,
 )
+
+
+def _patch_local_sqlite_path(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    path: Path,
+) -> None:
+    def _fake_resolve(_settings: AppSettings, db_path_override: Path | None = None) -> Path:
+        return db_path_override or path
+
+    monkeypatch.setattr("modelmeter.core.analytics._resolve_sqlite_path", _fake_resolve)
 
 
 def _create_simple_usage_fixture(db_path: Path, model_prefix: str = "claude") -> None:
@@ -292,6 +311,162 @@ class TestFederatedQueries:
 
         assert result.usage.input_tokens == 100
         assert result.usage.output_tokens == 50
+
+    def test_federated_summary_merges_multiple_sources(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When source_scope=all with sqlite sources, should merge local + federated data."""
+        local_db = tmp_path / "local.db"
+        db1 = tmp_path / "db1.db"
+        db2 = tmp_path / "db2.db"
+        _create_simple_usage_fixture(local_db, model_prefix="claude-local")
+        _create_simple_usage_fixture(db1, model_prefix="claude-1")
+        _create_simple_usage_fixture(db2, model_prefix="claude-2")
+
+        _patch_local_sqlite_path(monkeypatch, path=local_db)
+
+        registry_path = tmp_path / "sources.json"
+        settings = AppSettings(source_registry_file=registry_path)
+
+        registry = SourceRegistry(
+            sources=[
+                DataSourceConfig(
+                    source_id="source1",
+                    kind="sqlite",
+                    db_path=db1,
+                    enabled=True,
+                ),
+                DataSourceConfig(
+                    source_id="source2",
+                    kind="sqlite",
+                    db_path=db2,
+                    enabled=True,
+                ),
+            ]
+        )
+        save_source_registry(settings=settings, registry=registry)
+
+        result = get_summary(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.usage.input_tokens == 300
+        assert result.usage.output_tokens == 150
+        assert result.source_scope == "all"
+        assert "local" in result.sources_considered
+        assert "source1" in result.sources_considered
+        assert "source2" in result.sources_considered
+        assert len(result.sources_succeeded) == 3
+        assert len(result.sources_failed) == 0
+
+    def test_all_scope_with_no_sources_includes_local(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When source_scope=all and no registry sources, should still include local."""
+        local_db = tmp_path / "local.db"
+        _create_simple_usage_fixture(local_db)
+
+        _patch_local_sqlite_path(monkeypatch, path=local_db)
+
+        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
+        result = get_summary(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.usage.input_tokens == 100
+        assert result.usage.output_tokens == 50
+        assert result.source_scope == "all"
+        assert result.sources_considered == ["local"]
+        assert result.sources_succeeded == ["local"]
+        assert result.sources_failed == []
+
+    def test_all_scope_daily_includes_local(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When source_scope=all, get_daily should include local totals."""
+        local_db = tmp_path / "local.db"
+        _create_simple_usage_fixture(local_db)
+
+        _patch_local_sqlite_path(monkeypatch, path=local_db)
+
+        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
+        result = get_daily(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.source_scope == "all"
+        assert result.totals.input_tokens == 100
+        assert result.totals.output_tokens == 50
+        assert "local" in result.sources_considered
+
+    def test_all_scope_models_includes_local(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When source_scope=all, get_models should include local totals."""
+        local_db = tmp_path / "local.db"
+        _create_simple_usage_fixture(local_db)
+
+        _patch_local_sqlite_path(monkeypatch, path=local_db)
+
+        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
+        result = get_models(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.source_scope == "all"
+        assert result.totals.input_tokens == 100
+        assert result.totals.output_tokens == 50
+        assert "local" in result.sources_considered
+
+    def test_all_scope_providers_includes_local(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When source_scope=all, get_providers should include local totals."""
+        local_db = tmp_path / "local.db"
+        _create_simple_usage_fixture(local_db)
+
+        _patch_local_sqlite_path(monkeypatch, path=local_db)
+
+        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
+        result = get_providers(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.source_scope == "all"
+        assert result.totals.input_tokens == 100
+        assert result.totals.output_tokens == 50
+        assert "local" in result.sources_considered
+
+    def test_all_scope_projects_includes_local(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """When source_scope=all, get_projects should include local totals."""
+        local_db = tmp_path / "local.db"
+        _create_simple_usage_fixture(local_db)
+
+        _patch_local_sqlite_path(monkeypatch, path=local_db)
+
+        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
+        result = get_projects(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.source_scope == "all"
+        assert result.totals.input_tokens == 100
+        assert result.totals.output_tokens == 50
+        assert "local" in result.sources_considered
 
 
 class TestSourceRegistry:
