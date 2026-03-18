@@ -340,11 +340,11 @@ export default function Sources() {
             <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
               <tr>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Source ID</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Kind</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Target</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Auth</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Enabled</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Source</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Type</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Connection</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Credentials</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Active</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Status</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right">Actions</th>
               </tr>
@@ -355,12 +355,30 @@ export default function Sources() {
                 return (
                   <tr key={source.source_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium">{source.source_id}</td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">{source.kind}</td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-gray-600 dark:text-gray-400">{sourceTarget(source)}</td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">{source.has_auth ? 'Configured' : 'None'}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        source.kind === 'http' 
+                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                          : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                      }`}>
+                        {source.kind === 'http' ? '🌐 API' : '💾 Local'}
+                      </span>
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-gray-600 dark:text-gray-400 max-w-[200px] truncate" title={sourceTarget(source)}>
+                      {sourceTarget(source)}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                      {source.kind === 'http' ? (
+                        <span className={source.has_auth ? 'text-emerald-600' : 'text-amber-600'}>
+                          {source.has_auth ? '✓ Configured' : '✗ None'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">
                       <span className={source.enabled ? 'text-emerald-600' : 'text-gray-500'}>
-                        {source.enabled ? 'Yes' : 'No'}
+                        {source.enabled ? '✓ Yes' : '✗ No'}
                       </span>
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4">
@@ -370,10 +388,10 @@ export default function Sources() {
                             ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' 
                             : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
                         }`}>
-                          {result.is_reachable ? 'Healthy' : 'Unreachable'}
+                          {result.is_reachable ? '✓ Healthy' : '✗ Unreachable'}
                         </span>
                       ) : (
-                        <span className="text-gray-400 text-xs">Not checked</span>
+                        <span className="text-gray-400 text-xs">—</span>
                       )}
                     </td>
                     <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
