@@ -178,7 +178,7 @@ make perf-guardrail
 
 This repository uses GitHub Actions workflows:
 
-- `.github/workflows/ci.yml` runs pull-request and `main` branch checks (lint, typecheck, tests, package smoke, and perf guardrail).
+- `.github/workflows/ci.yml` runs pull-request and `main` branch checks with a **parallel structure** for fast feedback (lint, type generation, type checks, contract policy, tests, and security checks run in parallel where possible).
 - `.github/workflows/release.yml` runs on version tags (`vYYYY.M.x` for stable, `vYYYY.M.xrcN` for prereleases) to validate version alignment, build release artifacts, run a package smoke test, and publish wheel/sdist assets to the GitHub release.
 
 Before opening a PR, run:

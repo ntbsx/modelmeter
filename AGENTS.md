@@ -68,7 +68,7 @@ Frontend scripts:
 - `npm run --prefix web check:types`
 
 CI workflows (GitHub Actions):
-- `.github/workflows/ci.yml` (PR/main checks)
+- `.github/workflows/ci.yml` (PR/main checks) - optimized for parallel execution with ~10 jobs for fast feedback
 - `.github/workflows/release.yml` (tagged releases)
 
 ## 5) Product Versioning (Single Version)
