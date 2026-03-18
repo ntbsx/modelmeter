@@ -207,7 +207,11 @@ def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
     assert payload["selected_source"] == "sqlite"
 
 
-def test_sources_endpoint_returns_empty_registry_by_default() -> None:
+def test_sources_endpoint_returns_empty_registry_by_default(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
     client = _new_client()
     client.cookies.set("ignore", "1")
     response = client.get("/api/sources", headers={"X-Ignore": "1"})

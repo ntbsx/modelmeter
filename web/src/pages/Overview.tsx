@@ -17,7 +17,6 @@ import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import DateRangeFilter from '../components/DateRangeFilter'
-import SourceMetaBanner from '../components/SourceMetaBanner'
 import { useSourceScope } from '../hooks/useSourceScope'
 
 function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
@@ -107,13 +106,6 @@ export default function Overview() {
         </div>
         <DateRangeFilter days={days} onChange={setDays} />
       </div>
-
-      <SourceMetaBanner
-        sourceScope={summary.source_scope}
-        sourcesConsidered={summary.sources_considered}
-        sourcesSucceeded={summary.sources_succeeded}
-        sourcesFailed={summary.sources_failed}
-      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <StatCard 

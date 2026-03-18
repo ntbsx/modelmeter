@@ -81,7 +81,7 @@ describe('Sources page', () => {
     expect(await screen.findByText('Healthy')).toBeInTheDocument()
   })
 
-  it('submits sqlite source form with PUT request', async () => {
+  it('submits http source form with PUT request', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input)
       if (url.includes('/api/sources/') && init?.method === 'PUT') {
@@ -103,17 +103,21 @@ describe('Sources page', () => {
 
     expect(await screen.findByText('No sources configured yet.')).toBeInTheDocument()
 
-    fireEvent.change(screen.getByPlaceholderText('local-macbook'), {
-      target: { value: 'local-db' },
-    })
-    fireEvent.change(screen.getByPlaceholderText('/Users/me/.local/share/opencode/opencode.db'), {
-      target: { value: '/tmp/opencode.db' },
-    })
-    fireEvent.click(screen.getByRole('button', { name: 'Add Source' }))
+    const headerAddBtn = screen.getByRole('button', { name: 'Add Source' })
+    fireEvent.click(headerAddBtn)
+
+    const sourceIdInput = screen.getByPlaceholderText('local-macbook')
+    fireEvent.change(sourceIdInput, { target: { value: 'remote-server' } })
+
+    const baseUrlInput = screen.getByPlaceholderText('https://modelmeter.example.com')
+    fireEvent.change(baseUrlInput, { target: { value: 'https://example.com' } })
+
+    const submitBtn = document.querySelector('button[type="submit"]') as HTMLButtonElement
+    fireEvent.click(submitBtn)
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/api/sources/local-db'),
+        expect.stringContaining('/api/sources/remote-server'),
         expect.objectContaining({ method: 'PUT' })
       )
     })

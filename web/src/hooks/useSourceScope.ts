@@ -1,14 +1,14 @@
 import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-export type SourceScopeValue = 'local' | 'all' | `source:${string}`
+export type SourceScopeValue = 'self' | 'all' | `source:${string}`
 
 function normalizeScope(raw: string | null): SourceScopeValue {
   if (raw === 'all') return 'all'
   if (raw && raw.startsWith('source:') && raw.length > 'source:'.length) {
     return raw as SourceScopeValue
   }
-  return 'local'
+  return 'self'
 }
 
 export function useSourceScope() {

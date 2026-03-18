@@ -7,7 +7,6 @@ import type { ProvidersResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import TimeRangeFilter from '../components/TimeRangeFilter'
-import SourceMetaBanner from '../components/SourceMetaBanner'
 import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function Providers() {
@@ -40,13 +39,6 @@ export default function Providers() {
         </div>
         <TimeRangeFilter days={days} onChange={setDays} />
       </div>
-
-      <SourceMetaBanner
-        sourceScope={data.source_scope}
-        sourcesConsidered={data.sources_considered}
-        sourcesSucceeded={data.sources_succeeded}
-        sourcesFailed={data.sources_failed}
-      />
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
         <div className="overflow-x-auto">

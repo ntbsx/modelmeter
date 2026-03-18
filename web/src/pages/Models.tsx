@@ -8,7 +8,6 @@ import type { ModelsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import DateRangeFilter from '../components/DateRangeFilter'
-import SourceMetaBanner from '../components/SourceMetaBanner'
 import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function Models() {
@@ -59,13 +58,6 @@ export default function Models() {
           <DateRangeFilter days={days} onChange={setDays} />
         </div>
       </div>
-
-      <SourceMetaBanner
-        sourceScope={data.source_scope}
-        sourcesConsidered={data.sources_considered}
-        sourcesSucceeded={data.sources_succeeded}
-        sourcesFailed={data.sources_failed}
-      />
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
         <div className="overflow-x-auto">

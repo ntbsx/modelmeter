@@ -35,7 +35,7 @@ class SourceScope:
     @classmethod
     def parse(cls, value: str | None) -> SourceScope:
         """Parse a source scope string into a SourceScope."""
-        if value is None or value == "local":
+        if value is None or value in ("local", "self"):
             return cls(kind=SourceScopeKind.LOCAL)
         if value == "all":
             return cls(kind=SourceScopeKind.ALL)

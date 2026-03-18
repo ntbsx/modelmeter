@@ -7,7 +7,6 @@ import type { ProjectsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import TimeRangeFilter from '../components/TimeRangeFilter'
-import SourceMetaBanner from '../components/SourceMetaBanner'
 import { useSourceScope } from '../hooks/useSourceScope'
 
 export default function Projects() {
@@ -43,13 +42,6 @@ export default function Projects() {
         </div>
       </div>
 
-      <SourceMetaBanner
-        sourceScope={data.source_scope}
-        sourcesConsidered={data.sources_considered}
-        sourcesSucceeded={data.sources_succeeded}
-        sourcesFailed={data.sources_failed}
-      />
-
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
@@ -84,13 +76,13 @@ export default function Projects() {
                   <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">{p.cost_usd ? formatUsd(p.cost_usd) : '-'}</td>
                   <td className="px-3 sm:px-6 py-3 sm:py-4">
                     <div className="flex flex-wrap gap-1">
-                      {(p.sources ?? ['local']).map((src) => (
+                      {(p.sources ?? ['self']).map((src) => (
                         <span
                           key={src}
                           className="inline-flex rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 text-xs font-medium"
                           title={src}
                         >
-                          {src}
+                          {src === 'self' ? 'This Server' : src}
                         </span>
                       ))}
                     </div>

@@ -6,7 +6,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from modelmeter.config.settings import AppSettings
-from modelmeter.core.analytics import get_summary
+from modelmeter.core.analytics import (
+    get_daily,
+    get_models,
+    get_projects,
+    get_providers,
+    get_summary,
+)
 from modelmeter.core.federation import (
     merge_model_usage,
     merge_project_usage,
@@ -265,7 +271,7 @@ class TestFederatedQueries:
         assert result.usage.output_tokens == 50
 
     def test_federated_summary_merges_multiple_sources(self, tmp_path: Path) -> None:
-        """When source_scope=all with multiple sqlite sources, should merge results."""
+        """When source_scope=all with sqlite sources, should merge results including local."""
         db1 = tmp_path / "db1.db"
         db2 = tmp_path / "db2.db"
         _create_simple_usage_fixture(db1, model_prefix="claude-1")
@@ -298,15 +304,17 @@ class TestFederatedQueries:
             source_scope=SourceScope(kind=SourceScopeKind.ALL),
         )
 
-        assert result.usage.input_tokens == 200
-        assert result.usage.output_tokens == 100
+        assert result.usage.input_tokens > 200
+        assert result.usage.output_tokens > 100
         assert result.source_scope == "all"
-        assert len(result.sources_considered) == 2
-        assert len(result.sources_succeeded) == 2
+        assert "local" in result.sources_considered
+        assert "source1" in result.sources_considered
+        assert "source2" in result.sources_considered
+        assert len(result.sources_succeeded) == 3
         assert len(result.sources_failed) == 0
 
     def test_all_scope_with_no_sources(self, tmp_path: Path) -> None:
-        """When source_scope=all but no sources configured, should return empty."""
+        """When source_scope=all with no sources configured, should return local data."""
         settings = AppSettings(source_registry_file=tmp_path / "sources.json")
 
         result = get_summary(
@@ -315,7 +323,64 @@ class TestFederatedQueries:
             source_scope=SourceScope(kind=SourceScopeKind.ALL),
         )
 
-        assert result.usage.input_tokens == 0
+        assert result.usage.input_tokens > 0
+        assert result.source_scope == "all"
+        assert "local" in result.sources_considered
+
+    def test_all_scope_daily_includes_local(self, tmp_path: Path) -> None:
+        """When source_scope=all, get_daily should include local data."""
+        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
+
+        result = get_daily(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.source_scope == "all"
+        assert "local" in result.sources_considered
+        assert result.totals.input_tokens > 0
+
+    def test_all_scope_models_includes_local(self, tmp_path: Path) -> None:
+        """When source_scope=all, get_models should include local data."""
+        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
+
+        result = get_models(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.source_scope == "all"
+        assert "local" in result.sources_considered
+        assert result.totals.input_tokens > 0
+
+    def test_all_scope_providers_includes_local(self, tmp_path: Path) -> None:
+        """When source_scope=all, get_providers should include local data."""
+        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
+
+        result = get_providers(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.source_scope == "all"
+        assert "local" in result.sources_considered
+        assert result.totals.input_tokens > 0
+
+    def test_all_scope_projects_includes_local(self, tmp_path: Path) -> None:
+        """When source_scope=all, get_projects should include local data."""
+        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
+
+        result = get_projects(
+            settings=settings,
+            days=7,
+            source_scope=SourceScope(kind=SourceScopeKind.ALL),
+        )
+
+        assert result.source_scope == "all"
+        assert "local" in result.sources_considered
 
 
 class TestSourceRegistry:

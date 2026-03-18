@@ -117,7 +117,7 @@ describe('Projects page', () => {
     render(<Projects />)
 
     expect(await screen.findByText('Legacy Project')).toBeInTheDocument()
-    expect(screen.getByText('local')).toBeInTheDocument()
+    expect(screen.getAllByText('This Server').length).toBeGreaterThan(0)
   })
 
   it('renders an empty state when no project usage is returned', async () => {

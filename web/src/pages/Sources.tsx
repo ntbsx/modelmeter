@@ -5,6 +5,25 @@ import type { DataSourcePublic, SourceHealth, SourceRegistryPublic } from '../ty
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 
+const HEALTH_STORAGE_KEY = 'modelmeter-source-health'
+
+function loadStoredHealth(): Record<string, { is_reachable: boolean; error?: string; checked_at: string }> {
+  try {
+    const stored = localStorage.getItem(HEALTH_STORAGE_KEY)
+    return stored ? JSON.parse(stored) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveStoredHealth(health: Record<string, { is_reachable: boolean; error?: string; checked_at: string }>): void {
+  try {
+    localStorage.setItem(HEALTH_STORAGE_KEY, JSON.stringify(health))
+  } catch {
+    // ignore storage errors
+  }
+}
+
 type SourceFormState = {
   sourceId: string
   label: string
@@ -19,13 +38,15 @@ type SourceFormState = {
 const EMPTY_FORM: SourceFormState = {
   sourceId: '',
   label: '',
-  kind: 'sqlite',
+  kind: 'http',
   enabled: true,
   dbPath: '',
   baseUrl: '',
   username: '',
   password: '',
 }
+
+type StoredHealth = Record<string, { is_reachable: boolean; error?: string; checked_at: string }>
 
 function sourceTarget(source: DataSourcePublic): string {
   return source.kind === 'sqlite' ? String(source.db_path ?? '-') : String(source.base_url ?? '-')
@@ -36,7 +57,9 @@ export default function Sources() {
   const [form, setForm] = useState<SourceFormState>(EMPTY_FORM)
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
-  const [health, setHealth] = useState<SourceHealth[] | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<DataSourcePublic | null>(null)
+  const [storedHealth, setStoredHealth] = useState<StoredHealth>(() => loadStoredHealth())
 
   const {
     data: registry,
@@ -86,6 +109,7 @@ export default function Sources() {
       setForm(EMPTY_FORM)
       setEditingSourceId(null)
       setFormError(null)
+      setShowForm(false)
       await queryClient.invalidateQueries({ queryKey: ['sources-registry'] })
     },
     onError: (error) => {
@@ -105,7 +129,16 @@ export default function Sources() {
   const checkMutation = useMutation({
     mutationFn: async () => {
       const result = await fetchApi<SourceHealth[]>('/sources/check')
-      setHealth(result)
+      const healthMap: StoredHealth = {}
+      for (const item of result) {
+        healthMap[item.source_id] = {
+          is_reachable: item.is_reachable,
+          error: item.error ?? undefined,
+          checked_at: new Date().toISOString(),
+        }
+      }
+      setStoredHealth(healthMap)
+      saveStoredHealth(healthMap)
     },
   })
 
@@ -118,6 +151,7 @@ export default function Sources() {
   }, [form, saveMutation.isPending])
 
   function onEdit(source: DataSourcePublic): void {
+    setShowForm(true)
     setEditingSourceId(source.source_id)
     setFormError(null)
     setForm({
@@ -136,6 +170,11 @@ export default function Sources() {
     setForm(EMPTY_FORM)
     setEditingSourceId(null)
     setFormError(null)
+  }
+
+  function onAddNew(): void {
+    setShowForm(true)
+    onReset()
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>): void {
@@ -164,128 +203,141 @@ export default function Sources() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Sources</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">Manage local and remote analytics sources</p>
         </div>
-        <button
-          type="button"
-          onClick={() => checkMutation.mutate()}
-          disabled={checkMutation.isPending}
-          className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
-        >
-          {checkMutation.isPending ? 'Checking...' : 'Run Health Check'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onAddNew}
+            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+          >
+            Add Source
+          </button>
+          <button
+            type="button"
+            onClick={() => checkMutation.mutate()}
+            disabled={checkMutation.isPending}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+          >
+            {checkMutation.isPending ? 'Checking...' : 'Run Health Check'}
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 sm:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-          {editingSourceId ? `Edit Source: ${editingSourceId}` : 'Add Source'}
-        </h2>
-        <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="text-sm text-gray-700 dark:text-gray-300">
-            Source ID
-            <input
-              value={form.sourceId}
-              onChange={(event) => setForm((prev) => ({ ...prev, sourceId: event.target.value }))}
-              disabled={editingSourceId !== null}
-              className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
-              placeholder="local-macbook"
-            />
-          </label>
-          <label className="text-sm text-gray-700 dark:text-gray-300">
-            Label
-            <input
-              value={form.label}
-              onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
-              className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
-              placeholder="My laptop"
-            />
-          </label>
-          <label className="text-sm text-gray-700 dark:text-gray-300">
-            Kind
-            <select
-              value={form.kind}
-              onChange={(event) => setForm((prev) => ({ ...prev, kind: event.target.value as 'sqlite' | 'http' }))}
-              className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
-            >
-              <option value="sqlite">sqlite</option>
-              <option value="http">http</option>
-            </select>
-          </label>
-          <label className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2 mt-6">
-            <input
-              type="checkbox"
-              checked={form.enabled}
-              onChange={(event) => setForm((prev) => ({ ...prev, enabled: event.target.checked }))}
-            />
-            Enabled
-          </label>
-
-          {form.kind === 'sqlite' ? (
-            <label className="md:col-span-2 text-sm text-gray-700 dark:text-gray-300">
-              SQLite DB Path
+      {showForm && (
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 sm:p-6">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+            {editingSourceId ? `Edit Source: ${editingSourceId}` : 'Add Source'}
+          </h2>
+          <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Source ID
               <input
-                value={form.dbPath}
-                onChange={(event) => setForm((prev) => ({ ...prev, dbPath: event.target.value }))}
+                value={form.sourceId}
+                onChange={(event) => setForm((prev) => ({ ...prev, sourceId: event.target.value }))}
+                disabled={editingSourceId !== null}
                 className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
-                placeholder="/Users/me/.local/share/opencode/opencode.db"
+                placeholder="local-macbook"
               />
             </label>
-          ) : (
-            <>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Label
+              <input
+                value={form.label}
+                onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
+                className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                placeholder="My laptop"
+              />
+            </label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">
+              Kind
+              <select
+                value={form.kind}
+                onChange={(event) => setForm((prev) => ({ ...prev, kind: event.target.value as 'sqlite' | 'http' }))}
+                className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+              >
+                <option value="http">http</option>
+                <option value="sqlite">sqlite</option>
+              </select>
+            </label>
+            <label className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2 mt-6">
+              <input
+                type="checkbox"
+                checked={form.enabled}
+                onChange={(event) => setForm((prev) => ({ ...prev, enabled: event.target.checked }))}
+              />
+              Enabled
+            </label>
+
+            {form.kind === 'sqlite' ? (
               <label className="md:col-span-2 text-sm text-gray-700 dark:text-gray-300">
-                Base URL
+                SQLite DB Path
                 <input
-                  value={form.baseUrl}
-                  onChange={(event) => setForm((prev) => ({ ...prev, baseUrl: event.target.value }))}
+                  value={form.dbPath}
+                  onChange={(event) => setForm((prev) => ({ ...prev, dbPath: event.target.value }))}
                   className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
-                  placeholder="https://modelmeter.example.com"
+                  placeholder="/Users/me/.local/share/opencode/opencode.db"
                 />
               </label>
-              <label className="text-sm text-gray-700 dark:text-gray-300">
-                Username (optional)
-                <input
-                  value={form.username}
-                  onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
-                  placeholder="modelmeter"
-                />
-              </label>
-              <label className="text-sm text-gray-700 dark:text-gray-300">
-                Password (optional)
-                <input
-                  type="password"
-                  value={form.password}
-                  onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
-                />
-              </label>
-            </>
-          )}
+            ) : (
+              <>
+                <label className="md:col-span-2 text-sm text-gray-700 dark:text-gray-300">
+                  Base URL
+                  <input
+                    value={form.baseUrl}
+                    onChange={(event) => setForm((prev) => ({ ...prev, baseUrl: event.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                    placeholder="https://modelmeter.example.com"
+                  />
+                </label>
+                <label className="text-sm text-gray-700 dark:text-gray-300">
+                  Username (optional)
+                  <input
+                    value={form.username}
+                    onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                    placeholder="modelmeter"
+                  />
+                </label>
+                <label className="text-sm text-gray-700 dark:text-gray-300">
+                  Password (optional)
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                  />
+                </label>
+              </>
+            )}
 
-          {formError ? <p className="md:col-span-2 text-sm text-red-600">{formError}</p> : null}
+            {formError ? <p className="md:col-span-2 text-sm text-red-600">{formError}</p> : null}
 
-          <div className="md:col-span-2 flex gap-2">
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-            >
-              {saveMutation.isPending ? 'Saving...' : editingSourceId ? 'Update Source' : 'Add Source'}
-            </button>
-            {editingSourceId ? (
+            <div className="md:col-span-2 flex gap-2">
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              >
+                {saveMutation.isPending ? 'Saving...' : editingSourceId ? 'Update Source' : 'Add Source'}
+              </button>
               <button
                 type="button"
-                onClick={onReset}
+                onClick={() => {
+                  onReset()
+                  setShowForm(false)
+                }}
                 className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm"
               >
                 Cancel
               </button>
-            ) : null}
-          </div>
-        </form>
-      </div>
+            </div>
+          </form>
+        </div>
+      )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+      {!showForm && (
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs sm:text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
               <tr>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Source ID</th>
@@ -293,12 +345,13 @@ export default function Sources() {
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Target</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Auth</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Enabled</th>
+                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Status</th>
                 <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
               {(registry.sources ?? []).map((source) => {
-                const result = health?.find((item) => item.source_id === source.source_id)
+                const result = storedHealth[source.source_id]
                 return (
                   <tr key={source.source_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
                     <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium">{source.source_id}</td>
@@ -310,36 +363,49 @@ export default function Sources() {
                         {source.enabled ? 'Yes' : 'No'}
                       </span>
                     </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-right space-x-2">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
                       {result ? (
-                        <span className={result.is_reachable ? 'text-emerald-600 text-xs' : 'text-red-600 text-xs'}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                          result.is_reachable 
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        }`}>
                           {result.is_reachable ? 'Healthy' : 'Unreachable'}
                         </span>
-                      ) : null}
-                      <button
-                        type="button"
-                        onClick={() => onEdit(source)}
-                        className="text-blue-600 hover:text-blue-800 text-xs"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!window.confirm(`Remove source '${source.source_id}'?`)) return
-                          removeMutation.mutate(source.source_id)
-                        }}
-                        className="text-red-600 hover:text-red-800 text-xs"
-                      >
-                        Remove
-                      </button>
+                      ) : (
+                        <span className="text-gray-400 text-xs">Not checked</span>
+                      )}
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(source)}
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          title="Edit"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(source)}
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          title="Remove"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
               })}
               {(registry.sources ?? []).length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={7} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                     No sources configured yet.
                   </td>
                 </tr>
@@ -348,6 +414,37 @@ export default function Sources() {
           </table>
         </div>
       </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Remove Source</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              Are you sure you want to remove source <strong>{deleteTarget.source_id}</strong>? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  removeMutation.mutate(deleteTarget.source_id)
+                  setDeleteTarget(null)
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
