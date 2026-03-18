@@ -119,6 +119,12 @@ jobs:
           package_path.write_text(f"{json.dumps(package, indent=2)}\n")
           PY
 
+      - name: Build frontend
+        run: npm run --prefix web build
+
+      - name: Performance guardrail
+        run: make perf-guardrail
+
       - name: Build package artifacts
         run: make package-build
 

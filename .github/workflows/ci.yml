@@ -13,14 +13,12 @@ concurrency:
 
 permissions:
   contents: read
-  security-events: write
-  actions: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
-  fast-checks:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,14 +32,24 @@ jobs:
         with:
           version: "0.8.17"
           enable-cache: true
-      - name: Install dependencies
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install Python dependencies
         run: uv sync --frozen --all-groups
+      - name: Install frontend dependencies
+        run: npm ci --prefix web
       - name: Ruff format check
         run: uv run ruff format --check
       - name: Ruff lint
         run: uv run ruff check
+      - name: ESLint
+        run: npm run --prefix web lint
 
-  version-check:
+  check:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -55,29 +63,77 @@ jobs:
         with:
           version: "0.8.17"
           enable-cache: true
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-      - name: Version check
-        run: make version-check
-
-  typecheck:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
+      - name: Setup Node
+        uses: actions/setup-node@v6
         with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-          enable-cache: true
-      - name: Install dependencies
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install Python dependencies
         run: uv sync --frozen --all-groups
+      - name: Install frontend dependencies
+        run: npm ci --prefix web
       - name: Pyright
         run: uv run python -m pyright
+      - name: Version check
+        run: make version-check
+      - name: TypeScript types check
+        run: npm run --prefix web check:types
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install Python dependencies
+        run: uv sync --frozen --all-groups
+      - name: Install frontend dependencies
+        run: npm ci --prefix web
+      - name: Pytest
+        run: uv run python -m pytest -n auto
+      - name: Vitest
+        run: npm run --prefix web test -- --run
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.8.17"
+          enable-cache: true
+      - name: Install Python dependencies
+        run: uv sync --frozen --all-groups
+      - name: Run pip-audit
+        run: uv run pip-audit --disable-pip-args
+      - name: Run trufflehog
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/workspace" \
+            trufflesecurity/trufflehog:latest filesystem /workspace \
+            --no-update
 
   contract-policy:
     runs-on: ubuntu-latest
@@ -95,7 +151,7 @@ jobs:
         with:
           version: "0.8.17"
           enable-cache: true
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: uv sync --frozen --all-groups
       - name: Fetch comparison branch
         run: |
@@ -111,161 +167,3 @@ jobs:
           else
             uv run python scripts/check_contract_version_policy.py --base-ref "origin/${{ github.event.repository.default_branch }}"
           fi
-
-  frontend-lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Install frontend dependencies
-        run: npm ci --prefix web
-      - name: Frontend lint
-        run: npm run --prefix web lint
-
-  frontend-test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Install frontend dependencies
-        run: npm ci --prefix web
-      - name: Frontend tests
-        run: npm run --prefix web test -- --run
-
-  security-deps:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-      - name: Run pip-audit
-        run: uv run pip-audit --disable-pip-args --format=json | tee pip-audit.json
-      - name: Upload pip-audit results
-        uses: actions/upload-artifact@v7
-        with:
-          name: pip-audit
-          path: pip-audit.json
-          retention-days: 7
-
-  security-secrets:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - name: Run trufflehog
-        run: |
-          docker run --rm -v "${{ github.workspace }}:/workspace" \
-            trufflesecurity/trufflehog:latest filesystem /workspace \
-            --json --no-update | tee trufflehog.json || true
-      - name: Upload secrets scan
-        uses: actions/upload-artifact@v7
-        with:
-          name: secrets-scan
-          path: trufflehog.json
-          retention-days: 7
-
-  pytest:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-          enable-cache: true
-      - name: Install dependencies
-        run: uv sync --frozen --all-groups
-      - name: Pytest with coverage
-        run: uv run python -m pytest -n auto --cov=src/modelmeter --cov-report=xml --cov-report=term-missing
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-xml
-          path: coverage.xml
-
-  package-smoke:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-          enable-cache: true
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Install dependencies
-        run: |
-          uv sync --frozen --all-groups
-          npm ci --prefix web
-      - name: Build package
-        run: make package-build
-      - name: Verify wheel bundles web assets
-        run: |
-          uv run python -c "import zipfile, pathlib; wheels=sorted(pathlib.Path('dist').glob('*.whl')); assert wheels, 'No wheel built'; z=zipfile.ZipFile(wheels[-1]); assert any(n.endswith('modelmeter/web_dist/index.html') for n in z.namelist()), 'Bundled web_dist/index.html missing in wheel'"
-
-  perf-guardrail:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-      - name: Setup Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.12"
-      - name: Setup uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "0.8.17"
-          enable-cache: true
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: web/package-lock.json
-      - name: Install dependencies
-        run: |
-          uv sync --frozen --all-groups
-          npm ci --prefix web
-      - name: Build frontend
-        run: npm run --prefix web build
-      - name: Performance guardrail
-        run: make perf-guardrail
