@@ -128,7 +128,7 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --frozen --all-groups
       - name: Run pip-audit
-        run: uv run pip-audit --disable-pip-args
+        run: uv run pip-audit --disable-pip
       - name: Run trufflehog
         run: |
           docker run --rm -v "${{ github.workspace }}:/workspace" \
