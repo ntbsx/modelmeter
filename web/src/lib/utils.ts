@@ -9,7 +9,7 @@ export function formatTokens(value: number): string {
   if (value === undefined || value === null) return "0"
   
   const absValue = Math.abs(value)
-  let short = ""
+  let short: string
   
   if (absValue >= 1_000_000_000) {
     short = (value / 1_000_000_000).toFixed(1) + "B"
