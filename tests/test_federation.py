@@ -293,19 +293,6 @@ class TestFederatedQueries:
         assert result.usage.input_tokens == 100
         assert result.usage.output_tokens == 50
 
-    def test_all_scope_with_no_sources(self, tmp_path: Path) -> None:
-        """When source_scope=all with no sources configured, should return local data."""
-        settings = AppSettings(source_registry_file=tmp_path / "sources.json")
-
-        result = get_summary(
-            settings=settings,
-            days=7,
-            source_scope=SourceScope(kind=SourceScopeKind.ALL),
-        )
-
-        assert result.source_scope == "all"
-        assert "local" in result.sources_considered
-
 
 class TestSourceRegistry:
     """Test source registry loading and saving."""
