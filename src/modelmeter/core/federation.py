@@ -357,10 +357,12 @@ def execute_summary_federated(
                 )
             )
 
-    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
-    _all_source_ids = list(dict.fromkeys(
-        [s.source_id for s in sources] + [f.source_id for f in failures]
-    ))
+    _succeeded_ids = {
+        s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)
+    }
+    _all_source_ids = list(
+        dict.fromkeys([s.source_id for s in sources] + [f.source_id for f in failures])
+    )
     return (
         SummaryResponse(
             usage=total_usage,
@@ -507,10 +509,12 @@ def execute_daily_federated(
 
     daily_rows = sorted(daily_map.values(), key=lambda x: x.day)
 
-    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
-    _all_source_ids = list(dict.fromkeys(
-        [s.source_id for s in sources] + [f.source_id for f in failures]
-    ))
+    _succeeded_ids = {
+        s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)
+    }
+    _all_source_ids = list(
+        dict.fromkeys([s.source_id for s in sources] + [f.source_id for f in failures])
+    )
     return (
         DailyResponse(
             window_days=days,
@@ -697,10 +701,12 @@ def execute_models_federated(
     paginated_models = models_rows[offset : offset + limit] if limit > 0 else models_rows[offset:]
     models_returned = len(paginated_models)
 
-    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
-    _all_source_ids = list(dict.fromkeys(
-        [s.source_id for s in sources] + [f.source_id for f in failures]
-    ))
+    _succeeded_ids = {
+        s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)
+    }
+    _all_source_ids = list(
+        dict.fromkeys([s.source_id for s in sources] + [f.source_id for f in failures])
+    )
     return (
         ModelsResponse(
             window_days=days,
@@ -882,10 +888,12 @@ def execute_providers_federated(
     )
     providers_returned = len(paginated_providers)
 
-    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
-    _all_source_ids = list(dict.fromkeys(
-        [s.source_id for s in sources] + [f.source_id for f in failures]
-    ))
+    _succeeded_ids = {
+        s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)
+    }
+    _all_source_ids = list(
+        dict.fromkeys([s.source_id for s in sources] + [f.source_id for f in failures])
+    )
     return (
         ProvidersResponse(
             window_days=days,
@@ -1075,10 +1083,12 @@ def execute_projects_federated(
     )
     projects_returned = len(paginated_projects)
 
-    _succeeded_ids = {s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)}
-    _all_source_ids = list(dict.fromkeys(
-        [s.source_id for s in sources] + [f.source_id for f in failures]
-    ))
+    _succeeded_ids = {
+        s.source_id for s in sources if not any(f.source_id == s.source_id for f in failures)
+    }
+    _all_source_ids = list(
+        dict.fromkeys([s.source_id for s in sources] + [f.source_id for f in failures])
+    )
     return (
         ProjectsResponse(
             window_days=days,
