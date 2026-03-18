@@ -18,7 +18,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
-  lint:backend:
+  lint_backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,7 +39,7 @@ jobs:
       - name: Ruff lint
         run: uv run ruff check
 
-  lint:frontend:
+  lint_frontend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -55,7 +55,7 @@ jobs:
       - name: ESLint
         run: npm run --prefix web lint
 
-  check:backend:
+  check_backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -76,7 +76,7 @@ jobs:
       - name: Version check
         run: make version-check
 
-  check:frontend:
+  check_frontend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -92,7 +92,7 @@ jobs:
       - name: TypeScript types check
         run: npm run --prefix web check:types
 
-  test:backend:
+  test_backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -111,7 +111,7 @@ jobs:
       - name: Pytest
         run: uv run python -m pytest -n auto
 
-  test:frontend:
+  test_frontend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -127,7 +127,7 @@ jobs:
       - name: Vitest
         run: npm run --prefix web test -- --run
 
-  security:deps:
+  security_deps:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -146,7 +146,7 @@ jobs:
       - name: Run pip-audit
         run: uv run pip-audit --skip-editable
 
-  security:secrets:
+  security_secrets:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
