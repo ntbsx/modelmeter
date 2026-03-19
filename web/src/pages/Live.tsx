@@ -184,7 +184,7 @@ export default function Live() {
         </div>
         <button
           className={cn(
-            'rounded-lg border px-4 py-2 text-sm font-medium transition-colors shrink-0',
+            'rounded-lg border px-4 py-2 text-sm font-medium transition-colors shrink-0 focus-ring',
             isPaused
               ? 'border-[var(--border-success)] bg-[var(--surface-success)] text-[var(--color-success-muted-foreground)] hover:bg-[var(--color-success-muted)]'
               : 'border-[var(--border-warning)] bg-[var(--surface-warning)] text-[var(--color-warning-muted-foreground)] hover:bg-[var(--color-warning-muted)]'
