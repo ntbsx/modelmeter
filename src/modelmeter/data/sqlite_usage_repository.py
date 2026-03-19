@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 
 class SQLiteUsageRepository:
@@ -13,12 +13,48 @@ class SQLiteUsageRepository:
 
     def __init__(self, db_path: Path):
         self._db_path = db_path
+        # Simple per-instance memoization: repository instances are short-lived
+        # (one per analytics call), so this avoids redundant queries within a
+        # single request without the overhead of TTL bookkeeping.
+        self._cache: dict[tuple[str, ...], Any] = {}
 
     def _connect(self) -> sqlite3.Connection:
         uri = f"file:{self._db_path}?mode=ro"
         connection = sqlite3.connect(uri, uri=True)
         connection.row_factory = sqlite3.Row
+        # 64 MB page cache (negative value = kibibytes): reduces page faults on
+        # large table scans at the cost of up to 64 MB of process memory.
+        connection.execute("PRAGMA cache_size = -64000")
+        # 256 MB memory-mapped I/O window: bypasses read() syscall overhead for
+        # repeated page access. Adds up to 256 MB of virtual address space; does
+        # not pin that much physical RAM unless pages are actually touched.
+        connection.execute("PRAGMA mmap_size = 268435456")
+        # Keep internal temp tables (sorts, grouping) in RAM instead of a temp
+        # file. Safe for read-only connections; bounded by available memory.
+        connection.execute("PRAGMA temp_store = MEMORY")
+        # NORMAL durability: skips fsync after each write group. Read-only
+        # connections are unaffected by this, but it avoids any implicit
+        # sync overhead if SQLite ever needs to roll back a read transaction.
+        connection.execute("PRAGMA synchronous = NORMAL")
         return connection
+
+    def _cache_key(self, method_name: str, **kwargs: Any) -> tuple[str, ...]:
+        parts: list[str] = [method_name]
+        for key in sorted(kwargs.keys()):
+            value: Any = kwargs[key]
+            if value is None:
+                parts.append(f"{key}=None")
+            elif isinstance(value, (list, tuple)):
+                parts.append(f"{key}={','.join(str(v) for v in value)}")  # type: ignore[arg-type]
+            else:
+                parts.append(f"{key}={value}")
+        return tuple(parts)
+
+    def _get_cached(self, key: tuple[str, ...]) -> Any | None:
+        return self._cache.get(key)
+
+    def _set_cached(self, key: tuple[str, ...], result: Any) -> None:
+        self._cache[key] = result
 
     @staticmethod
     def _time_filter(days: int | None, *, time_expr: str) -> tuple[str, list[int]]:
@@ -42,6 +78,11 @@ class SQLiteUsageRepository:
 
     def fetch_summary(self, *, days: int | None = None) -> sqlite3.Row:
         """Fetch aggregate usage totals and distinct session count."""
+        cache_key = self._cache_key("fetch_summary", days=days)
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         time_filter, params = self._time_filter(
             days,
             time_expr="json_extract(data, '$.time.created')",
@@ -67,10 +108,16 @@ class SQLiteUsageRepository:
             row = conn.execute(query, params).fetchone()
             if row is None:
                 raise RuntimeError("Summary query returned no row")
+            self._set_cached(cache_key, row)
             return row
 
     def fetch_session_count(self, *, days: int | None = None) -> int:
         """Fetch count of sessions created in the selected window."""
+        cache_key = self._cache_key("fetch_session_count", days=days)
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         time_filter, params = self._time_filter(days, time_expr="time_created")
         query = f"""
             SELECT COUNT(*) AS total_sessions
@@ -81,9 +128,9 @@ class SQLiteUsageRepository:
 
         with self._connect() as conn:
             row = conn.execute(query, params).fetchone()
-            if row is None:
-                return 0
-            return int(row["total_sessions"])
+            result = 0 if row is None else int(row["total_sessions"])
+            self._set_cached(cache_key, result)
+            return result
 
     def fetch_daily_session_counts(
         self,
@@ -114,6 +161,11 @@ class SQLiteUsageRepository:
 
     def fetch_summary_steps(self, *, days: int | None = None) -> sqlite3.Row:
         """Fetch aggregate usage totals from step-finish parts."""
+        cache_key = self._cache_key("fetch_summary_steps", days=days)
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         time_filter, params = self._time_filter(days, time_expr="time_created")
         query = f"""
             SELECT
@@ -136,6 +188,7 @@ class SQLiteUsageRepository:
             row = conn.execute(query, params).fetchone()
             if row is None:
                 raise RuntimeError("Step summary query returned no row")
+            self._set_cached(cache_key, row)
             return row
 
     def fetch_daily(
@@ -145,6 +198,13 @@ class SQLiteUsageRepository:
         timezone_offset_minutes: int = 0,
     ) -> list[sqlite3.Row]:
         """Fetch daily usage aggregates ordered by day ascending."""
+        cache_key = self._cache_key(
+            "fetch_daily", days=days, timezone_offset_minutes=timezone_offset_minutes
+        )
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         time_filter, params = self._time_filter(
             days,
             time_expr="json_extract(data, '$.time.created')",
@@ -175,7 +235,9 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            self._set_cached(cache_key, result)
+            return result
 
     def fetch_daily_steps(
         self,
@@ -184,6 +246,13 @@ class SQLiteUsageRepository:
         timezone_offset_minutes: int = 0,
     ) -> list[sqlite3.Row]:
         """Fetch daily usage aggregates from step-finish parts."""
+        cache_key = self._cache_key(
+            "fetch_daily_steps", days=days, timezone_offset_minutes=timezone_offset_minutes
+        )
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         time_filter, params = self._time_filter(days, time_expr="time_created")
         day_expr = self._day_bucket_expr(
             time_expr="time_created",
@@ -210,7 +279,9 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            self._set_cached(cache_key, result)
+            return result
 
     def resolve_token_source(
         self,
@@ -245,6 +316,11 @@ class SQLiteUsageRepository:
 
     def fetch_model_usage(self, *, days: int | None = None) -> list[sqlite3.Row]:
         """Fetch token usage grouped by model."""
+        cache_key = self._cache_key("fetch_model_usage", days=days)
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         time_filter, params = self._time_filter(
             days,
             time_expr="json_extract(data, '$.time.created')",
@@ -272,7 +348,9 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            self._set_cached(cache_key, result)
+            return result
 
     def fetch_daily_model_usage(
         self,
@@ -324,6 +402,11 @@ class SQLiteUsageRepository:
 
     def fetch_model_usage_detail(self, *, days: int | None = None) -> list[sqlite3.Row]:
         """Fetch usage grouped by model with interactions and session counts."""
+        cache_key = self._cache_key("fetch_model_usage_detail", days=days)
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         time_filter, params = self._time_filter(
             days,
             time_expr="json_extract(data, '$.time.created')",
@@ -359,7 +442,9 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            self._set_cached(cache_key, result)
+            return result
 
     def fetch_model_detail(self, *, model_id: str, days: int | None = None) -> sqlite3.Row | None:
         """Fetch aggregate usage detail for one model."""
@@ -440,6 +525,11 @@ class SQLiteUsageRepository:
 
     def fetch_project_usage_detail(self, *, days: int | None = None) -> list[sqlite3.Row]:
         """Fetch usage grouped by project with interactions and session counts."""
+        cache_key = self._cache_key("fetch_project_usage_detail", days=days)
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
         time_filter, params = self._time_filter(
             days,
             time_expr="json_extract(m.data, '$.time.created')",
@@ -470,7 +560,9 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            self._set_cached(cache_key, result)
+            return result
 
     def fetch_project_model_usage(self, *, days: int | None = None) -> list[sqlite3.Row]:
         """Fetch usage grouped by project and model for cost calculation."""

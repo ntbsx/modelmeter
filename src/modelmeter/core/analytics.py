@@ -213,18 +213,24 @@ def get_summary(
 
     sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
     repository = SQLiteUsageRepository(sqlite_db_path)
-    resolved_source = repository.resolve_token_source(days=days, token_source=token_source)
-    resolved_session_source = repository.resolve_session_count_source(
-        days=days,
-        session_count_source=session_count_source,
-    )
 
-    if resolved_source == "steps":
+    if token_source == "auto":
+        summary_steps = repository.fetch_summary_steps(days=days)
+        if int(summary_steps["total_sessions"]) > 0:
+            row = summary_steps
+        else:
+            row = repository.fetch_summary(days=days)
+    elif token_source == "steps":
         row = repository.fetch_summary_steps(days=days)
     else:
         row = repository.fetch_summary(days=days)
 
-    if resolved_session_source == "session":
+    if session_count_source == "auto":
+        try:
+            total_sessions = repository.fetch_session_count(days=days)
+        except sqlite3.Error:
+            total_sessions = int(row["total_sessions"])
+    elif session_count_source == "session":
         total_sessions = repository.fetch_session_count(days=days)
     else:
         total_sessions = int(row["total_sessions"])

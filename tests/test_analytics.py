@@ -613,3 +613,105 @@ def test_get_models_filters_by_provider(tmp_path: Path) -> None:
     assert result.models[0].model_id == "anthropic/claude-sonnet-4-5"
     assert result.totals.input_tokens == 10
     assert result.totals.output_tokens == 1
+
+
+def test_get_summary_returns_cached_result_on_subsequent_calls(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_usage_fixture(db_path)
+
+    result1 = get_summary(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+    )
+
+    result2 = get_summary(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+    )
+
+    assert result1.total_sessions == result2.total_sessions
+    assert result1.usage.input_tokens == result2.usage.input_tokens
+    assert result1.usage.output_tokens == result2.usage.output_tokens
+
+
+def test_get_daily_returns_cached_result_on_subsequent_calls(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_usage_fixture(db_path)
+
+    result1 = get_daily(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+    )
+
+    result2 = get_daily(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+    )
+
+    assert len(result1.daily) == len(result2.daily)
+    assert result1.totals.input_tokens == result2.totals.input_tokens
+
+
+def test_get_summary_cache_isolation_for_different_days(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_usage_fixture(db_path)
+
+    result_7_days = get_summary(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+    )
+
+    result_1_day = get_summary(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=1,
+        db_path_override=db_path,
+    )
+
+    assert result_7_days.total_sessions == 2
+    assert result_1_day.total_sessions == 1
+
+
+def test_get_models_returns_cached_result_on_subsequent_calls(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_usage_fixture(db_path)
+
+    result1 = get_models(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+    )
+
+    result2 = get_models(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+    )
+
+    assert result1.total_models == result2.total_models
+    assert len(result1.models) == len(result2.models)
+    assert result1.totals.input_tokens == result2.totals.input_tokens
+
+
+def test_get_projects_returns_cached_result_on_subsequent_calls(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_usage_fixture(db_path)
+
+    result1 = get_projects(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+    )
+
+    result2 = get_projects(
+        settings=AppSettings(opencode_data_dir=tmp_path),
+        days=7,
+        db_path_override=db_path,
+    )
+
+    assert result1.total_projects == result2.total_projects
+    assert len(result1.projects) == len(result2.projects)
