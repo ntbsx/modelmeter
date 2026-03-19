@@ -25,13 +25,13 @@ describe('formatTokens', () => {
 })
 
 describe('formatUsd', () => {
-  it('formats zero with four decimal places', () => {
-    expect(formatUsd(0)).toBe('$0.0000')
+  it('formats zero as $0', () => {
+    expect(formatUsd(0)).toBe('$0')
   })
 
-  it('formats small amounts with four decimal places', () => {
-    expect(formatUsd(0.01)).toBe('$0.0100')
-    expect(formatUsd(0.5)).toBe('$0.5000')
+  it('formats small amounts with two decimal places', () => {
+    expect(formatUsd(0.01)).toBe('$0.01')
+    expect(formatUsd(0.5)).toBe('$0.50')
   })
 
   it('formats amounts >= 1 with two decimal places', () => {

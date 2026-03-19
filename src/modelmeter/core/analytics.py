@@ -25,10 +25,7 @@ from modelmeter.core.models import (
     TokenUsage,
 )
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
-from modelmeter.core.providers import (
-    provider_from_model_id,
-    provider_from_model_id_and_provider_field,
-)
+from modelmeter.core.providers import provider_from_model_id_and_provider_field
 from modelmeter.core.sources import SourceScope, SourceScopeKind
 from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.data.storage import resolve_storage_paths
@@ -841,7 +838,7 @@ def get_model_detail(
 
     return ModelDetailResponse(
         model_id=model_id,
-        provider=provider_from_model_id(model_id),
+        provider=provider_from_model_id_and_provider_field(model_id, row["provider_id"]),
         window_days=days,
         usage=usage,
         total_sessions=int(row["total_sessions"]),
