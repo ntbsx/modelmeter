@@ -1,78 +1,105 @@
 # ModelMeter Planning Guide for Agents
 
-This folder contains feature-sliced plans for building ModelMeter (OpenCode usage analytics for terminal and web).
+This folder contains **active and planned** features for ModelMeter (OpenCode usage analytics for terminal and web).
+
+## Current Structure
+
+- **Active Plans:** Current plans directory contains only active/planned work
+- **Completed Plans:** Historical plans archived in `completed/` folder by phase
+- **Execution Order:** Follow dependencies and checkpoints outlined below
+
+## Active Work
+
+### Phase 4: Distributed Analytics and Lifecycle Automation (Remaining)
+
+- [ ] `phase-4-remaining/20-source-status-banner-and-loading-states.md`
+  - Status: Planned
+  - Priority: High
+  - Estimated: 4-5 hours
+  - Description: Visual feedback for data loading, source failures, and partial federation
+
+- [ ] `phase-4-remaining/21-provider-detection-from-providerid-field.md`
+  - Status: Planned
+  - Priority: High
+  - Estimated: 4 hours
+  - Description: Fix provider detection bug (~20% misattribution)
+
+### Phase Milestones
+
+- **Phase 1-3:** ✅ Complete (Core Platform, Analytics, CLI, Web)
+- **Phase 4 Part 1:** ✅ Complete (Federation, Provider Analytics, Update Flow, Source Management)
+- **Phase 4 Part 2:** 🔄 In Progress (Plans 20-21)
+
+## Completed Work
+
+Historical plans are organized in `completed/` by phase:
+
+- **`completed/phase-1-3/`** - Foundation plans (01-09)
+  - Core Platform, Data Layer, Analytics Engine
+  - CLI Product, Live Monitoring
+  - API Foundation, Web App
+  - Packaging Quality, Future Extensions
+  - See `phase-1-3-README.md` for details
+
+- **`completed/phase-4-part-1/`** - First half of Phase 4 (16-19)
+  - Federation Core, Provider Analytics
+  - Auto-Update & Release Awareness
+  - Dashboard Source Management
+  - See `phase-4-part-1-README.md` for details
 
 ## Engineering Standards (Applies to all phases)
-- Use `uv` for all dependency and command execution.
-- Use `ruff` as the single formatter/linter.
-- Enforce typing with `pyright`.
-- Enforce tests with `pytest`.
-- Keep all tool settings centralized in `pyproject.toml`.
 
-## Execution Order (Primary Path)
-- [x] `01-core-platform.md`
-- [x] `02-opencode-data-layer.md`
-- [x] `03-analytics-engine.md`
-- [x] `04-cli-product.md`
-- [x] `05-live-monitoring.md`
-- [x] `06-api-foundation-for-web.md`
-- [x] `07-web-app-plan.md`
-- [x] `08-packaging-quality-observability.md`
-- [x] `09-future-extensions.md`
-- [x] `10-server-parity-contract-live-streaming.md`
-- [x] `11-frontend-product-polish-and-reliability.md`
-- [x] `12-release-ops-and-collaboration-hardening.md`
-- [x] `13-performance-and-scalability.md`
-- [x] `14-release-artifact-packaging-and-installer.md`
-- [x] `15-calver-and-git-hash-versioning.md`
+- Use `uv` for all dependency and command execution
+- Use `ruff` as single formatter/linter
+- Enforce typing with `pyright`
+- Enforce tests with `pytest`
+- Keep all tool settings centralized in `pyproject.toml`
 
-## Phase 4: Distributed Analytics and Lifecycle Automation
-- [ ] `phase-4-distributed-and-lifecycle/16-federation-core.md`
-- [ ] `phase-4-distributed-and-lifecycle/17-provider-analytics.md`
-- [ ] `phase-4-distributed-and-lifecycle/18-auto-update-and-release-awareness.md`
-- [ ] `phase-4-distributed-and-lifecycle/19-dashboard-source-management-and-filtering.md`
-- [ ] `phase-4-distributed-and-lifecycle/TRACKING.md`
+## Dependency Graph (Active Work Only)
 
-Use `00-roadmap-index.md` as the high-level map.
+- `20-source-status-banner-and-loading-states` → depends on `16-federation-core`, `19-dashboard-source-management-and-filtering`
+- `21-provider-detection-from-providerid-field` → independent fix, no dependencies
 
-## Dependency Graph (What depends on what)
-- `01-core-platform` -> foundation for all other plans
-- `02-opencode-data-layer` -> depends on `01`
-- `03-analytics-engine` -> depends on `01`, `02`
-- `04-cli-product` -> depends on `03`
-- `05-live-monitoring` -> depends on `02`, `03`, and parts of `04` rendering patterns
-- `06-api-foundation-for-web` -> depends on `03`
-- `07-web-app-plan` -> depends on `06`
-- `08-packaging-quality-observability` -> cross-cutting, starts early, finalizes late
-- `09-future-extensions` -> after `04`, `06`, and `07` baseline completion
-- `10-server-parity-contract-live-streaming` -> after `06` and `07`, before or alongside `09`
-- `16-federation-core` -> depends on `03`, `04`, `06`, and `10`
-- `17-provider-analytics` -> depends on `03`, `06`, and `16`
-- `18-auto-update-and-release-awareness` -> depends on `14` and `15`
-- `19-dashboard-source-management-and-filtering` -> depends on `07`, `10`, `11`, and `16`
+## Definition of Done (Current Phase)
 
-## Parallelization Strategy
-After `01` is complete:
-- Track A: `02` -> `03`
-- Track B: start scaffolding from `08` (tooling/CI/tests skeleton), without locking analytics contracts
-- Track C: early UX shell for `04` can begin, but final command behavior must wait for `03`
+- [ ] Source status banner and loading states implemented across all data pages
+- [ ] Provider detection correctly attributes GitHub Copilot and OpenCode models
+- [ ] All tests pass and coverage is maintained
+- [ ] CHANGELOG.md updated with release notes
+- [ ] Release candidate tagged and published
 
-After `03` is stable:
-- Run `04` and `06` in parallel
-- Start `05` in parallel with `04` once live snapshot contract exists
-- Start `07` once `06` endpoint contracts are stable
+## Quick Reference
 
-## Contract Freeze Checkpoints
-To avoid rework, freeze these contracts before downstream work:
-1. Core analytics models (`01` + `03`)
-2. Data-layer normalized record shape (`02`)
-3. CLI JSON output schema (`04`)
-4. API response schema parity with CLI JSON (`06`)
-5. Federated response metadata and source scoping (`16`)
+- **Current Version:** See `pyproject.toml` `[project].version`
+- **Latest Release:** See `git describe --tags --abbrev=0`
+- **Roadmap Index:** See `00-roadmap-index.md`
+- **Phase Tracking:** See `phase-4-remaining/README.md`
 
-## Definition of Done (Roadmap Level)
-- [x] CLI commands implemented with stable JSON output
-- [x] Live terminal monitoring functional
-- [x] API endpoints available with OpenAPI docs
-- [x] Web dashboard can consume API and display key metrics
-- [x] Packaging and tests pass on macOS and Linux
+## Historical Dependency Graph (Archived)
+
+For reference on how completed phases were structured, see the archive READMEs:
+
+- **Phase 1-3 dependencies:**
+  - `01` → foundation for all other plans
+  - `02` → depends on `01`
+  - `03` → depends on `01`, `02`
+  - `04` → depends on `03`
+  - `05` → depends on `02`, `03`, and parts of `04`
+  - `06` → depends on `03`
+  - `07` → depends on `06`
+  - `08` → cross-cutting, starts early, finalizes late
+  - `09` → after `04`, `06`, and `07` baseline completion
+  - `10` → after `06` and `07`, before or alongside `09`
+  - `11` → depends on `07`, `08`, and `10`
+  - `12` → depends on `14` and `15`
+  - `13` → depends on `03`, `04`, `06`, and `07`
+  - `14` → depends on `12` and `13`
+  - `15` → depends on `12`, `13`, and `14`
+
+- **Phase 4 Part 1 dependencies:**
+  - `16-federation-core` → depends on `03`, `04`, `06`, and `10`
+  - `17-provider-analytics` → depends on `03`, `06`, and `16`
+  - `18-auto-update-and-release-awareness` → depends on `14` and `15`
+  - `19-dashboard-source-management-and-filtering` → depends on `07`, `10`, `11`, and `16`
+
+See archive README files for detailed execution order and parallelization strategies.
