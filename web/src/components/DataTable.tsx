@@ -58,7 +58,7 @@ export function DataTable<T>({
               data.map((row) => (
                 <tr
                   key={keyExtractor(row)}
-                  className={`transition-colors hover:bg-[var(--surface-accent)]/50 focus-ring ${onRowClick ? 'cursor-pointer' : ''}`}
+                  className={`transition-colors hover:bg-[var(--surface-accent)]/50 outline-none focus-visible:outline-2 focus-visible:outline-[var(--accent-primary)] ${onRowClick ? 'cursor-pointer' : ''}`}
                   onClick={() => onRowClick?.(row)}
                   {...(onRowClick
                     ? {

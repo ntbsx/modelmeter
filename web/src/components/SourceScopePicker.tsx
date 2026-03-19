@@ -54,6 +54,7 @@ export default function SourceScopePicker({ compact = false }: Props) {
     <div className="relative inline-block">
       <select
         id="source-scope-picker"
+        aria-label="Source scope"
         value={sourceScope}
         onChange={(event) => setSourceScope(event.target.value as SourceScopeValue)}
         className={`appearance-none rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] ${compact ? 'pl-1.5 pr-5 py-1 text-[10px]' : 'pl-3 pr-8 py-1.5 text-xs'} text-[var(--text-primary)] font-medium cursor-pointer hover:border-[var(--border-strong)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/50`}
