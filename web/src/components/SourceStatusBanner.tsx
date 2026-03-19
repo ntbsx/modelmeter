@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, ChevronUp, RefreshCw, AlertTriangle } from 'lucide-react'
+import { RefreshCw, Database, Wifi, WifiOff, Loader2, Info } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
 import { cn } from '../lib/utils'
@@ -14,6 +14,22 @@ export interface SourceStatusBannerProps {
   sourcesFailed?: Array<Record<string, string>>
   hasData: boolean
   healthCheckSupport?: boolean
+}
+
+const SourceStatusIcon = ({ variant }: { variant: 'loading' | 'warning' | 'error' | 'info' }) => {
+  const iconClass = "h-4 w-4 shrink-0"
+  
+  switch (variant) {
+    case 'loading':
+      return <Loader2 className={cn(iconClass, "animate-spin")} />
+    case 'warning':
+      return <Wifi className={iconClass} />
+    case 'error':
+      return <WifiOff className={iconClass} />
+    case 'info':
+    default:
+      return <Info className={iconClass} />
+  }
 }
 
 export default function SourceStatusBanner({
@@ -60,10 +76,10 @@ export default function SourceStatusBanner({
   } else if (isRefetching) {
     bannerVariant = 'loading'
     const sourceCount = sourcesConsidered.length
-    message = sourceCount > 1 ? `Loading data from ${sourceCount} sources...` : 'Refreshing data...'
+    message = sourceCount > 1 ? `Loading from ${sourceCount} sources` : 'Refreshing data'
   } else if (allFailed) {
     bannerVariant = 'error'
-    message = `Unable to reach ${sourcesConsidered.length > 1 ? 'any sources' : 'the selected source'}`
+    message = sourcesConsidered.length > 1 ? 'Unable to reach any sources' : 'Unable to reach source'
     showHealthCheck = healthCheckSupport
   } else if (partialFailure) {
     bannerVariant = 'warning'
@@ -75,53 +91,83 @@ export default function SourceStatusBanner({
     message = 'No data available for the selected time range'
   }
 
-  const baseClasses = cn(
-    'mb-6 rounded-lg border px-4 py-3 text-sm',
-    'transition-all duration-300',
-    isRefetching && 'animate-pulse'
-  )
-
-  const variantClasses = {
-    loading: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-800/50 dark:bg-blue-900/20 dark:text-blue-300',
-    warning: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300',
-    error: 'border-red-200 bg-red-50 text-red-800 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300',
-    info: 'border-gray-200 bg-gray-50 text-gray-700 dark:border-gray-800/50 dark:bg-gray-900/20 dark:text-gray-300',
+  const variantStyles = {
+    loading: {
+      container: 'bg-[var(--surface-secondary)] border-[var(--border-default)]',
+      icon: 'text-[var(--text-tertiary)]',
+      text: 'text-[var(--text-secondary)]',
+      button: 'text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]',
+    },
+    warning: {
+      container: 'bg-[var(--surface-warning)] border-[var(--border-warning)]',
+      icon: 'text-[var(--color-warning)]',
+      text: 'text-[var(--color-warning-muted-foreground)]',
+      button: 'text-[var(--color-warning)] hover:opacity-80',
+    },
+    error: {
+      container: 'bg-[var(--surface-error)] border-[var(--border-error)]',
+      icon: 'text-[var(--color-error)]',
+      text: 'text-[var(--color-error-muted-foreground)]',
+      button: 'text-[var(--color-error)] hover:opacity-80',
+    },
+    info: {
+      container: 'bg-[var(--surface-secondary)] border-[var(--border-default)]',
+      icon: 'text-[var(--text-tertiary)]',
+      text: 'text-[var(--text-secondary)]',
+      button: 'text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]',
+    },
   }
 
+  const styles = variantStyles[bannerVariant]
+
   return (
-    <div className={cn(baseClasses, variantClasses[bannerVariant])}>
+    <div
+      className={cn(
+        'mb-6 rounded-lg border px-4 py-3 text-sm',
+        'transition-all duration-300',
+        isRefetching && 'animate-pulse-subtle',
+        styles.container
+      )}
+    >
       <div className="flex items-start gap-3">
-        <div className="flex-1">
-          <p className="font-medium">{message}</p>
+        <SourceStatusIcon variant={bannerVariant} />
+
+        <div className="flex-1 min-w-0">
+          <p className={cn('font-medium', styles.text)}>{message}</p>
 
           {partialFailure && sourcesFailed.length > 0 && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="mt-2 flex items-center gap-1 text-xs font-semibold opacity-80 hover:opacity-100 transition-opacity"
+              className={cn(
+                'mt-2 flex items-center gap-1 text-xs font-medium',
+                styles.button,
+                'transition-opacity'
+              )}
               type="button"
             >
-              {expanded ? (
-                <>
-                  Hide details
-                  <ChevronUp className="h-3 w-3" />
-                </>
-              ) : (
-                <>
-                  Show details
-                  <ChevronDown className="h-3 w-3" />
-                </>
-              )}
+              {expanded ? 'Hide details' : 'Show details'}
+              <svg
+                className={cn('h-3 w-3 transition-transform', expanded && 'rotate-180')}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </button>
           )}
 
           {expanded && partialFailure && sourcesFailed.length > 0 && (
-            <div className="mt-2 space-y-1">
+            <div className="mt-3 space-y-2 pl-1">
               {sourcesFailed.map((source, index) => {
                 const [sourceId, error] = Object.entries(source)[0] ?? []
                 return (
-                  <div key={index} className="text-xs opacity-90 flex items-start gap-1.5">
-                    <span className="font-medium">{sourceId}:</span>
-                    <span>{error || 'Connection failed'}</span>
+                  <div key={index} className="flex items-start gap-2 text-xs">
+                    <Database className="h-3 w-3 mt-0.5 text-[var(--text-tertiary)] shrink-0" />
+                    <div>
+                      <span className="font-medium text-[var(--text-primary)]">{sourceId}</span>
+                      <span className="text-[var(--text-tertiary)]"> — {error || 'Connection failed'}</span>
+                    </div>
                   </div>
                 )
               })}
@@ -133,13 +179,17 @@ export default function SourceStatusBanner({
           <button
             onClick={() => healthCheckMutation.mutate()}
             disabled={healthCheckMutation.isPending}
-            className="shrink-0 rounded-md border border-current px-3 py-1.5 text-xs font-medium hover:bg-white/10 dark:hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+            className={cn(
+              'shrink-0 flex items-center gap-1.5 text-xs font-medium',
+              styles.button,
+              'transition-opacity disabled:opacity-50'
+            )}
             type="button"
           >
             {healthCheckMutation.isPending ? (
               <RefreshCw className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <AlertTriangle className="h-3.5 w-3.5" />
+              <RefreshCw className="h-3.5 w-3.5" />
             )}
             Check sources
           </button>
