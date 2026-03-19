@@ -227,14 +227,10 @@ def get_summary(
 
     if session_count_source == "auto":
         try:
-            repository.fetch_session_count(days=days)
-            resolved_session_source: Literal["activity", "session"] = "session"
+            total_sessions = repository.fetch_session_count(days=days)
         except sqlite3.Error:
-            resolved_session_source = "activity"
-    else:
-        resolved_session_source = session_count_source
-
-    if resolved_session_source == "session":
+            total_sessions = int(row["total_sessions"])
+    elif session_count_source == "session":
         total_sessions = repository.fetch_session_count(days=days)
     else:
         total_sessions = int(row["total_sessions"])
