@@ -36,63 +36,63 @@ export default function Models() {
   }
 
   return (
-    <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto space-y-6 w-full min-w-0">
-      <div className="space-y-3">
+    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto">
+      <div className="mb-10 sm:mb-12 space-y-4">
         <Link 
           to="/models" 
-          className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+          className="inline-flex items-center gap-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Providers
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-all">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] break-all">
               {providerId ? `${providerId} Models` : 'Models'}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="mt-2 text-[var(--text-secondary)]">
               Usage breakdown by model ({days === 1 ? 'last 24 hours' : `last ${days} days`})
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
+      <div className="ds-surface overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
+          <table className="w-full text-sm">
+            <thead className="bg-[var(--surface-secondary)] border-b border-[var(--border-default)]">
               <tr>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium whitespace-nowrap">Model</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Sessions</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Interactions</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Input</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Output</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Total Tokens</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Cost</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] whitespace-nowrap">Model</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Sessions</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Interactions</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Input</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Output</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Total Tokens</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Cost</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {(data.models ?? []).map((m) => (
-                <tr key={m.model_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium whitespace-nowrap">
+                <tr key={m.model_id} className="hover:bg-[var(--surface-accent)]/50 transition-colors">
+                  <td className="px-4 sm:px-6 py-4 font-medium whitespace-nowrap">
                     <Link
                       to={`/models/${encodeURIComponent(m.model_id)}`}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline"
+                      className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] hover:underline"
                     >
                       {m.model_id}
                     </Link>
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{m.total_sessions}</td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{m.total_interactions}</td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{formatTokens(m.usage.input_tokens)}</td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">{formatTokens(m.usage.output_tokens)}</td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">{formatTokens(m.usage.total_tokens)}</td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">{m.cost_usd ? formatUsd(m.cost_usd) : '-'}</td>
+                  <td className="px-4 sm:px-6 py-4 text-right text-[var(--text-secondary)]">{m.total_sessions}</td>
+                  <td className="px-4 sm:px-6 py-4 text-right text-[var(--text-secondary)]">{m.total_interactions}</td>
+                  <td className="px-4 sm:px-6 py-4 text-right text-[var(--text-secondary)]">{formatTokens(m.usage.input_tokens)}</td>
+                  <td className="px-4 sm:px-6 py-4 text-right text-[var(--text-secondary)]">{formatTokens(m.usage.output_tokens)}</td>
+                  <td className="px-4 sm:px-6 py-4 text-right font-mono text-[var(--text-primary)]">{formatTokens(m.usage.total_tokens)}</td>
+                  <td className="px-4 sm:px-6 py-4 text-right font-mono text-[var(--text-primary)]">{m.cost_usd ? formatUsd(m.cost_usd) : '-'}</td>
                 </tr>
               ))}
               {(data.models ?? []).length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">No model usage found in this period.</td>
+                  <td colSpan={7} className="px-4 sm:px-6 py-12 text-center text-[var(--text-tertiary)]">No model usage found in this period.</td>
                 </tr>
               )}
             </tbody>

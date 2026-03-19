@@ -121,10 +121,10 @@ export default function ProjectDetail() {
     })
 
   return (
-    <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto space-y-6 w-full min-w-0">
-      <div className="space-y-3">
+    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto">
+      <div className="mb-8 sm:mb-10 space-y-3">
         <Link
-          className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+          className="inline-flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
           to="/projects"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -132,57 +132,59 @@ export default function ProjectDetail() {
         </Link>
 
         <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)]">
             {displayProjectName}
           </h1>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2 min-w-0">
+          <div className="text-sm text-[var(--text-secondary)] mt-1.5 flex items-center gap-2 min-w-0">
             <Folder className="h-4 w-4 shrink-0" />
             <span className="truncate">{data.project_path || data.project_id}</span>
           </div>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-[var(--text-secondary)] mt-2">
             Session activity across all available history.
           </p>
         </div>
       </div>
 
       {sourceScope !== 'self' ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300">
+        <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300">
           Project detail currently supports This Server only. Showing local data for this view.
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Sessions</div>
-          <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-            {data.total_sessions}
+      <section className="mb-8 sm:mb-10">
+        <div className="grid grid-cols-3 gap-4 sm:gap-5">
+          <div className="ds-surface p-5 sm:p-6">
+            <div className="ds-text-label">Sessions</div>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] mt-1 ds-text-tabular">
+              {data.total_sessions}
+            </div>
+          </div>
+          <div className="ds-surface p-5 sm:p-6">
+            <div className="ds-text-label">Total Tokens</div>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] mt-1 ds-text-tabular">
+              {formatTokens(data.usage.total_tokens)}
+            </div>
+          </div>
+          <div className="ds-surface p-5 sm:p-6">
+            <div className="ds-text-label">Cost</div>
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)] mt-1 ds-text-tabular">
+              {data.total_cost_usd ? formatUsd(data.total_cost_usd) : 'N/A'}
+            </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Total Tokens</div>
-          <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-            {formatTokens(data.usage.total_tokens)}
-          </div>
-        </div>
-        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-          <div className="text-sm text-gray-500 dark:text-gray-400">Cost</div>
-          <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
-            {data.total_cost_usd ? formatUsd(data.total_cost_usd) : 'N/A'}
-          </div>
-        </div>
-      </div>
+      </section>
 
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden transition-colors">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+      <div className="ds-surface overflow-hidden">
+        <div className="p-4 sm:px-6 sm:py-5 border-b border-[var(--border-subtle)] flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
           <input
-            className="w-full sm:max-w-md rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="w-full sm:max-w-xs rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-blue-500/40"
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search sessions by title, id, or directory"
+            placeholder="Search sessions..."
             type="search"
             value={searchTerm}
           />
           <select
-            className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none"
+            className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-blue-500/40"
             onChange={(event) =>
               setSortBy(
                 event.target.value as 'last_updated' | 'tokens' | 'cost' | 'interactions'
@@ -190,54 +192,54 @@ export default function ProjectDetail() {
             }
             value={sortBy}
           >
-            <option value="last_updated">Sort: Last Updated</option>
-            <option value="tokens">Sort: Tokens</option>
-            <option value="cost">Sort: Cost</option>
-            <option value="interactions">Sort: Interactions</option>
+            <option value="last_updated">Last Updated</option>
+            <option value="tokens">Tokens</option>
+            <option value="cost">Cost</option>
+            <option value="interactions">Interactions</option>
           </select>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm min-w-[720px]">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
+          <table className="w-full text-left text-sm min-w-[720px]">
+            <thead className="border-b border-[var(--border-default)]">
               <tr>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium whitespace-nowrap">Session</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium whitespace-nowrap">Directory</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Interactions</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Tokens</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Cost</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right whitespace-nowrap">Last Updated</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] whitespace-nowrap">Session</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] whitespace-nowrap">Directory</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Interactions</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Tokens</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Cost</th>
+                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Last Updated</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {visibleSessions.map((session) => (
-                <tr key={session.session_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                  <td className="px-3 sm:px-6 py-3 sm:py-4">
+                <tr key={session.session_id} className="hover:bg-[var(--surface-accent)]/50 transition-colors">
+                  <td className="px-4 sm:px-6 py-4">
                     <div
-                      className="font-medium text-gray-900 dark:text-gray-100 truncate max-w-[16rem]"
+                      className="font-medium text-[var(--text-primary)] truncate max-w-[14rem]"
                       title={session.title || session.session_id}
                     >
                       {session.title || session.session_id}
                     </div>
-                    <div className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[16rem]" title={session.session_id}>
+                    <div className="text-xs text-[var(--text-tertiary)] truncate max-w-[14rem]" title={session.session_id}>
                       {session.session_id}
                     </div>
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-gray-600 dark:text-gray-400">
-                    <span className="truncate block max-w-[18rem]" title={session.directory || '-'}>
+                  <td className="px-4 sm:px-6 py-4 text-[var(--text-secondary)]">
+                    <span className="truncate block max-w-[14rem]" title={session.directory || '-'}>
                       {session.directory || '-'}
                     </span>
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400">
+                  <td className="px-4 sm:px-6 py-4 text-right text-[var(--text-secondary)]">
                     {session.total_interactions}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">
+                  <td className="px-4 sm:px-6 py-4 text-right font-mono text-[var(--text-primary)]">
                     {formatTokens(session.usage.total_tokens)}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right font-mono text-gray-900 dark:text-gray-100">
+                  <td className="px-4 sm:px-6 py-4 text-right font-mono text-[var(--text-primary)]">
                     {session.cost_usd ? formatUsd(session.cost_usd) : '-'}
                   </td>
-                  <td className="px-3 sm:px-6 py-3 sm:py-4 text-right text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1 justify-end">
+                  <td className="px-4 sm:px-6 py-4 text-right text-[var(--text-secondary)] whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1.5 justify-end">
                       <Clock className="h-3.5 w-3.5" />
                       {new Date(session.last_updated_ms).toLocaleString()}
                     </span>
@@ -246,7 +248,7 @@ export default function ProjectDetail() {
               ))}
               {visibleSessions.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <td colSpan={6} className="px-4 sm:px-6 py-12 text-center text-[var(--text-secondary)]">
                     No sessions match this filter.
                   </td>
                 </tr>

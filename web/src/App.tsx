@@ -62,8 +62,8 @@ function LogoutButton({ compact = false }: { compact?: boolean }) {
   if (!authRequired) return null
 
   const className = compact
-    ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 transition-colors'
-    : 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60 transition-colors w-full'
+    ? 'inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors'
+    : 'flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors w-full'
 
   return (
     <button
@@ -81,8 +81,8 @@ function Nav() {
   const location = useLocation()
 
   return (
-    <nav className="hidden md:flex w-64 border-r border-gray-200 dark:border-gray-800 min-h-screen bg-gray-50/50 dark:bg-gray-900/50 p-4 flex-col">
-      <div className="font-bold text-xl mb-8 px-4 text-blue-600 dark:text-blue-400 flex items-center gap-2">
+    <nav className="hidden lg:flex w-56 border-r border-[var(--border-default)] min-h-screen bg-[var(--surface-secondary)] p-4 flex-col">
+      <div className="font-bold text-xl mb-8 px-4 text-[var(--accent-primary)] flex items-center gap-2.5">
         <Activity className="w-6 h-6" />
         ModelMeter
       </div>
@@ -95,8 +95,8 @@ function Nav() {
               to={l.to}
               className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
                 (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
-                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 font-medium' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60'
+                  ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary-muted-foreground)] font-medium' 
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]'
               }`}
             >
               <Icon className="w-5 h-5" />
@@ -105,10 +105,10 @@ function Nav() {
           )
         })}
       </div>
-      <div className="space-y-2 border-t border-gray-200 dark:border-gray-800 pt-4">
+      <div className="space-y-2 border-t border-[var(--border-default)] pt-4 mt-4">
         <LogoutButton />
-        <div className="px-4 text-xs text-gray-400 dark:text-gray-500">
-          <VersionBadge className="text-xs text-gray-400 dark:text-gray-500" />
+        <div className="px-4 text-xs text-[var(--text-tertiary)]">
+          <VersionBadge className="text-xs text-[var(--text-tertiary)]" />
         </div>
       </div>
     </nav>
@@ -117,29 +117,41 @@ function Nav() {
 
 function MobileNav() {
   const location = useLocation()
+  const { authRequired, logout } = useAuth()
 
   return (
-    <nav className="md:hidden border-b border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-950/95 backdrop-blur">
-      <div className="px-3 py-2 overflow-x-auto">
-        <div className="flex gap-2 min-w-max">
+    <nav className="lg:hidden border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 backdrop-blur-sm">
+      <div className="px-2 py-2 overflow-x-auto -mx-2">
+        <div className="flex gap-1.5 min-w-max px-2">
           {links.map((l) => {
             const Icon = l.icon
+            const isActive = (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
 
             return (
               <Link
                 key={l.to}
                 to={l.to}
-                className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 font-medium'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/60'
+                className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] ${
+                  isActive
+                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary-muted-foreground)] font-medium'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]'
                 }`}
               >
                 <Icon className="w-4 h-4" />
-                {l.label}
+                <span className="hidden sm:inline">{l.label}</span>
               </Link>
             )
           })}
+          {authRequired && (
+            <button
+              onClick={logout}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] sm:hidden"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </nav>
@@ -160,8 +172,8 @@ function AuthGate() {
 
   if (authRequired === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--surface-secondary)]">
+        <div className="text-[var(--text-tertiary)]">Loading...</div>
       </div>
     )
   }
@@ -171,28 +183,28 @@ function AuthGate() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-200">
+    <div className="flex min-h-screen bg-[var(--surface-secondary)] text-[var(--text-primary)] transition-colors duration-200">
       <Nav />
       <div className="flex-1 min-w-0 flex flex-col min-h-screen overflow-x-hidden">
-        <header className="h-14 md:h-16 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 flex items-center justify-between md:justify-end px-4 md:px-8 transition-colors duration-200">
-          <div className="md:hidden font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-2">
+        <header className="h-14 lg:h-16 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 backdrop-blur-sm flex items-center justify-between lg:justify-end px-4 lg:px-8 transition-colors duration-200">
+          <div className="lg:hidden font-semibold text-[var(--accent-primary)] flex items-center gap-2">
             <Activity className="w-5 h-5" />
             ModelMeter
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <SourceScopePicker />
             {showDaysFilter && <DaysFilterPicker />}
-            <div className="md:hidden">
+            <div className="hidden sm:block">
               <LogoutButton compact />
             </div>
             <ThemeToggle />
           </div>
         </header>
         <MobileNav />
-        <main className="flex-1 bg-gray-50/20 dark:bg-gray-900/20 transition-colors duration-200">
+        <main className="flex-1 bg-[var(--surface-secondary)]/50 transition-colors duration-200">
           <Suspense
             fallback={
-              <div className="px-4 py-6 sm:p-8 text-gray-500 dark:text-gray-400">Loading page...</div>
+              <div className="px-4 py-6 sm:p-8 text-[var(--text-tertiary)]">Loading page...</div>
             }
           >
             <Routes>
@@ -218,8 +230,8 @@ function LoginRoute() {
 
   if (authRequired === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[var(--surface-secondary)]">
+        <div className="text-[var(--text-tertiary)]">Loading...</div>
       </div>
     )
   }
@@ -239,8 +251,8 @@ function App() {
           <BrowserRouter>
             <Suspense
               fallback={
-                <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-                  <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+                <div className="min-h-screen flex items-center justify-center bg-[var(--surface-secondary)]">
+                  <div className="text-[var(--text-tertiary)]">Loading...</div>
                 </div>
               }
             >

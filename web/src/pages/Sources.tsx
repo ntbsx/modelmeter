@@ -197,17 +197,17 @@ export default function Sources() {
   }
 
   return (
-    <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 sm:mb-10">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Sources</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Manage local and remote analytics sources</p>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text-primary)]">Sources</h1>
+          <p className="mt-2 text-[var(--text-secondary)]">Manage local and remote analytics sources</p>
         </div>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={onAddNew}
-            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
           >
             Add Source
           </button>
@@ -215,7 +215,7 @@ export default function Sources() {
             type="button"
             onClick={() => checkMutation.mutate()}
             disabled={checkMutation.isPending}
-            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+            className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-sm hover:bg-[var(--surface-tertiary)] disabled:opacity-50 transition-colors"
           >
             {checkMutation.isPending ? 'Checking...' : 'Run Health Check'}
           </button>
@@ -223,87 +223,88 @@ export default function Sources() {
       </div>
 
       {showForm && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 sm:p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <div className="bg-[var(--surface-primary)] rounded-xl border border-[var(--border-default)] shadow-sm p-5 sm:p-8">
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-6">
             {editingSourceId ? `Edit Source: ${editingSourceId}` : 'Add Source'}
           </h2>
-          <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <label className="text-sm text-gray-700 dark:text-gray-300">
+          <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <label className="text-sm font-medium text-[var(--text-primary)]">
               Source ID
               <input
                 value={form.sourceId}
                 onChange={(event) => setForm((prev) => ({ ...prev, sourceId: event.target.value }))}
                 disabled={editingSourceId !== null}
-                className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
                 placeholder="local-macbook"
               />
             </label>
-            <label className="text-sm text-gray-700 dark:text-gray-300">
+            <label className="text-sm font-medium text-[var(--text-primary)]">
               Label
               <input
                 value={form.label}
                 onChange={(event) => setForm((prev) => ({ ...prev, label: event.target.value }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
                 placeholder="My laptop"
               />
             </label>
-            <label className="text-sm text-gray-700 dark:text-gray-300">
+            <label className="text-sm font-medium text-[var(--text-primary)]">
               Kind
               <select
                 value={form.kind}
                 onChange={(event) => setForm((prev) => ({ ...prev, kind: event.target.value as 'sqlite' | 'http' }))}
-                className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 <option value="http">http</option>
                 <option value="sqlite">sqlite</option>
               </select>
             </label>
-            <label className="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-2 mt-6">
+            <label className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2 mt-7">
               <input
                 type="checkbox"
                 checked={form.enabled}
                 onChange={(event) => setForm((prev) => ({ ...prev, enabled: event.target.checked }))}
+                className="rounded"
               />
               Enabled
             </label>
 
             {form.kind === 'sqlite' ? (
-              <label className="md:col-span-2 text-sm text-gray-700 dark:text-gray-300">
+              <label className="md:col-span-2 text-sm font-medium text-[var(--text-primary)]">
                 SQLite DB Path
                 <input
                   value={form.dbPath}
                   onChange={(event) => setForm((prev) => ({ ...prev, dbPath: event.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                  className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
                   placeholder="/Users/me/.local/share/opencode/opencode.db"
                 />
               </label>
             ) : (
               <>
-                <label className="md:col-span-2 text-sm text-gray-700 dark:text-gray-300">
+                <label className="md:col-span-2 text-sm font-medium text-[var(--text-primary)]">
                   Base URL
                   <input
                     value={form.baseUrl}
                     onChange={(event) => setForm((prev) => ({ ...prev, baseUrl: event.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                    className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
                     placeholder="https://modelmeter.example.com"
                   />
                 </label>
-                <label className="text-sm text-gray-700 dark:text-gray-300">
+                <label className="text-sm font-medium text-[var(--text-primary)]">
                   Username (optional)
                   <input
                     value={form.username}
                     onChange={(event) => setForm((prev) => ({ ...prev, username: event.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                    className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
                     placeholder="modelmeter"
                   />
                 </label>
-                <label className="text-sm text-gray-700 dark:text-gray-300">
+                <label className="text-sm font-medium text-[var(--text-primary)]">
                   Password (optional)
                   <input
                     type="password"
                     value={form.password}
                     onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2"
+                    className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
                   />
                 </label>
               </>
@@ -311,11 +312,11 @@ export default function Sources() {
 
             {formError ? <p className="md:col-span-2 text-sm text-red-600">{formError}</p> : null}
 
-            <div className="md:col-span-2 flex gap-2">
+            <div className="md:col-span-2 flex gap-2 pt-2">
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 {saveMutation.isPending ? 'Saving...' : editingSourceId ? 'Update Source' : 'Add Source'}
               </button>
@@ -325,7 +326,7 @@ export default function Sources() {
                   onReset()
                   setShowForm(false)
                 }}
-                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm"
+                className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-sm transition-colors"
               >
                 Cancel
               </button>
@@ -335,117 +336,118 @@ export default function Sources() {
       )}
 
       {!showForm && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="bg-[var(--surface-primary)] rounded-xl border border-[var(--border-default)] shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs sm:text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400">
-              <tr>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Source</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Type</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Connection</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Credentials</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Active</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium">Status</th>
-                <th className="px-3 sm:px-6 py-3 sm:py-4 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-              {(registry.sources ?? []).map((source) => {
-                const result = storedHealth[source.source_id]
-                return (
-                  <tr key={source.source_id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 font-medium">{source.source_id}</td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        source.kind === 'http' 
-                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-                          : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                      }`}>
-                        {source.kind === 'http' ? '🌐 API' : '💾 Local'}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-gray-600 dark:text-gray-400 max-w-[200px] truncate" title={sourceTarget(source)}>
-                      {sourceTarget(source)}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      {source.kind === 'http' ? (
-                        <span className={source.has_auth ? 'text-emerald-600' : 'text-amber-600'}>
-                          {source.has_auth ? '✓ Configured' : '✗ None'}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      <span className={source.enabled ? 'text-emerald-600' : 'text-gray-500'}>
-                        {source.enabled ? '✓ Yes' : '✗ No'}
-                      </span>
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
-                      {result ? (
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[var(--surface-secondary)] border-b border-[var(--border-default)]">
+                <tr>
+                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Source</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Type</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Connection</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Credentials</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Active</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Status</th>
+                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-subtle)]">
+                {(registry.sources ?? []).map((source) => {
+                  const result = storedHealth[source.source_id]
+                  return (
+                    <tr key={source.source_id} className="hover:bg-[var(--surface-accent)]/50 transition-colors">
+                      <td className="px-4 sm:px-6 py-4 font-medium text-[var(--text-primary)]">{source.source_id}</td>
+                      <td className="px-4 sm:px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          result.is_reachable 
-                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                          source.kind === 'http' 
+                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
+                            : 'bg-[var(--surface-secondary)] text-[var(--text-secondary)]'
                         }`}>
-                          {result.is_reachable ? '✓ Healthy' : '✗ Unreachable'}
+                          {source.kind === 'http' ? '🌐 API' : '💾 Local'}
                         </span>
-                      ) : (
-                        <span className="text-gray-400 text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onEdit(source)}
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
-                          title="Edit"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(source)}
-                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                          title="Remove"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-[var(--text-secondary)] max-w-[200px] truncate" title={sourceTarget(source)}>
+                        {sourceTarget(source)}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-sm">
+                        {source.kind === 'http' ? (
+                          <span className={source.has_auth ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+                            {source.has_auth ? '✓ Configured' : '✗ None'}
+                          </span>
+                        ) : (
+                          <span className="text-[var(--text-tertiary)]">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-sm">
+                        <span className={source.enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-secondary)]'}>
+                          {source.enabled ? '✓ Yes' : '✗ No'}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        {result ? (
+                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium animate-fade-in ${
+                            result.is_reachable 
+                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                          }`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${result.is_reachable ? 'bg-emerald-500 animate-pulse-subtle' : 'bg-red-500'}`} />
+                            {result.is_reachable ? 'Healthy' : 'Unreachable'}
+                          </span>
+                        ) : (
+                          <span className="text-[var(--text-tertiary)] text-xs">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => onEdit(source)}
+                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            title="Edit"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(source)}
+                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title="Remove"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+                {(registry.sources ?? []).length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 sm:px-6 py-12 text-center text-[var(--text-secondary)]">
+                      No sources configured yet.
                     </td>
                   </tr>
-                )
-              })}
-              {(registry.sources ?? []).length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-3 sm:px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-                    No sources configured yet.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
       )}
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Remove Source</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <div className="bg-[var(--surface-primary)] rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">Remove Source</h3>
+            <p className="text-[var(--text-secondary)] mb-6">
               Are you sure you want to remove source <strong>{deleteTarget.source_id}</strong>? This action cannot be undone.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm"
+                className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-sm"
               >
                 Cancel
               </button>
