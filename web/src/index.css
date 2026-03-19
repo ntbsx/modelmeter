@@ -170,12 +170,12 @@
 /* Animation utility classes */
 @layer utilities {
   .animate-slide-up {
-    animation: slide-up 400ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: slide-up 300ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
     opacity: 0;
   }
   
   .animate-fade-in {
-    animation: fade-in 300ms ease-out forwards;
+    animation: fade-in 200ms ease-out forwards;
   }
   
   .animate-pulse-subtle {
@@ -189,6 +189,12 @@
   /* Focus ring for keyboard navigation */
   .focus-ring {
     @apply outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-primary)];
+  }
+  
+  /* Performance: skip rendering off-screen content */
+  .content-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 200px;
   }
   
   /* Reduced motion support */

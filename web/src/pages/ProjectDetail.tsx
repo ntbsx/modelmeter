@@ -35,7 +35,7 @@ export default function ProjectDetail() {
         description="The requested project identifier is not valid."
         action={
           <Link
-            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            className="inline-flex items-center gap-2 text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
             to="/projects"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -57,7 +57,7 @@ export default function ProjectDetail() {
         description="We could not fetch sessions for this project. Please refresh and try again."
         action={
           <Link
-            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            className="inline-flex items-center gap-2 text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
             to="/projects"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -75,7 +75,7 @@ export default function ProjectDetail() {
         description="No usage data was found for this project in the selected window."
         action={
           <Link
-            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            className="inline-flex items-center gap-2 text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
             to="/projects"
           >
             <ArrowLeft className="h-4 w-4" />

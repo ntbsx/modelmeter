@@ -134,28 +134,28 @@ export default function Overview() {
           <StatCard 
             label="Total Tokens" 
             value={formatTokens(summary.usage.total_tokens)} 
-            delay={50}
+            delay={30}
             accent="blue"
             icon={<Zap className="w-5 h-5" />}
           />
           <StatCard 
             label="Cache Read" 
             value={formatTokens(summary.usage.cache_read_tokens)} 
-            delay={100}
+            delay={60}
             accent="amber"
             icon={<Database className="w-5 h-5" />}
           />
           <StatCard 
             label="Sessions" 
             value={summary.total_sessions.toString()} 
-            delay={150}
+            delay={90}
             accent="purple"
             icon={<Activity className="w-5 h-5" />}
           />
         </StatGrid>
       </section>
 
-      <section className="ds-surface overflow-hidden">
+      <section className="ds-surface overflow-hidden content-auto">
         <div className="p-5 sm:p-8 border-b border-[var(--border-subtle)]">
           <SectionHeader
             title="Usage Trend"

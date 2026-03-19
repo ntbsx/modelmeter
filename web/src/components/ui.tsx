@@ -71,7 +71,16 @@ export function StatCard({ label, value, subtitle, trend, className = '', delay 
     >
       <div className="flex items-start justify-between gap-3 relative z-10">
         <div className="flex-1 min-w-0">
-          <div className="ds-text-label uppercase tracking-wider">{label}</div>
+          <div className="flex items-center gap-2">
+            {icon && (
+              <div className={`sm:hidden shrink-0 ${iconBgColors[accent]} ${iconColors[accent]}`}>
+                <span className="flex p-1.5 rounded-md">
+                  {icon}
+                </span>
+              </div>
+            )}
+            <div className="ds-text-label uppercase tracking-wider">{label}</div>
+          </div>
           <div className="ds-text-metric mt-1 font-bold">{value}</div>
           {subtitle && <div className="ds-text-muted mt-1.5">{subtitle}</div>}
           {trend && (
@@ -92,7 +101,7 @@ export function StatCard({ label, value, subtitle, trend, className = '', delay 
           )}
         </div>
         {icon && (
-          <div className={`shrink-0 p-2.5 rounded-lg ${iconBgColors[accent]} ${iconColors[accent]}`}>
+          <div className={`hidden sm:block shrink-0 p-2.5 rounded-lg ${iconBgColors[accent]} ${iconColors[accent]}`}>
             {icon}
           </div>
         )}

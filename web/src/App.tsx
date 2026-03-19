@@ -173,45 +173,47 @@ function Nav() {
   )
 }
 
-function MobileNav() {
+function MobileBottomNav() {
   const location = useLocation()
   const { authRequired, logout } = useAuth()
 
   return (
-    <nav className="lg:hidden border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 backdrop-blur-sm">
-      <div className="px-2 py-2 overflow-x-auto -mx-2">
-        <div className="flex gap-1.5 min-w-max px-2">
-          {links.map((l) => {
-            const Icon = l.icon
-            const isActive = (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.08)]" aria-label="Main navigation">
+      <div className="flex items-center justify-around h-16 px-1">
+        {links.map((l) => {
+          const Icon = l.icon
+          const isActive = (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
 
-            return (
+          return (
             <Link
               key={l.to}
               to={l.to}
-              className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] focus-ring ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg transition-colors focus-ring min-w-[60px] ${
                 isActive
-                  ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary-muted-foreground)] font-medium'
-                  : 'text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]'
+                  ? 'text-[var(--accent-primary)] bg-[var(--accent-primary)]/10'
+                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]/50'
               }`}
             >
-              <Icon className="w-4 h-4" aria-hidden="true" />
-              <span className="hidden sm:inline">{l.label}</span>
-              <span className="sr-only sm:hidden">{l.label}</span>
+              <Icon className="w-5 h-5" aria-hidden="true" />
+              <span className="text-[10px] font-medium">{l.label}</span>
             </Link>
-            )
-          })}
-          {authRequired && (
-            <button
-              onClick={logout}
-              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] sm:hidden focus-ring"
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOut className="w-4 h-4" aria-hidden="true" />
-            </button>
-          )}
+          )
+        })}
+        <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 min-w-[60px]">
+          <SourceScopePicker compact />
         </div>
+        {authRequired && (
+          <button
+            onClick={logout}
+            className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors focus-ring min-w-[60px]"
+            aria-label="Sign out"
+            title="Sign out"
+          >
+            <LogOut className="w-5 h-5" aria-hidden="true" />
+            <span className="text-[10px] font-medium">Logout</span>
+          </button>
+        )}
       </div>
     </nav>
   )
@@ -245,23 +247,26 @@ function AuthGate() {
     <div className="flex min-h-screen bg-[var(--surface-secondary)] text-[var(--text-primary)] transition-colors duration-200">
       <Nav />
       <div className="flex-1 min-w-0 flex flex-col min-h-screen overflow-x-hidden">
-        <header className="h-14 lg:h-16 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 backdrop-blur-sm flex items-center justify-between lg:justify-end px-4 lg:px-8 transition-colors duration-200 relative z-20">
+        <header className="h-14 lg:h-16 border-b border-[var(--border-default)] bg-[var(--surface-primary)] flex items-center justify-between px-4 lg:px-8 transition-colors duration-200 relative z-20">
           <div className="lg:hidden font-semibold text-[var(--accent-primary)] flex items-center gap-2">
             <Activity className="w-5 h-5" />
             ModelMeter
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3">
             <SourceScopePicker />
             <HeaderSourceStatus />
             {showDaysFilter && <DaysFilterPicker />}
-            <div className="hidden sm:block">
-              <LogoutButton compact />
+            <LogoutButton compact />
+            <ThemeToggle />
+          </div>
+          <div className="lg:hidden flex items-center gap-1 sm:gap-2">
+            <div className="hidden min-[380px]:block">
+              <HeaderSourceStatus />
             </div>
             <ThemeToggle />
           </div>
         </header>
-        <MobileNav />
-        <main className="flex-1 bg-[var(--surface-secondary)]/50 transition-colors duration-200">
+        <main className="flex-1 bg-[var(--surface-secondary)]/50 transition-colors duration-200 pb-20 lg:pb-0">
           <ErrorBoundary>
             <Suspense
               fallback={
@@ -282,6 +287,7 @@ function AuthGate() {
             </Suspense>
           </ErrorBoundary>
         </main>
+        <MobileBottomNav />
       </div>
     </div>
   )
