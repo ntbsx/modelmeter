@@ -465,46 +465,8 @@ export default function Overview() {
               )}
             </div>
           ) : showSingleDay ? (
-            <div className="space-y-4">
-              <div className="p-4 sm:p-6 text-center text-[var(--text-tertiary)]">
-                Showing data for {latestDay?.date}
-              </div>
-              {showSessions && (
-                <div className="h-44 p-4 sm:px-6 pb-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.grid} />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: chartColors.axis }} />
-                      <YAxis
-                        yAxisId="left"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: chartColors.axis }}
-                        tickFormatter={(value: number | string) => Number(value).toLocaleString()}
-                        width={48}
-                      />
-                      <Tooltip
-                        contentStyle={tooltipContentStyle}
-                        formatter={(
-                          value: number | string | readonly (number | string)[] | undefined
-                        ) => {
-                          const baseValue = Array.isArray(value) ? value[0] : value
-                          const numericValue = Number(baseValue ?? 0)
-                          return [numericValue.toLocaleString(), 'Sessions']
-                        }}
-                      />
-                      <Bar
-                        yAxisId="left"
-                        dataKey="sessions"
-                        name="Sessions"
-                        fill={chartColors.sessions.fill}
-                        radius={[2, 2, 0, 0]}
-                        maxBarSize={40}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+            <div className="p-4 sm:p-6 text-center text-[var(--text-tertiary)]">
+              Showing data for {latestDay?.date}
             </div>
           ) : (
             <div className="p-4 sm:p-6 text-center text-[var(--text-tertiary)]">
