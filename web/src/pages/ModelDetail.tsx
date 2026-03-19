@@ -14,30 +14,18 @@ import {
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { ModelDetailResponse } from '../types'
-import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
 import { PageEmptyState, PageErrorState } from '../components/PageState'
 import { useDaysFilter } from '../hooks/useDaysFilter'
-
-function StatCard({ title, value, subtitle }: { title: string; value: string; subtitle?: string }) {
-  return (
-    <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-      <div className="text-sm text-gray-500 dark:text-gray-400">{title}</div>
-      <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
-      {subtitle && <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{subtitle}</div>}
-    </div>
-  )
-}
+import { StatCard } from '../components/ui'
+import { SectionHeader } from '../components/DataTable'
+import { useChartColors } from '../components/useChartColors'
 
 export default function ModelDetail() {
   const { modelId } = useParams()
   const decodedModelId = decodeURIComponent(modelId ?? '')
   const { days } = useDaysFilter()
-
-  const { theme } = useTheme()
-  const isDark =
-    theme === 'dark' ||
-    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const chartColors = useChartColors()
 
   const { data, isLoading, error } = useQuery<ModelDetailResponse>({
     queryKey: ['model-detail', decodedModelId, days],
@@ -114,19 +102,17 @@ export default function ModelDetail() {
     }
   })
 
-  const axisColor = isDark ? '#9ca3af' : '#6b7280'
-  const gridColor = isDark ? '#374151' : '#f3f4f6'
   const tooltipContentStyle = {
-    backgroundColor: isDark ? '#1f2937' : '#ffffff',
-    borderColor: isDark ? '#374151' : '#e5e7eb',
-    color: isDark ? '#f9fafb' : '#111827',
+    backgroundColor: chartColors.tooltip.background,
+    borderColor: chartColors.tooltip.border,
+    color: chartColors.tooltip.text,
   }
 
   return (
-    <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto space-y-6 w-full min-w-0">
-      <div className="space-y-3">
+    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto">
+      <div className="mb-8 sm:mb-10 space-y-3">
         <Link
-          className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+          className="inline-flex items-center gap-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
           to={`/models/provider/${encodeURIComponent(data.provider)}`}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -135,52 +121,58 @@ export default function ModelDetail() {
 
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white break-all">
+            <h1 className="ds-text-heading break-all">
               {data.model_id}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mt-1">
+            <p className="mt-2 text-[var(--text-tertiary)]">
               Model usage for the {days === 1 ? 'last 24 hours' : `last ${days} days`}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Sessions" value={data.total_sessions.toString()} />
-        <StatCard title="Interactions" value={data.total_interactions.toString()} />
-        <StatCard title="Total Tokens" value={formatTokens(data.usage.total_tokens)} />
-        <StatCard
-          title="Cost"
-          value={data.cost_usd ? formatUsd(data.cost_usd) : 'N/A'}
-          subtitle={data.pricing_source ? 'via models.dev' : 'No pricing data'}
-        />
-      </div>
+      <section className="mb-8 sm:mb-10">
+        <h2 className="ds-text-label-uppercase mb-4">Overview</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          <StatCard label="Sessions" value={data.total_sessions.toString()} />
+          <StatCard label="Interactions" value={data.total_interactions.toString()} />
+          <StatCard label="Total Tokens" value={formatTokens(data.usage.total_tokens)} />
+          <StatCard
+            label="Cost"
+            value={data.cost_usd ? formatUsd(data.cost_usd) : 'N/A'}
+            subtitle={data.pricing_source ? 'via models.dev' : 'No pricing data'}
+          />
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Input Tokens" value={formatTokens(data.usage.input_tokens)} />
-        <StatCard title="Output Tokens" value={formatTokens(data.usage.output_tokens)} />
-        <StatCard title="Cache Read" value={formatTokens(data.usage.cache_read_tokens)} />
-        <StatCard title="Cache Write" value={formatTokens(data.usage.cache_write_tokens)} />
-      </div>
+      <section className="mb-8 sm:mb-10">
+        <h2 className="ds-text-label-uppercase mb-4">Token Breakdown</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+          <StatCard label="Input Tokens" value={formatTokens(data.usage.input_tokens)} />
+          <StatCard label="Output Tokens" value={formatTokens(data.usage.output_tokens)} />
+          <StatCard label="Cache Read" value={formatTokens(data.usage.cache_read_tokens)} />
+          <StatCard label="Cache Write" value={formatTokens(data.usage.cache_write_tokens)} />
+        </div>
+      </section>
 
       {chartData.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Daily Usage</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Token usage and cost over time
-            </p>
+        <section className="ds-surface overflow-hidden">
+          <div className="p-5 sm:p-8 border-b border-[var(--border-subtle)]">
+            <SectionHeader
+              title="Daily Usage"
+              description="Token usage and cost over time"
+            />
           </div>
-          <div className="h-[20rem] sm:h-80">
+          <div className="h-80 p-4 sm:p-6 pt-2 sm:pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: axisColor }} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.grid} />
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: chartColors.axis }} />
                 <YAxis
                   yAxisId="left"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: axisColor }}
+                  tick={{ fill: chartColors.axis }}
                   tickFormatter={(value: number | string) => formatTokens(Number(value))}
                 />
                 <YAxis
@@ -188,7 +180,7 @@ export default function ModelDetail() {
                   orientation="right"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: axisColor }}
+                  tick={{ fill: chartColors.axis }}
                   tickFormatter={(value: number | string) => formatUsd(Number(value))}
                 />
                 <Tooltip
@@ -213,7 +205,7 @@ export default function ModelDetail() {
                   yAxisId="left"
                   dataKey="sessions"
                   name="Sessions"
-                  fill={isDark ? '#334155' : '#cbd5e1'}
+                  fill={chartColors.sessions.fill}
                   radius={[4, 4, 0, 0]}
                   maxBarSize={28}
                 />
@@ -222,9 +214,9 @@ export default function ModelDetail() {
                   type="monotone"
                   dataKey="tokens"
                   name="Tokens"
-                  stroke={isDark ? '#60a5fa' : '#2563eb'}
+                  stroke={chartColors.tokens.stroke}
                   strokeWidth={2.5}
-                  dot={{ r: 3, strokeWidth: 0, fill: isDark ? '#93c5fd' : '#3b82f6' }}
+                  dot={{ r: 3, strokeWidth: 0, fill: chartColors.tokens.fill }}
                   activeDot={{ r: 5 }}
                 />
                 <Line
@@ -232,7 +224,7 @@ export default function ModelDetail() {
                   type="monotone"
                   dataKey="cost"
                   name="Cost"
-                  stroke={isDark ? '#34d399' : '#059669'}
+                  stroke={chartColors.cost.stroke}
                   strokeWidth={2}
                   dot={false}
                   strokeDasharray="5 3"
@@ -240,7 +232,7 @@ export default function ModelDetail() {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </section>
       )}
     </div>
   )

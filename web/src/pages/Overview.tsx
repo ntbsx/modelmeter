@@ -10,24 +10,16 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { DollarSign, Zap, Database, Activity } from 'lucide-react'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { DailyResponse, SummaryResponse } from '../types'
-import { useTheme } from '../components/useTheme'
 import PageLoading from '../components/PageLoading'
-import { PageErrorState } from '../components/PageState'
 import { useSourceScope } from '../hooks/useSourceScope'
 import { useDaysFilter } from '../hooks/useDaysFilter'
-
-function StatCard({ title, value, subtitle }: { title: string, value: string, subtitle?: string }) {
-  return (
-    <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-      <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{title}</div>
-      <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{value}</div>
-      {subtitle && <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">{subtitle}</div>}
-    </div>
-  )
-}
+import { StatCard } from '../components/ui'
+import { PageHeader, StatGrid, SectionHeader } from '../components/DataTable'
+import { useChartColors } from '../components/useChartColors'
 
 export default function Overview() {
   const { days } = useDaysFilter()
@@ -36,11 +28,7 @@ export default function Overview() {
   const [showCost, setShowCost] = useState(true)
   const timezoneOffsetMinutes = -new Date().getTimezoneOffset()
   const { sourceScope } = useSourceScope()
-
-  const { theme } = useTheme()
-  const isDark =
-    theme === 'dark' ||
-    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const chartColors = useChartColors()
 
   const { data: summary, isLoading: loadingSummary } = useQuery<SummaryResponse>({
     queryKey: ['summary', days, sourceScope],
@@ -63,10 +51,16 @@ export default function Overview() {
 
   if (!summary || !daily) {
     return (
-      <PageErrorState
-        title="Unable to load overview"
-        description="We could not load summary metrics right now. Try refreshing the page."
-      />
+      <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto">
+        <div className="ds-surface p-6 bg-[var(--color-error-muted)] border-[var(--color-error)]">
+          <div className="flex items-start gap-3">
+            <span className="text-[var(--color-error)]">Unable to load overview</span>
+            <div>
+              <p className="text-sm text-[var(--color-error-muted-foreground)]">We could not load summary metrics right now. Try refreshing the page.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     )
   }
 
@@ -83,12 +77,10 @@ export default function Overview() {
 
   const leftAxisTicks = showTokens || showSessions
 
-  const axisColor = isDark ? '#9ca3af' : '#6b7280'
-  const gridColor = isDark ? '#374151' : '#f3f4f6'
   const tooltipContentStyle = {
-    backgroundColor: isDark ? '#1f2937' : '#ffffff',
-    borderColor: isDark ? '#374151' : '#e5e7eb',
-    color: isDark ? '#f9fafb' : '#111827',
+    backgroundColor: chartColors.tooltip.background,
+    borderColor: chartColors.tooltip.border,
+    color: chartColors.tooltip.text,
   }
   const avgDailyTokens =
     chartData.length > 0
@@ -96,59 +88,59 @@ export default function Overview() {
       : 0
 
   return (
-    <div className="px-4 py-6 sm:p-8 max-w-6xl mx-auto">
-      <div className="flex justify-between items-end mb-6 sm:mb-8">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Overview</h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            {days === 1 ? 'Last 24 hours' : `Last ${days} days`} of OpenCode usage
-          </p>
-        </div>
-      </div>
+    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto space-y-10 sm:space-y-12 lg:space-y-16">
+      <PageHeader
+        title="Overview"
+        description={`${days === 1 ? 'Last 24 hours' : `Last ${days} days`} of OpenCode usage`}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <StatCard 
-          title="Total Cost" 
-          value={summary.cost_usd ? formatUsd(summary.cost_usd) : 'N/A'}
-          subtitle={summary.pricing_source ? "via models.dev" : "No pricing data"}
-        />
-        <StatCard 
-          title="Total Tokens" 
-          value={formatTokens(summary.usage.total_tokens)} 
-        />
-        <StatCard 
-          title="Cache Read" 
-          value={formatTokens(summary.usage.cache_read_tokens)} 
-        />
-        <StatCard 
-          title="Sessions" 
-          value={summary.total_sessions.toString()} 
-        />
-      </div>
+      <section>
+        <StatGrid columns={4}>
+          <StatCard 
+            label="Total Cost" 
+            value={summary.cost_usd ? formatUsd(summary.cost_usd) : 'N/A'}
+            subtitle={summary.pricing_source ? "via models.dev" : "No pricing data"}
+            delay={0}
+            accent="green"
+            icon={<DollarSign className="w-5 h-5" />}
+          />
+          <StatCard 
+            label="Total Tokens" 
+            value={formatTokens(summary.usage.total_tokens)} 
+            delay={50}
+            accent="blue"
+            icon={<Zap className="w-5 h-5" />}
+          />
+          <StatCard 
+            label="Cache Read" 
+            value={formatTokens(summary.usage.cache_read_tokens)} 
+            delay={100}
+            accent="amber"
+            icon={<Database className="w-5 h-5" />}
+          />
+          <StatCard 
+            label="Sessions" 
+            value={summary.total_sessions.toString()} 
+            delay={150}
+            accent="purple"
+            icon={<Activity className="w-5 h-5" />}
+          />
+        </StatGrid>
+      </section>
 
-      <div className="bg-white dark:bg-gray-900 p-4 sm:p-6 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm transition-colors">
-        <div className="flex flex-wrap items-end justify-between gap-3 mb-6">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Usage Trend</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              Tokens, sessions, and spend across the selected window
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="text-right">
-              <div className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                Avg Daily Tokens
-              </div>
-              <div className="font-semibold text-gray-900 dark:text-gray-100">
-                {formatTokens(avgDailyTokens)}
-              </div>
-            </div>
-            <div className="flex flex-wrap justify-end gap-2 text-xs">
-              <button
-                className={`px-2.5 py-1 rounded-md border ${
-                  showSessions
-                    ? 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200'
-                    : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-500'
+      <section className="ds-surface overflow-hidden">
+        <div className="p-5 sm:p-8 border-b border-[var(--border-subtle)]">
+          <SectionHeader
+            title="Usage Trend"
+            description="Tokens, sessions, and spend across the selected window"
+            accent
+            actions={
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <button
+                  className={`px-3 py-1.5 rounded-md border transition-colors ${
+                    showSessions
+                      ? 'border-[var(--chart-sessions)] bg-[var(--chart-sessions)]/20 text-[var(--text-primary)]'
+                    : 'border-[var(--border-default)] text-[var(--text-tertiary)]'
                 }`}
                 onClick={() => setShowSessions((value) => !value)}
                 type="button"
@@ -156,10 +148,10 @@ export default function Overview() {
                 Sessions
               </button>
               <button
-                className={`px-2.5 py-1 rounded-md border ${
+                className={`px-3 py-1.5 rounded-md border transition-colors ${
                   showTokens
-                    ? 'border-blue-300 bg-blue-100 text-blue-700 dark:border-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
-                    : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-500'
+                    ? 'border-[var(--chart-tokens)] bg-[var(--chart-tokens)]/20 text-[var(--accent-primary)]'
+                    : 'border-[var(--border-default)] text-[var(--text-tertiary)]'
                 }`}
                 onClick={() => setShowTokens((value) => !value)}
                 type="button"
@@ -167,29 +159,38 @@ export default function Overview() {
                 Tokens
               </button>
               <button
-                className={`px-2.5 py-1 rounded-md border ${
+                className={`px-3 py-1.5 rounded-md border transition-colors ${
                   showCost
-                    ? 'border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-                    : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-500'
+                    ? 'border-[var(--chart-cost)] bg-[var(--chart-cost)]/20 text-[var(--chart-cost)]'
+                    : 'border-[var(--border-default)] text-[var(--text-tertiary)]'
                 }`}
                 onClick={() => setShowCost((value) => !value)}
                 type="button"
               >
                 Cost
               </button>
+              </div>
+            }
+          />
+          {avgDailyTokens > 0 && (
+            <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
+              <div className="flex items-center gap-2 ds-text-muted">
+                <span className="ds-text-label-uppercase">Avg daily tokens</span>
+                <span className="font-semibold text-[var(--text-primary)] ds-text-tabular">{formatTokens(avgDailyTokens)}</span>
+              </div>
             </div>
-          </div>
+          )}
         </div>
-        <div className="h-[22rem] sm:h-96">
+        <div className="h-80 p-4 sm:p-6 pt-2 sm:pt-4">
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
-              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: axisColor }} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartColors.grid} />
+              <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: chartColors.axis }} />
               <YAxis
                 yAxisId="left"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: axisColor }}
+                tick={{ fill: chartColors.axis }}
                 hide={!leftAxisTicks}
                 tickFormatter={(value: number | string) => formatTokens(Number(value))}
               />
@@ -198,7 +199,7 @@ export default function Overview() {
                 orientation="right"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: axisColor }}
+                tick={{ fill: chartColors.axis }}
                 hide={!showCost}
                 tickFormatter={(value: number | string) => formatUsd(Number(value))}
               />
@@ -225,7 +226,7 @@ export default function Overview() {
                   yAxisId="left"
                   dataKey="sessions"
                   name="Sessions"
-                  fill={isDark ? '#334155' : '#cbd5e1'}
+                  fill={chartColors.sessions.fill}
                   radius={[4, 4, 0, 0]}
                   maxBarSize={28}
                 />
@@ -236,9 +237,9 @@ export default function Overview() {
                   type="monotone"
                   dataKey="tokens"
                   name="Tokens"
-                  stroke={isDark ? '#60a5fa' : '#2563eb'}
+                  stroke={chartColors.tokens.stroke}
                   strokeWidth={2.5}
-                  dot={{ r: 3, strokeWidth: 0, fill: isDark ? '#93c5fd' : '#3b82f6' }}
+                  dot={{ r: 3, strokeWidth: 0, fill: chartColors.tokens.fill }}
                   activeDot={{ r: 5 }}
                 />
               ) : null}
@@ -248,7 +249,7 @@ export default function Overview() {
                   type="monotone"
                   dataKey="cost"
                   name="Cost"
-                  stroke={isDark ? '#34d399' : '#059669'}
+                  stroke={chartColors.cost.stroke}
                   strokeWidth={2}
                   dot={false}
                   strokeDasharray="5 3"
@@ -257,7 +258,7 @@ export default function Overview() {
             </ComposedChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

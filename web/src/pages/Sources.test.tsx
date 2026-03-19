@@ -78,7 +78,7 @@ describe('Sources page', () => {
     expect(await screen.findByText('remote-prod')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Run Health Check' }))
 
-    expect(await screen.findByText('✓ Healthy')).toBeInTheDocument()
+    expect(await screen.findByText('Healthy')).toBeInTheDocument()
   })
 
   it('submits http source form with PUT request', async () => {
