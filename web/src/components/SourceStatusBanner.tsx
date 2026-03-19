@@ -52,7 +52,7 @@ export default function SourceStatusBanner({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sources'] })
-      queryClient.invalidateQueries({ queryKey: ['sources', 'health'] })
+      queryClient.invalidateQueries({ queryKey: ['sources-health-check'] })
     },
   })
 
@@ -89,6 +89,10 @@ export default function SourceStatusBanner({
   } else if (hasEmptyData) {
     bannerVariant = 'info'
     message = 'No data available for the selected time range'
+  }
+
+  if (!message) {
+    return null
   }
 
   const variantStyles = {

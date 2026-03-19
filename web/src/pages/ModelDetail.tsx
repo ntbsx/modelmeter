@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Info } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import {
   Bar,
@@ -28,12 +28,13 @@ export default function ModelDetail() {
   const decodedModelId = decodeURIComponent(modelId ?? '')
   const { days } = useDaysFilter()
   const { sourceScope } = useSourceScope()
+  const detailScope = 'self' as const
   const chartColors = useChartColors()
   const [showSessions, setShowSessions] = useState(false)
 
   const { data, isLoading, error } = useQuery<ModelDetailResponse>({
-    queryKey: ['model-detail', decodedModelId, days, sourceScope],
-    queryFn: () => fetchApi(`/models/${encodeURIComponent(decodedModelId)}`, { days, source_scope: sourceScope }),
+    queryKey: ['model-detail', decodedModelId, days, detailScope],
+    queryFn: () => fetchApi(`/models/${encodeURIComponent(decodedModelId)}`, { days, source_scope: detailScope }),
     enabled: decodedModelId.length > 0,
   })
 
@@ -134,6 +135,13 @@ export default function ModelDetail() {
           </div>
         </div>
       </div>
+
+      {sourceScope !== 'self' && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3 text-sm text-[var(--text-secondary)]">
+          <Info className="h-4 w-4 shrink-0 mt-0.5 text-[var(--text-tertiary)]" />
+          <span>Model detail always shows data from this server only — federated model detail is not yet supported. The source scope selector does not affect this view.</span>
+        </div>
+      )}
 
       <section className="mb-8 sm:mb-10">
           <h2 className="ds-text-label-uppercase mb-4">Overview</h2>
