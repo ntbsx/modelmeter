@@ -88,9 +88,6 @@ function HeaderSourceStatus() {
   })
 
   const hasSources = (data?.length ?? 0) > 0
-  if (!hasSources) {
-    return <div className="w-6" />
-  }
 
   if (isLoading) {
     return (
@@ -101,6 +98,10 @@ function HeaderSourceStatus() {
         <div className="w-3 h-3 rounded-full bg-[var(--text-tertiary)] animate-pulse" />
       </div>
     )
+  }
+
+  if (!hasSources) {
+    return <div className="w-6" />
   }
 
   const failedSources = data?.filter(s => !s.is_reachable) ?? []
