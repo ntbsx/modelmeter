@@ -44,7 +44,7 @@ const accentStyles = {
   blue: 'border-l-4 border-l-[var(--accent-primary)] bg-[var(--surface-accent)]/30',
   green: 'border-l-4 border-l-[var(--color-success)] bg-[var(--surface-success)]/30',
   amber: 'border-l-4 border-l-[var(--color-warning)] bg-[var(--surface-warning)]/30',
-  purple: 'border-l-4 border-l-purple-500 bg-purple-50 dark:bg-purple-950/30',
+  purple: 'border-l-4 border-l-[var(--color-info)] bg-[var(--color-info-muted)]/30',
 }
 
 const iconColors = {
@@ -52,7 +52,7 @@ const iconColors = {
   blue: 'text-[var(--accent-primary)]',
   green: 'text-[var(--color-success)]',
   amber: 'text-[var(--color-warning)]',
-  purple: 'text-purple-500',
+  purple: 'text-[var(--color-info)]',
 }
 
 export function StatCard({ label, value, subtitle, trend, className = '', delay = 0, accent = 'default', icon }: StatCardProps) {

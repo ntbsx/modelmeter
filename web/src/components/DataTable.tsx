@@ -63,7 +63,6 @@ export function DataTable<T>({
                   {...(onRowClick
                     ? {
                         tabIndex: 0,
-                        role: 'button' as const,
                         onKeyDown: (e: KeyboardEvent<HTMLTableRowElement>) => {
                           if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
                             e.preventDefault()

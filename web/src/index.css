@@ -50,6 +50,9 @@
     --color-error: #dc2626;
     --color-error-muted: #fee2e2;
     --color-error-muted-foreground: #991b1b;
+    --color-info: #7c3aed;
+    --color-info-muted: #f5f3ff;
+    --color-info-muted-foreground: #5b21b6;
     
     /* Chart colors - theme-aware */
     --chart-tokens: #2563eb;
@@ -107,6 +110,9 @@
     --color-error: #ef4444;
     --color-error-muted: #450a0a;
     --color-error-muted-foreground: #fca5a5;
+    --color-info: #a78bfa;
+    --color-info-muted: #2e1065;
+    --color-info-muted-foreground: #c4b5fd;
     
     /* Chart colors */
     --chart-tokens: #60a5fa;
