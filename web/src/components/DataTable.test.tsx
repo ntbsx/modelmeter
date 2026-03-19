@@ -1,15 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
 import { render, screen, fireEvent } from '../test/test-utils'
 import { DataTable, PageHeader, SectionHeader, EmptyState, StatGrid } from './DataTable'
-import type { ReactNode } from 'react'
+
+type TestItem = { name: string; value: number }
 
 describe('DataTable', () => {
-  const columns = [
+  const columns: Array<{ key: keyof TestItem; header: string; align?: 'right' }> = [
     { key: 'name', header: 'Name' },
-    { key: 'value', header: 'Value', align: 'right' as const },
+    { key: 'value', header: 'Value', align: 'right' },
   ]
 
-  const data = [
+  const data: TestItem[] = [
     { name: 'Item 1', value: 100 },
     { name: 'Item 2', value: 200 },
   ]
@@ -38,7 +39,7 @@ describe('DataTable', () => {
     render(
       <DataTable
         columns={columns}
-        data={[]}
+        data={[] as TestItem[]}
         keyExtractor={item => item.name}
         emptyMessage="No items found"
       />
@@ -49,7 +50,7 @@ describe('DataTable', () => {
 
   it('renders default empty message when not provided', () => {
     render(
-      <DataTable columns={columns} data={[]} keyExtractor={item => item.name} />
+      <DataTable columns={columns} data={[] as TestItem[]} keyExtractor={item => item.name} />
     )
 
     expect(screen.getByText('No data available')).toBeInTheDocument()
