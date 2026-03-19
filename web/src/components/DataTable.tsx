@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react'
+import { type ReactNode, type KeyboardEvent } from 'react'
 
 type TableColumn<T> = {
   key: keyof T | string
@@ -60,6 +60,18 @@ export function DataTable<T>({
                   key={keyExtractor(row)}
                   className={`transition-colors hover:bg-[var(--surface-accent)]/50 ${onRowClick ? 'cursor-pointer' : ''}`}
                   onClick={() => onRowClick?.(row)}
+                  {...(onRowClick
+                    ? {
+                        tabIndex: 0,
+                        role: 'button' as const,
+                        onKeyDown: (e: KeyboardEvent<HTMLTableRowElement>) => {
+                          if (e.key === 'Enter' || e.key === ' ' || e.code === 'Space') {
+                            e.preventDefault()
+                            onRowClick(row)
+                          }
+                        },
+                      }
+                    : {})}
                 >
                   {columns.map((col) => (
                     <td
