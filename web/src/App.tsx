@@ -1,7 +1,7 @@
 import { Suspense, lazy, useMemo } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, RefreshCw, WifiOff } from 'lucide-react'
+import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, WifiOff, Wifi } from 'lucide-react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
@@ -93,21 +93,25 @@ function HeaderSourceStatus() {
   if (sourceScope === 'self') return null
 
   const failedSources = data?.filter(s => !s.is_reachable) ?? []
-  if (failedSources.length === 0) return null
+  const hasFailed = failedSources.length > 0
 
   return (
-    <div className="flex items-center gap-1.5 text-xs">
-      <WifiOff className="w-3.5 h-3.5 text-[var(--color-error)]" />
-      <span className="text-[var(--color-error)] font-medium">
-        {failedSources.length} source{failedSources.length > 1 ? 's' : ''} unreachable
-      </span>
-      <button
-        onClick={() => window.location.reload()}
-        className="inline-flex items-center gap-1 text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors"
-        title="Retry"
-      >
-        <RefreshCw className="w-3 h-3" />
-      </button>
+    <div className={hasFailed ? 'flex items-center gap-1.5 text-xs' : 'flex items-center gap-1.5 text-xs'}>
+      {hasFailed ? (
+        <>
+          <WifiOff className="w-3.5 h-3.5 text-[var(--color-error)]" />
+          <span className="text-[var(--color-error)] font-medium">
+            {failedSources.length} source{failedSources.length > 1 ? 's' : ''} unreachable
+          </span>
+        </>
+      ) : (
+        <>
+          <Wifi className="w-3.5 h-3.5 text-[var(--color-success)]" />
+          <span className="text-[var(--color-success-muted-foreground)] font-medium">
+            Federation active
+          </span>
+        </>
+      )}
     </div>
   )
 }
