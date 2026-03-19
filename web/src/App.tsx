@@ -9,6 +9,8 @@ import SourceScopePicker from './components/SourceScopePicker'
 import DaysFilterPicker from './components/DaysFilterPicker'
 import { useAuth } from './hooks/useAuth'
 import { useSourceScope } from './hooks/useSourceScope'
+import { fetchApi } from './lib/api'
+import type { SourceHealth } from './types'
 
 const queryClient = new QueryClient()
 
@@ -80,12 +82,9 @@ function LogoutButton({ compact = false }: { compact?: boolean }) {
 
 function HeaderSourceStatus() {
   const { sourceScope } = useSourceScope()
-  const { data } = useQuery({
+  const { data } = useQuery<SourceHealth[]>({
     queryKey: ['sources-health-check'],
-    queryFn: async () => {
-      const response = await fetchApi('/sources/check')
-      return response
-    },
+    queryFn: () => fetchApi('/sources/check') as Promise<SourceHealth[]>,
     enabled: sourceScope !== 'self',
     staleTime: 30_000,
     retry: 1,
@@ -93,14 +92,14 @@ function HeaderSourceStatus() {
 
   if (sourceScope === 'self') return null
 
-  const failedCount = data?.sources_failed?.length ?? 0
-  if (failedCount === 0) return null
+  const failedSources = data?.filter(s => !s.is_reachable) ?? []
+  if (failedSources.length === 0) return null
 
   return (
     <div className="flex items-center gap-1.5 text-xs">
       <WifiOff className="w-3.5 h-3.5 text-[var(--color-error)]" />
       <span className="text-[var(--color-error)] font-medium">
-        {failedCount} source{failedCount > 1 ? 's' : ''} unreachable
+        {failedSources.length} source{failedSources.length > 1 ? 's' : ''} unreachable
       </span>
       <button
         onClick={() => window.location.reload()}
