@@ -4,6 +4,22 @@ All notable changes to ModelMeter are documented in this file.
 
 The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.D`).
 
+## [2026.3.21] - 2026-03-19
+
+### Added
+- Comprehensive design system implementation across frontend with unified color tokens, spacing, and typography.
+- `/create_pr` command for standardized pull request creation.
+- Chart color alignment with design system tokens.
+
+### Changed
+- Improved UX indicators and visual feedback across the dashboard.
+- Enhanced mobile experience with improved logout flow.
+
+### Fixed
+- CSS token alignment for chart and purple color scales.
+- DataTable row accessibility with proper ARIA roles.
+- Command file naming consistency (snake_case).
+
 ## [Unreleased]
 
 ### Added
