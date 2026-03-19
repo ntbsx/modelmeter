@@ -9,10 +9,10 @@
 
 @layer base {
   :root {
-    /* Surface colors - warm neutrals */
+    /* Surface colors - warm neutrals with subtle cream tint */
     --surface-primary: #ffffff;
-    --surface-secondary: #fafafa;
-    --surface-tertiary: #f4f4f5;
+    --surface-secondary: #fafaf9;
+    --surface-tertiary: #f5f5f4;
     --surface-inverse: #18181b;
     --surface-accent: #eff6ff;
     --surface-success: #f0fdf4;
@@ -170,12 +170,12 @@
 /* Animation utility classes */
 @layer utilities {
   .animate-slide-up {
-    animation: slide-up 400ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    animation: slide-up 300ms cubic-bezier(0.25, 1, 0.5, 1) forwards;
     opacity: 0;
   }
   
   .animate-fade-in {
-    animation: fade-in 300ms ease-out forwards;
+    animation: fade-in 200ms ease-out forwards;
   }
   
   .animate-pulse-subtle {
@@ -184,6 +184,28 @@
   
   .animate-bounce-subtle {
     animation: bounce-subtle 1s ease-in-out infinite;
+  }
+
+  /* Focus ring for keyboard navigation */
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--surface-primary)];
+  }
+  
+  /* Performance: skip rendering off-screen content */
+  .content-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 200px;
+  }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-slide-up,
+    .animate-fade-in,
+    .animate-pulse-subtle,
+    .animate-bounce-subtle {
+      animation: none;
+      opacity: 1;
+    }
   }
 }
 
@@ -279,11 +301,21 @@
     border-radius: 0.5rem;
     background-color: var(--accent-primary);
     color: white;
-    transition: background-color 150ms ease;
+    transition: background-color 150ms ease, transform 100ms cubic-bezier(0.25, 1, 0.5, 1);
   }
   
   .ds-btn-primary:hover {
     background-color: var(--accent-primary-hover);
+  }
+  
+  .ds-btn-primary:active {
+    transform: translateY(1px);
+  }
+
+  .ds-btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
   }
   
   .ds-btn-secondary {
@@ -298,12 +330,16 @@
     border: 1px solid var(--border-default);
     background-color: transparent;
     color: var(--text-secondary);
-    transition: background-color 150ms ease, border-color 150ms ease;
+    transition: background-color 150ms ease, border-color 150ms ease, transform 100ms cubic-bezier(0.25, 1, 0.5, 1);
   }
   
   .ds-btn-secondary:hover {
     background-color: var(--surface-tertiary);
     border-color: var(--border-strong);
+  }
+  
+  .ds-btn-secondary:active {
+    transform: translateY(1px);
   }
   
   .ds-btn-ghost {

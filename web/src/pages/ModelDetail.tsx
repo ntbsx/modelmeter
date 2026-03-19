@@ -45,7 +45,7 @@ export default function ModelDetail() {
         description="The requested model identifier is not valid."
         action={
           <Link
-            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            className="inline-flex items-center gap-2 text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
             to="/models"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -67,7 +67,7 @@ export default function ModelDetail() {
         description="We could not fetch usage for this model. Please refresh and try again."
         action={
           <Link
-            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            className="inline-flex items-center gap-2 text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
             to="/models"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -85,7 +85,7 @@ export default function ModelDetail() {
         description="No usage data was found for this model in the selected window."
         action={
           <Link
-            className="inline-flex items-center gap-2 text-sm text-blue-700 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+            className="inline-flex items-center gap-2 text-sm text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)]"
             to="/models"
           >
             <ArrowLeft className="h-4 w-4" />

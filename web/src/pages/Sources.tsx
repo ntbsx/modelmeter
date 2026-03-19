@@ -207,7 +207,7 @@ export default function Sources() {
           <button
             type="button"
             onClick={onAddNew}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="ds-btn-primary"
           >
             Add Source
           </button>
@@ -316,7 +316,7 @@ export default function Sources() {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                className="ds-btn-primary"
               >
                 {saveMutation.isPending ? 'Saving...' : editingSourceId ? 'Update Source' : 'Add Source'}
               </button>
@@ -401,7 +401,7 @@ export default function Sources() {
                           <button
                             type="button"
                             onClick={() => onEdit(source)}
-                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] hover:bg-[var(--accent-primary-muted)] transition-colors"
                             title="Edit"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -411,7 +411,7 @@ export default function Sources() {
                           <button
                             type="button"
                             onClick={() => setDeleteTarget(source)}
-                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-muted)] transition-colors"
                             title="Remove"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

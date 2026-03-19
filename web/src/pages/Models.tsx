@@ -92,7 +92,10 @@ export default function Models() {
               ))}
               {(data.models ?? []).length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 sm:px-6 py-12 text-center text-[var(--text-tertiary)]">No model usage found in this period.</td>
+                  <td colSpan={7} className="px-4 sm:px-6 py-12 text-center">
+                    <div className="text-[var(--text-tertiary)]">No model usage found in this period.</div>
+                    <div className="text-sm text-[var(--text-tertiary)] mt-1">Start using models to see usage data here.</div>
+                  </td>
                 </tr>
               )}
             </tbody>

@@ -79,6 +79,7 @@ export default function Overview() {
   const hasEnoughData = chartData.length >= 3
   const showTrendChart = hasEnoughData
   const showComparisonView = hasMultipleDays && !hasEnoughData
+  const showSingleDay = chartData.length === 1
 
   const latestDay = chartData[chartData.length - 1]
   const previousDay = chartData.length >= 2 ? chartData[chartData.length - 2] : null
@@ -134,28 +135,28 @@ export default function Overview() {
           <StatCard 
             label="Total Tokens" 
             value={formatTokens(summary.usage.total_tokens)} 
-            delay={50}
+            delay={30}
             accent="blue"
             icon={<Zap className="w-5 h-5" />}
           />
           <StatCard 
             label="Cache Read" 
             value={formatTokens(summary.usage.cache_read_tokens)} 
-            delay={100}
+            delay={60}
             accent="amber"
             icon={<Database className="w-5 h-5" />}
           />
           <StatCard 
             label="Sessions" 
             value={summary.total_sessions.toString()} 
-            delay={150}
+            delay={90}
             accent="purple"
             icon={<Activity className="w-5 h-5" />}
           />
         </StatGrid>
       </section>
 
-      <section className="ds-surface overflow-hidden">
+      <section className="ds-surface overflow-hidden content-auto">
         <div className="p-5 sm:p-8 border-b border-[var(--border-subtle)]">
           <SectionHeader
             title="Usage Trend"
@@ -168,7 +169,7 @@ export default function Overview() {
                     <>
                       <span className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider mr-2 opacity-60">Show:</span>
                       <button
-                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all cursor-pointer min-h-[44px] focus-ring ${
                           showSessions
                             ? 'text-[var(--chart-sessions)]'
                             : 'text-[var(--text-tertiary)] opacity-40'
@@ -181,7 +182,7 @@ export default function Overview() {
                         <span className="text-xs">Sessions</span>
                       </button>
                       <button
-                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all cursor-pointer min-h-[44px] focus-ring ${
                           showTokens
                             ? 'text-[var(--chart-tokens)]'
                             : 'text-[var(--text-tertiary)] opacity-40'
@@ -194,7 +195,7 @@ export default function Overview() {
                         <span className="text-xs">Tokens</span>
                       </button>
                       <button
-                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all cursor-pointer min-h-[44px] focus-ring ${
                           showCost
                             ? 'text-[var(--chart-cost)]'
                             : 'text-[var(--text-tertiary)] opacity-40'
@@ -343,7 +344,7 @@ export default function Overview() {
           ) : showComparisonView ? (
             <div className="space-y-4">
               <div className="p-4 sm:p-6">
-                <div className="grid grid-cols-4 gap-2 sm:gap-4">
+                <div className="hidden sm:grid sm:grid-cols-4 gap-2 sm:gap-4">
                   <div />
                   <div className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider text-center">
                     {previousDay?.date}
@@ -362,7 +363,7 @@ export default function Overview() {
                   <div className="text-xl font-semibold text-[var(--text-primary)] ds-text-tabular text-right">
                     {formatTokens(latestDay?.tokens ?? 0)}
                   </div>
-                  <div className={`text-sm font-medium ds-text-tabular text-right ${tokensDelta ? (tokensDelta.isPositive ? 'text-emerald-400' : 'text-rose-400') : 'text-[var(--text-tertiary)]'}`}>
+                  <div className={`text-sm font-medium ds-text-tabular text-right ${tokensDelta ? (tokensDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
                     {tokensDelta ? `${tokensDelta.isPositive ? '+' : ''}${tokensDelta.percent}%` : '—'}
                   </div>
 
@@ -373,7 +374,7 @@ export default function Overview() {
                   <div className="text-lg text-[var(--text-secondary)] ds-text-tabular text-right">
                     {formatUsd(latestDay?.cost ?? 0)}
                   </div>
-                  <div className={`text-sm font-medium ds-text-tabular text-right ${costDelta ? (costDelta.isPositive ? 'text-emerald-400' : 'text-rose-400') : 'text-[var(--text-tertiary)]'}`}>
+                  <div className={`text-sm font-medium ds-text-tabular text-right ${costDelta ? (costDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
                     {costDelta ? `${costDelta.isPositive ? '+' : ''}${costDelta.percent}%` : '—'}
                   </div>
 
@@ -384,11 +385,45 @@ export default function Overview() {
                   <div className="text-lg text-[var(--text-secondary)] ds-text-tabular text-right">
                     {latestDay?.sessions ?? 0}
                   </div>
-                  <div className={`text-sm font-medium ds-text-tabular text-right ${sessionsDelta ? (sessionsDelta.isPositive ? 'text-emerald-400' : 'text-rose-400') : 'text-[var(--text-tertiary)]'}`}>
+                  <div className={`text-sm font-medium ds-text-tabular text-right ${sessionsDelta ? (sessionsDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
                     {sessionsDelta?.diff !== undefined ? `${sessionsDelta.isPositive ? '+' : ''}${sessionsDelta.diff}` : '—'}
                     {sessionsDelta && sessionsDelta.diff !== undefined && (
                       <span className="text-xs opacity-60 ml-1">({sessionsDelta.percent}%)</span>
                     )}
+                  </div>
+                </div>
+                <div className="sm:hidden space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Tokens</span>
+                    <span className={`text-sm font-medium ${tokensDelta ? (tokensDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
+                      {tokensDelta ? `${tokensDelta.isPositive ? '+' : ''}${tokensDelta.percent}%` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-tertiary)]">{previousDay?.date}: {formatTokens(previousDay?.tokens ?? 0)}</span>
+                    <span className="text-[var(--text-tertiary)]">{latestDay?.date}: {formatTokens(latestDay?.tokens ?? 0)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)]">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Cost</span>
+                    <span className={`text-sm font-medium ${costDelta ? (costDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
+                      {costDelta ? `${costDelta.isPositive ? '+' : ''}${costDelta.percent}%` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-tertiary)]">{previousDay?.date}: {formatUsd(previousDay?.cost ?? 0)}</span>
+                    <span className="text-[var(--text-tertiary)]">{latestDay?.date}: {formatUsd(latestDay?.cost ?? 0)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)]">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Sessions</span>
+                    <span className={`text-sm font-medium ${sessionsDelta ? (sessionsDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
+                      {sessionsDelta?.diff !== undefined ? `${sessionsDelta.isPositive ? '+' : ''}${sessionsDelta.diff}` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-tertiary)]">{previousDay?.date}: {previousDay?.sessions ?? 0}</span>
+                    <span className="text-[var(--text-tertiary)]">{latestDay?.date}: {latestDay?.sessions ?? 0}</span>
                   </div>
                 </div>
               </div>
@@ -428,6 +463,10 @@ export default function Overview() {
                   </ResponsiveContainer>
                 </div>
               )}
+            </div>
+          ) : showSingleDay ? (
+            <div className="p-4 sm:p-6 text-center text-[var(--text-tertiary)]">
+              Showing data for {latestDay?.date}
             </div>
           ) : (
             <div className="p-4 sm:p-6 text-center text-[var(--text-tertiary)]">

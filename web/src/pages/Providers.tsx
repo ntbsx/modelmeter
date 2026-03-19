@@ -75,8 +75,13 @@ export default function Providers() {
               ))}
               {(data.providers ?? []).length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 sm:px-6 py-12 text-center text-[var(--text-tertiary)]">
-                    No provider usage found in this period.
+                  <td colSpan={5} className="px-4 sm:px-6 py-12 text-center">
+                    <div className="text-[var(--text-tertiary)]">
+                      No provider usage found in this period.
+                    </div>
+                    <div className="text-sm text-[var(--text-tertiary)] mt-1">
+                      Make API calls to start tracking usage across your providers.
+                    </div>
                   </td>
                 </tr>
               )}

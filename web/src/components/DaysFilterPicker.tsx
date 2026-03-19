@@ -57,7 +57,7 @@ export default function DaysFilterPicker() {
 
   return (
     <div className="relative" ref={pickerRef}>
-      <div className="hidden sm:inline-flex rounded-xl border border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-900/90 p-0.5 gap-0.5 shadow-sm">
+      <div className="hidden sm:inline-flex rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)]/90 p-0.5 gap-0.5 shadow-sm">
         {PRESET_OPTIONS.map((option) => {
           const active = option.days === days && !isCustom
           return (
@@ -65,8 +65,8 @@ export default function DaysFilterPicker() {
               key={option.days}
               className={`px-2.5 py-1.5 text-xs rounded-lg font-medium transition-colors ${
                 active
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-[var(--accent-primary)] text-[var(--text-inverse)]'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]'
               }`}
               onClick={() => handlePresetClick(option.days)}
               type="button"
@@ -78,8 +78,8 @@ export default function DaysFilterPicker() {
         <button
           className={`px-2.5 py-1.5 text-xs rounded-lg font-medium transition-colors inline-flex items-center gap-1 ${
             isCustom
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+              ? 'bg-[var(--accent-primary)] text-[var(--text-inverse)]'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]'
           }`}
           onClick={handleCustomClick}
           type="button"
@@ -91,7 +91,7 @@ export default function DaysFilterPicker() {
 
       <select
         aria-label="Select time range"
-        className="sm:hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-2 py-1.5 text-xs text-gray-700 dark:text-gray-200"
+        className="sm:hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-2 py-1.5 text-xs text-[var(--text-primary)]"
         onChange={(event) => {
           const value = event.target.value
           if (value === 'custom') {
@@ -111,13 +111,13 @@ export default function DaysFilterPicker() {
       </select>
 
       {showPicker && (
-        <div className="absolute top-full right-0 mt-2 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-lg p-4 min-w-[200px]">
+        <div className="absolute top-full right-0 mt-2 z-50 bg-[var(--surface-primary)] border border-[var(--border-default)] rounded-xl shadow-lg p-4 min-w-[200px]">
           <div className="space-y-3">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
+            <div className="text-sm font-medium text-[var(--text-primary)]">
               Custom Time Window
             </div>
             <div>
-              <label htmlFor="custom-days-input" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+              <label htmlFor="custom-days-input" className="block text-xs text-[var(--text-tertiary)] mb-1">
                 Number of days
               </label>
               <input
@@ -129,10 +129,10 @@ export default function DaysFilterPicker() {
                 onChange={(e) => setCustomDays(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="e.g. 14"
-                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-950 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500/40"
+                className="w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)] outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/40"
                 autoFocus
               />
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              <p className="text-xs text-[var(--text-tertiary)] mt-1">
                 Shows data from the last N days
               </p>
             </div>
@@ -140,7 +140,7 @@ export default function DaysFilterPicker() {
               <button
                 type="button"
                 onClick={() => setShowPicker(false)}
-                className="px-3 py-2 text-xs rounded-lg font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="px-3 py-2 text-xs rounded-lg font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors"
               >
                 Cancel
               </button>
@@ -148,7 +148,7 @@ export default function DaysFilterPicker() {
                 type="button"
                 onClick={handleApplyCustomDays}
                 disabled={!customDays || parseInt(customDays, 10) < 1}
-                className="px-4 py-2 text-xs rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-xs rounded-lg font-medium bg-[var(--accent-primary)] text-[var(--text-inverse)] hover:bg-[var(--accent-primary-hover)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Apply
               </button>

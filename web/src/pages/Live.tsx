@@ -157,12 +157,12 @@ export default function Live() {
           : 'Polling fallback'
         : 'Connecting...'
   const transportBadgeClasses = isPaused
-    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+    ? 'bg-[var(--color-warning-muted)] text-[var(--color-warning-muted-foreground)]'
     : streamMode === 'streaming'
-      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+      ? 'bg-[var(--color-success-muted)] text-[var(--color-success-muted-foreground)]'
       : streamMode === 'polling'
         ? 'bg-[var(--surface-secondary)] text-[var(--text-secondary)]'
-        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+        : 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary-muted-foreground)]'
 
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto space-y-6 w-full min-w-0">
@@ -170,8 +170,8 @@ export default function Live() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] flex items-center gap-3">
             <span className="relative flex h-3 w-3">
-              {isActuallyActive && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
-              <span className={cn("relative inline-flex rounded-full h-3 w-3", isActuallyActive ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600")}></span>
+              {isActuallyActive && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-success)] opacity-75"></span>}
+              <span className={cn("relative inline-flex rounded-full h-3 w-3", isActuallyActive ? "bg-[var(--color-success)]" : "bg-[var(--surface-tertiary)]")}></span>
             </span>
             Live Monitoring
           </h1>
@@ -184,10 +184,10 @@ export default function Live() {
         </div>
         <button
           className={cn(
-            'rounded-lg border px-4 py-2 text-sm font-medium transition-colors shrink-0',
+            'rounded-lg border px-4 py-2 text-sm font-medium transition-colors shrink-0 focus-ring',
             isPaused
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'
-              : 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
+              ? 'border-[var(--border-success)] bg-[var(--surface-success)] text-[var(--color-success-muted-foreground)] hover:bg-[var(--color-success-muted)]'
+              : 'border-[var(--border-warning)] bg-[var(--surface-warning)] text-[var(--color-warning-muted-foreground)] hover:bg-[var(--color-warning-muted)]'
           )}
           onClick={handlePauseToggle}
           type="button"
@@ -198,12 +198,15 @@ export default function Live() {
 
       {data.active_session && (
         <div className={cn(
-          "p-5 sm:p-6 rounded-xl border transition-colors",
+          "p-5 sm:p-6 rounded-xl border transition-colors relative overflow-hidden",
           isActuallyActive 
-            ? "bg-blue-50/50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/50" 
+            ? "bg-[var(--surface-accent)] border-[var(--border-accent)]" 
             : "bg-[var(--surface-primary)] border-[var(--border-default)]"
         )}>
-          <div className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
+          {isActuallyActive && (
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent-primary)] opacity-5 rounded-full blur-3xl transform translate-x-8 -translate-y-8 pointer-events-none" />
+          )}
+          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--accent-primary-muted-foreground)] mb-2 relative z-10">
             <Activity className="w-4 h-4" />
             {isActuallyActive ? 'Active Session' : 'Last Session'}
           </div>
