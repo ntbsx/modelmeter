@@ -1,7 +1,7 @@
 import { Suspense, lazy, useMemo } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, WifiOff, Wifi } from 'lucide-react'
+import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, WifiOff } from 'lucide-react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
@@ -82,7 +82,7 @@ function LogoutButton({ compact = false }: { compact?: boolean }) {
 
 function HeaderSourceStatus() {
   const { sourceScope } = useSourceScope()
-  const { data } = useQuery<SourceHealth[]>({
+  const { data, isLoading } = useQuery<SourceHealth[]>({
     queryKey: ['sources-health-check'],
     queryFn: () => fetchApi('/sources/check') as Promise<SourceHealth[]>,
     enabled: sourceScope !== 'self',
@@ -90,28 +90,30 @@ function HeaderSourceStatus() {
     retry: 1,
   })
 
-  if (sourceScope === 'self') return null
+  if (sourceScope === 'self') {
+    return <div className="w-4" />
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
+        <div className="w-3.5 h-3.5 rounded-full border border-current animate-pulse" />
+        <span>Checking sources...</span>
+      </div>
+    )
+  }
 
   const failedSources = data?.filter(s => !s.is_reachable) ?? []
-  const hasFailed = failedSources.length > 0
+  if (failedSources.length === 0) {
+    return null
+  }
 
   return (
-    <div className={hasFailed ? 'flex items-center gap-1.5 text-xs' : 'flex items-center gap-1.5 text-xs'}>
-      {hasFailed ? (
-        <>
-          <WifiOff className="w-3.5 h-3.5 text-[var(--color-error)]" />
-          <span className="text-[var(--color-error)] font-medium">
-            {failedSources.length} source{failedSources.length > 1 ? 's' : ''} unreachable
-          </span>
-        </>
-      ) : (
-        <>
-          <Wifi className="w-3.5 h-3.5 text-[var(--color-success)]" />
-          <span className="text-[var(--color-success-muted-foreground)] font-medium">
-            Federation active
-          </span>
-        </>
-      )}
+    <div className="flex items-center gap-1.5 text-xs">
+      <WifiOff className="w-3.5 h-3.5 text-[var(--color-error)]" />
+      <span className="text-[var(--color-error)] font-medium">
+        {failedSources.length} source{failedSources.length > 1 ? 's' : ''} unreachable
+      </span>
     </div>
   )
 }
@@ -230,8 +232,8 @@ function AuthGate() {
             ModelMeter
           </div>
           <div className="flex items-center gap-3">
-            <HeaderSourceStatus />
             <SourceScopePicker />
+            <HeaderSourceStatus />
             {showDaysFilter && <DaysFilterPicker />}
             <div className="hidden sm:block">
               <LogoutButton compact />
