@@ -1,4 +1,4 @@
-# Phase 4: Distributed Analytics and Lifecycle Automation (Remaining)
+# Phase 4 Part 2: Source Status and Provider Detection
 
 ## Objective
 
@@ -16,13 +16,13 @@ Phase 4 Part 1 (Plans 16-19) was completed on 2026-03-18:
 
 These features are already released in v2026.3.16 - v2026.3.21.
 
-See `../completed/phase-4-part-1/phase-4-part-1-README.md` for detailed implementation notes.
+See `../phase-4_part_1/phase-4_part_1-README.md` for detailed implementation notes.
 
-## Remaining Plans (20-21)
+## Completed Plans (20-21)
 
 ### 20. Source Status Banner and Loading States
 
-**Status:** Planned
+**Status:** ✅ Completed 2026-03-19
 **Priority:** High
 **Estimated:** 4-5 hours
 **Dependencies:** Plans 16, 19
@@ -52,7 +52,7 @@ Users don't get visual feedback when:
 
 ### 21. Provider Detection from providerID Field
 
-**Status:** Planned
+**Status:** ✅ Completed 2026-03-19
 **Priority:** High
 **Estimated:** 4 hours
 **Dependencies:** None
@@ -78,12 +78,12 @@ ModelMeter ignores `providerID` field in message JSON, causing ~20% misattributi
 
 ## Phase Exit Criteria
 
-Phase 4 will be complete when:
-- [ ] Plan 20 implemented and tested
-- [ ] Plan 21 implemented and tested
-- [ ] All tests pass
-- [ ] CHANGELOG.md updated
-- [ ] v2026.3.22 release tagged
+Phase 4 is complete! ✅
+- [x] Plan 20 implemented and tested
+- [x] Plan 21 implemented and tested
+- [x] All tests pass (133 backend, 38 frontend)
+- [ ] CHANGELOG.md updated (pending release)
+- [ ] v2026.3.22 release tagged (pending merge)
 
 ## Dependencies
 
@@ -93,7 +93,7 @@ Phase 4 will be complete when:
 
 ## Related
 
-- **Archive:** `../completed/phase-4-part-1/` for Plans 16-19
+- **Archive:** `../phase-4_part_1/` for Plans 16-19
 - **Roadmap:** `../00-roadmap-index.md` for overall roadmap
 - **Planning Guide:** `../README.md` for project-wide planning
 
@@ -104,8 +104,8 @@ See `../completed/phase-4-part-1/phase-4-part-1-README.md` for historical PR and
 
 ## Next Steps After Phase 4
 
-Once Plans 20-21 are complete:
-1. Update CHANGELOG.md with Phase 4 completion notes
-2. Tag and release v2026.3.22
+Phase 4 is complete! 🎉
+
+1. Update CHANGELOG.md with Phase 4 completion notes (after merge)
+2. Tag and release v2026.3.22 (after merge)
 3. Begin Phase 5 planning
-4. Archive this folder to `../completed/phase-4-part-2/`
