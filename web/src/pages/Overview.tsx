@@ -87,6 +87,16 @@ export default function Overview() {
       ? Math.round(chartData.reduce((sum, point) => sum + point.tokens, 0) / chartData.length)
       : 0
 
+  const avgDailyCost =
+    chartData.length > 0
+      ? chartData.reduce((sum, point) => sum + (point.cost || 0), 0) / chartData.length
+      : 0
+
+  const avgDailySessions =
+    chartData.length > 0
+      ? Math.round(chartData.reduce((sum, point) => sum + point.sessions, 0) / chartData.length)
+      : 0
+
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto space-y-10 sm:space-y-12 lg:space-y-16">
       <PageHeader
@@ -174,9 +184,22 @@ export default function Overview() {
           />
           {avgDailyTokens > 0 && (
             <div className="mt-6 pt-4 border-t border-[var(--border-subtle)]">
-              <div className="flex items-center gap-2 ds-text-muted">
-                <span className="ds-text-label-uppercase">Avg daily tokens</span>
-                <span className="font-semibold text-[var(--text-primary)] ds-text-tabular">{formatTokens(avgDailyTokens)}</span>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                <div className="flex items-center gap-2 ds-text-muted">
+                  <span className="ds-text-label-uppercase">Avg daily</span>
+                </div>
+                <div className="flex items-center gap-2 ds-text-muted">
+                  <span className="font-semibold text-[var(--text-primary)] ds-text-tabular">{formatTokens(avgDailyTokens)}</span>
+                  <span className="ds-text-label-uppercase">tokens</span>
+                </div>
+                <div className="flex items-center gap-2 ds-text-muted">
+                  <span className="font-semibold text-[var(--text-primary)] ds-text-tabular">{formatUsd(avgDailyCost)}</span>
+                  <span className="ds-text-label-uppercase">cost</span>
+                </div>
+                <div className="flex items-center gap-2 ds-text-muted">
+                  <span className="font-semibold text-[var(--text-primary)] ds-text-tabular">{avgDailySessions}</span>
+                  <span className="ds-text-label-uppercase">sessions</span>
+                </div>
               </div>
             </div>
           )}
