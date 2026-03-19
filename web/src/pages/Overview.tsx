@@ -343,7 +343,7 @@ export default function Overview() {
           ) : showComparisonView ? (
             <div className="space-y-4">
               <div className="p-4 sm:p-6">
-                <div className="grid grid-cols-4 gap-2 sm:gap-4">
+                <div className="hidden sm:grid sm:grid-cols-4 gap-2 sm:gap-4">
                   <div />
                   <div className="text-xs text-[var(--text-tertiary)] uppercase tracking-wider text-center">
                     {previousDay?.date}
@@ -389,6 +389,40 @@ export default function Overview() {
                     {sessionsDelta && sessionsDelta.diff !== undefined && (
                       <span className="text-xs opacity-60 ml-1">({sessionsDelta.percent}%)</span>
                     )}
+                  </div>
+                </div>
+                <div className="sm:hidden space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Tokens</span>
+                    <span className={`text-sm font-medium ${tokensDelta ? (tokensDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
+                      {tokensDelta ? `${tokensDelta.isPositive ? '+' : ''}${tokensDelta.percent}%` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-tertiary)]">{previousDay?.date}: {formatTokens(previousDay?.tokens ?? 0)}</span>
+                    <span className="text-[var(--text-tertiary)]">{latestDay?.date}: {formatTokens(latestDay?.tokens ?? 0)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)]">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Cost</span>
+                    <span className={`text-sm font-medium ${costDelta ? (costDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
+                      {costDelta ? `${costDelta.isPositive ? '+' : ''}${costDelta.percent}%` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-tertiary)]">{previousDay?.date}: {formatUsd(previousDay?.cost ?? 0)}</span>
+                    <span className="text-[var(--text-tertiary)]">{latestDay?.date}: {formatUsd(latestDay?.cost ?? 0)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center pt-2 border-t border-[var(--border-subtle)]">
+                    <span className="text-sm font-medium text-[var(--text-primary)]">Sessions</span>
+                    <span className={`text-sm font-medium ${sessionsDelta ? (sessionsDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
+                      {sessionsDelta?.diff !== undefined ? `${sessionsDelta.isPositive ? '+' : ''}${sessionsDelta.diff}` : '—'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--text-tertiary)]">{previousDay?.date}: {previousDay?.sessions ?? 0}</span>
+                    <span className="text-[var(--text-tertiary)]">{latestDay?.date}: {latestDay?.sessions ?? 0}</span>
                   </div>
                 </div>
               </div>

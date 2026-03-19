@@ -9,10 +9,10 @@
 
 @layer base {
   :root {
-    /* Surface colors - warm neutrals */
+    /* Surface colors - warm neutrals with subtle cream tint */
     --surface-primary: #ffffff;
-    --surface-secondary: #fafafa;
-    --surface-tertiary: #f4f4f5;
+    --surface-secondary: #fafaf9;
+    --surface-tertiary: #f5f5f4;
     --surface-inverse: #18181b;
     --surface-accent: #eff6ff;
     --surface-success: #f0fdf4;

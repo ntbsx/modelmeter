@@ -207,7 +207,7 @@ export default function Sources() {
           <button
             type="button"
             onClick={onAddNew}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="ds-btn-primary"
           >
             Add Source
           </button>

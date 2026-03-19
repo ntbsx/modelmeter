@@ -170,8 +170,8 @@ export default function Live() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] flex items-center gap-3">
             <span className="relative flex h-3 w-3">
-              {isActuallyActive && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>}
-              <span className={cn("relative inline-flex rounded-full h-3 w-3", isActuallyActive ? "bg-green-500" : "bg-gray-300 dark:bg-gray-600")}></span>
+              {isActuallyActive && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-success)] opacity-75"></span>}
+              <span className={cn("relative inline-flex rounded-full h-3 w-3", isActuallyActive ? "bg-[var(--color-success)]" : "bg-[var(--surface-tertiary)]")}></span>
             </span>
             Live Monitoring
           </h1>
