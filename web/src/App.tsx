@@ -94,25 +94,38 @@ function HeaderSourceStatus() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
+      <div 
+        className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]" 
+        title="Checking source connectivity..."
+      >
         <div className="w-3 h-3 rounded-full bg-[var(--text-tertiary)] animate-pulse" />
-        <span>Checking...</span>
       </div>
     )
   }
 
   const failedSources = data?.filter(s => !s.is_reachable) ?? []
+  const healthySources = data?.filter(s => s.is_reachable) ?? []
   
   if (failedSources.length === 0) {
+    const sourceNames = healthySources.map(s => s.source_id).join(', ')
     return (
-      <div className="flex items-center gap-1 text-xs text-[var(--color-success)]" title="All sources healthy">
+      <div 
+        className="flex items-center gap-1 text-xs text-[var(--color-success)]" 
+        title={`Federation active: ${sourceNames}`}
+      >
         <Zap className="w-3 h-3" />
       </div>
     )
   }
 
+  const failedNames = failedSources.map(s => s.source_id).join(', ')
+  const healthyNames = healthySources.map(s => s.source_id).join(', ')
+  const tooltip = failedNames 
+    ? `Unreachable: ${failedNames}${healthyNames ? ` | Healthy: ${healthyNames}` : ''}`
+    : 'Sources unreachable'
+
   return (
-    <div className="flex items-center gap-1 text-xs">
+    <div className="flex items-center gap-1 text-xs" title={tooltip}>
       <WifiOff className="w-3 h-3 text-[var(--color-error)]" />
       <span className="text-[var(--color-error)] font-medium">
         {failedSources.length}
