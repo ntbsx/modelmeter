@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { fetchApi } from '../lib/api'
-import { formatTokens, formatUsd } from '../lib/utils'
+import { formatTokens, formatUsd, cn } from '../lib/utils'
 import type { ProjectsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
@@ -9,15 +9,19 @@ import { useSourceScope } from '../hooks/useSourceScope'
 import { useDaysFilter } from '../hooks/useDaysFilter'
 import { PageHeader } from '../components/DataTable'
 import { Badge } from '../components/ui'
+import SourceStatusBanner from '../components/SourceStatusBanner'
 
 export default function Projects() {
   const { days } = useDaysFilter()
   const { sourceScope } = useSourceScope()
 
-  const { data, isLoading } = useQuery<ProjectsResponse>({
+  const { data, isLoading, isFetching } = useQuery<ProjectsResponse>({
     queryKey: ['projects', days, sourceScope],
     queryFn: () => fetchApi('/projects', { days, source_scope: sourceScope })
   })
+
+  const isRefetching = isFetching && !isLoading
+  const hasData = (data?.projects ?? []).length > 0
 
   if (isLoading) return <PageLoading title="Projects" subtitle="Loading project usage" cards={3} />
   if (!data) {
@@ -35,6 +39,18 @@ export default function Projects() {
         title="Projects"
         description={`Usage breakdown by project workspace (${days === 1 ? 'last 24 hours' : `last ${days} days`})`}
       />
+
+      <SourceStatusBanner
+        isLoading={isLoading}
+        isFetching={isRefetching}
+        sourceScope={sourceScope}
+        sourcesConsidered={data?.sources_considered ?? []}
+        sourcesSucceeded={data?.sources_succeeded ?? []}
+        sourcesFailed={data?.sources_failed ?? []}
+        hasData={hasData}
+      />
+
+      <div className={cn('ds-surface overflow-hidden transition-opacity', isRefetching && 'opacity-60')}>
 
       <div className="ds-surface overflow-hidden">
         <div className="overflow-x-auto">
@@ -86,6 +102,7 @@ export default function Projects() {
               )}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
     </div>

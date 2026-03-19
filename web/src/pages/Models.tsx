@@ -2,19 +2,20 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
-import { formatTokens, formatUsd } from '../lib/utils'
+import { formatTokens, formatUsd, cn } from '../lib/utils'
 import type { ModelsResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import { useSourceScope } from '../hooks/useSourceScope'
 import { useDaysFilter } from '../hooks/useDaysFilter'
+import SourceStatusBanner from '../components/SourceStatusBanner'
 
 export default function Models() {
   const { providerId } = useParams<{ providerId: string }>()
   const { days } = useDaysFilter()
   const { sourceScope } = useSourceScope()
 
-  const { data, isLoading } = useQuery<ModelsResponse>({
+  const { data, isLoading, isFetching } = useQuery<ModelsResponse>({
     queryKey: ['models', days, providerId, sourceScope],
     queryFn: () =>
       fetchApi(
@@ -24,6 +25,9 @@ export default function Models() {
           : { days, source_scope: sourceScope }
       )
   })
+
+  const isRefetching = isFetching && !isLoading
+  const hasData = (data?.models ?? []).length > 0
 
   if (isLoading) return <PageLoading title="Models" subtitle="Loading model usage" cards={3} />
   if (!data) {
@@ -38,8 +42,8 @@ export default function Models() {
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto">
       <div className="mb-10 sm:mb-12 space-y-4">
-        <Link 
-          to="/models" 
+        <Link
+          to="/models"
           className="inline-flex items-center gap-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -56,6 +60,18 @@ export default function Models() {
           </div>
         </div>
       </div>
+
+      <SourceStatusBanner
+        isLoading={isLoading}
+        isFetching={isRefetching}
+        sourceScope={sourceScope}
+        sourcesConsidered={data?.sources_considered ?? []}
+        sourcesSucceeded={data?.sources_succeeded ?? []}
+        sourcesFailed={data?.sources_failed ?? []}
+        hasData={hasData}
+      />
+
+      <div className={cn('ds-surface overflow-hidden transition-opacity', isRefetching && 'opacity-60')}>
 
       <div className="ds-surface overflow-hidden">
         <div className="overflow-x-auto">
@@ -97,6 +113,7 @@ export default function Models() {
               )}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
     </div>

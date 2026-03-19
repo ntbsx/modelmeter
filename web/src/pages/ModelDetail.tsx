@@ -12,26 +12,32 @@ import {
   YAxis,
 } from 'recharts'
 import { fetchApi } from '../lib/api'
-import { formatTokens, formatUsd } from '../lib/utils'
+import { formatTokens, formatUsd, cn } from '../lib/utils'
 import type { ModelDetailResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageEmptyState, PageErrorState } from '../components/PageState'
+import { useSourceScope } from '../hooks/useSourceScope'
 import { useDaysFilter } from '../hooks/useDaysFilter'
 import { StatCard } from '../components/ui'
 import { SectionHeader } from '../components/DataTable'
 import { useChartColors } from '../components/useChartColors'
+import SourceStatusBanner from '../components/SourceStatusBanner'
 
 export default function ModelDetail() {
   const { modelId } = useParams()
   const decodedModelId = decodeURIComponent(modelId ?? '')
   const { days } = useDaysFilter()
+  const { sourceScope } = useSourceScope()
   const chartColors = useChartColors()
 
-  const { data, isLoading, error } = useQuery<ModelDetailResponse>({
-    queryKey: ['model-detail', decodedModelId, days],
-    queryFn: () => fetchApi(`/models/${encodeURIComponent(decodedModelId)}`, { days }),
+  const { data, isLoading, error, isFetching } = useQuery<ModelDetailResponse>({
+    queryKey: ['model-detail', decodedModelId, days, sourceScope],
+    queryFn: () => fetchApi(`/models/${encodeURIComponent(decodedModelId)}`, { days, source_scope: sourceScope }),
     enabled: decodedModelId.length > 0,
   })
+
+  const isRefetching = isFetching && !isLoading
+  const hasData = data?.total_sessions !== undefined
 
   if (!decodedModelId) {
     return (
@@ -128,11 +134,22 @@ export default function ModelDetail() {
               Model usage for the {days === 1 ? 'last 24 hours' : `last ${days} days`}
             </p>
           </div>
-        </div>
       </div>
 
-      <section className="mb-8 sm:mb-10">
-        <h2 className="ds-text-label-uppercase mb-4">Overview</h2>
+      <SourceStatusBanner
+        isLoading={isLoading}
+        isFetching={isRefetching}
+        sourceScope={sourceScope}
+        sourcesConsidered={data?.sources_considered ?? []}
+        sourcesSucceeded={data?.sources_succeeded ?? []}
+        sourcesFailed={data?.sources_failed ?? []}
+        hasData={hasData}
+        healthCheckSupport={false}
+      />
+
+      <div className={cn('transition-opacity', isRefetching && 'opacity-60')}>
+        <section className="mb-8 sm:mb-10">
+          <h2 className="ds-text-label-uppercase mb-4">Overview</h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
           <StatCard label="Sessions" value={data.total_sessions.toString()} />
           <StatCard label="Interactions" value={data.total_interactions.toString()} />
@@ -232,8 +249,10 @@ export default function ModelDetail() {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-        </section>
+      </section>
       )}
+      </div>
+      </div>
     </div>
   )
 }

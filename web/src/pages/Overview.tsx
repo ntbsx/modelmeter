@@ -12,7 +12,7 @@ import {
 } from 'recharts'
 import { DollarSign, Zap, Database, Activity } from 'lucide-react'
 import { fetchApi } from '../lib/api'
-import { formatTokens, formatUsd } from '../lib/utils'
+import { formatTokens, formatUsd, cn } from '../lib/utils'
 import type { DailyResponse, SummaryResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { useSourceScope } from '../hooks/useSourceScope'
@@ -20,6 +20,7 @@ import { useDaysFilter } from '../hooks/useDaysFilter'
 import { StatCard } from '../components/ui'
 import { PageHeader, StatGrid, SectionHeader } from '../components/DataTable'
 import { useChartColors } from '../components/useChartColors'
+import SourceStatusBanner from '../components/SourceStatusBanner'
 
 export default function Overview() {
   const { days } = useDaysFilter()
@@ -30,12 +31,12 @@ export default function Overview() {
   const { sourceScope } = useSourceScope()
   const chartColors = useChartColors()
 
-  const { data: summary, isLoading: loadingSummary } = useQuery<SummaryResponse>({
+  const { data: summary, isLoading: loadingSummary, isFetching: isRefetchingSummary } = useQuery<SummaryResponse>({
     queryKey: ['summary', days, sourceScope],
     queryFn: () => fetchApi('/summary', { days, source_scope: sourceScope })
   })
 
-  const { data: daily, isLoading: loadingDaily } = useQuery<DailyResponse>({
+  const { data: daily, isLoading: loadingDaily, isFetching: isRefetchingDaily } = useQuery<DailyResponse>({
     queryKey: ['daily', days, sourceScope],
     queryFn: () =>
       fetchApi('/daily', {
@@ -44,6 +45,8 @@ export default function Overview() {
         source_scope: sourceScope,
       })
   })
+
+  const isRefetching = isRefetchingSummary || isRefetchingDaily
 
   if (loadingSummary || loadingDaily) {
     return <PageLoading title="Overview" subtitle="Loading usage metrics" cards={4} />
@@ -87,6 +90,8 @@ export default function Overview() {
       ? Math.round(chartData.reduce((sum, point) => sum + point.tokens, 0) / chartData.length)
       : 0
 
+  const hasData = (summary?.usage.total_tokens ?? 0) > 0 || (summary?.total_sessions ?? 0) > 0
+
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto space-y-10 sm:space-y-12 lg:space-y-16">
       <PageHeader
@@ -94,8 +99,19 @@ export default function Overview() {
         description={`${days === 1 ? 'Last 24 hours' : `Last ${days} days`} of OpenCode usage`}
       />
 
-      <section>
-        <StatGrid columns={4}>
+      <SourceStatusBanner
+        isLoading={loadingSummary || loadingDaily}
+        isFetching={isRefetching}
+        sourceScope={sourceScope}
+        sourcesConsidered={summary?.sources_considered ?? daily?.sources_considered ?? []}
+        sourcesSucceeded={summary?.sources_succeeded ?? daily?.sources_succeeded ?? []}
+        sourcesFailed={summary?.sources_failed ?? daily?.sources_failed ?? []}
+        hasData={hasData}
+      />
+
+      <div className={cn('transition-opacity', isRefetching && 'opacity-60')}>
+        <section>
+          <StatGrid columns={4}>
           <StatCard 
             label="Total Cost" 
             value={summary.cost_usd ? formatUsd(summary.cost_usd) : 'N/A'}
@@ -259,6 +275,7 @@ export default function Overview() {
           </ResponsiveContainer>
         </div>
       </section>
+      </div>
     </div>
   )
 }

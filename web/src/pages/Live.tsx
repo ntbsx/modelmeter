@@ -7,6 +7,7 @@ import type { LiveSnapshotResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import { useSourceScope } from '../hooks/useSourceScope'
+import SourceStatusBanner from '../components/SourceStatusBanner'
 
 export default function Live() {
   const [streamData, setStreamData] = useState<LiveSnapshotResponse | null>(null)
@@ -195,6 +196,17 @@ export default function Live() {
           {isPaused ? 'Resume Updates' : 'Pause Updates'}
         </button>
       </div>
+
+      <SourceStatusBanner
+        isLoading={false}
+        isFetching={false}
+        sourceScope={sourceScope}
+        sourcesConsidered={[]}
+        sourcesSucceeded={[]}
+        sourcesFailed={[]}
+        hasData={true}
+        healthCheckSupport={false}
+      />
 
       {data.active_session && (
         <div className={cn(
