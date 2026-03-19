@@ -1,13 +1,14 @@
 import { Suspense, lazy, useMemo } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server } from 'lucide-react'
+import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, RefreshCw, WifiOff } from 'lucide-react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
 import SourceScopePicker from './components/SourceScopePicker'
 import DaysFilterPicker from './components/DaysFilterPicker'
 import { useAuth } from './hooks/useAuth'
+import { useSourceScope } from './hooks/useSourceScope'
 
 const queryClient = new QueryClient()
 
@@ -77,6 +78,41 @@ function LogoutButton({ compact = false }: { compact?: boolean }) {
   )
 }
 
+function HeaderSourceStatus() {
+  const { sourceScope } = useSourceScope()
+  const { data } = useQuery({
+    queryKey: ['sources-health-check'],
+    queryFn: async () => {
+      const response = await fetchApi('/sources/check')
+      return response
+    },
+    enabled: sourceScope !== 'self',
+    staleTime: 30_000,
+    retry: 1,
+  })
+
+  if (sourceScope === 'self') return null
+
+  const failedCount = data?.sources_failed?.length ?? 0
+  if (failedCount === 0) return null
+
+  return (
+    <div className="flex items-center gap-1.5 text-xs">
+      <WifiOff className="w-3.5 h-3.5 text-[var(--color-error)]" />
+      <span className="text-[var(--color-error)] font-medium">
+        {failedCount} source{failedCount > 1 ? 's' : ''} unreachable
+      </span>
+      <button
+        onClick={() => window.location.reload()}
+        className="inline-flex items-center gap-1 text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors"
+        title="Retry"
+      >
+        <RefreshCw className="w-3 h-3" />
+      </button>
+    </div>
+  )
+}
+
 function Nav() {
   const location = useLocation()
 
@@ -105,8 +141,7 @@ function Nav() {
           )
         })}
       </div>
-      <div className="space-y-2 border-t border-[var(--border-default)] pt-4 mt-4">
-        <LogoutButton />
+      <div className="border-t border-[var(--border-default)] pt-4 mt-4">
         <div className="px-4 text-xs text-[var(--text-tertiary)]">
           <VersionBadge className="text-xs text-[var(--text-tertiary)]" />
         </div>
@@ -191,7 +226,8 @@ function AuthGate() {
             <Activity className="w-5 h-5" />
             ModelMeter
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-3">
+            <HeaderSourceStatus />
             <SourceScopePicker />
             {showDaysFilter && <DaysFilterPicker />}
             <div className="hidden sm:block">

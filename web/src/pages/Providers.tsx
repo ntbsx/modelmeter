@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
-import { formatTokens, formatUsd, cn } from '../lib/utils'
+import { formatTokens, formatUsd } from '../lib/utils'
 import type { ProvidersResponse } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
@@ -9,19 +9,15 @@ import { useSourceScope } from '../hooks/useSourceScope'
 import { useDaysFilter } from '../hooks/useDaysFilter'
 import { PageHeader } from '../components/DataTable'
 import { Badge } from '../components/ui'
-import SourceStatusBanner from '../components/SourceStatusBanner'
 
 export default function Providers() {
   const { days } = useDaysFilter()
   const { sourceScope } = useSourceScope()
 
-  const { data, isLoading, isFetching } = useQuery<ProvidersResponse>({
+  const { data, isLoading } = useQuery<ProvidersResponse>({
     queryKey: ['providers', days, sourceScope],
     queryFn: () => fetchApi('/providers', { days, source_scope: sourceScope }),
   })
-
-  const isRefetching = isFetching && !isLoading
-  const hasData = (data?.providers ?? []).length > 0
 
   if (isLoading) return <PageLoading title="Providers" subtitle="Loading provider usage" cards={3} />
   if (!data) {
@@ -39,18 +35,6 @@ export default function Providers() {
         title="Providers"
         description={`Usage breakdown by provider (${days === 1 ? 'last 24 hours' : `last ${days} days`})`}
       />
-
-      <SourceStatusBanner
-        isLoading={isLoading}
-        isFetching={isRefetching}
-        sourceScope={sourceScope}
-        sourcesConsidered={data?.sources_considered ?? []}
-        sourcesSucceeded={data?.sources_succeeded ?? []}
-        sourcesFailed={data?.sources_failed ?? []}
-        hasData={hasData}
-      />
-
-      <div className={cn('ds-surface overflow-hidden transition-opacity', isRefetching && 'opacity-60')}>
 
       <div className="ds-surface overflow-hidden">
         <div className="overflow-x-auto">
@@ -98,7 +82,6 @@ export default function Providers() {
               )}
             </tbody>
           </table>
-        </div>
         </div>
       </div>
     </div>
