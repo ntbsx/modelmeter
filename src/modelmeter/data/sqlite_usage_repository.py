@@ -5,28 +5,36 @@ from __future__ import annotations
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
-
-if TYPE_CHECKING:
-    CacheKey = tuple[str, ...]
-    CacheValue = tuple[Any, float]
+from typing import Any, Literal
 
 
 class SQLiteUsageRepository:
     """Read-only usage queries against the OpenCode SQLite database."""
 
-    def __init__(self, db_path: Path, cache_ttl_seconds: int = 30):
+    def __init__(self, db_path: Path):
         self._db_path = db_path
-        self._cache: dict[tuple[str, ...], tuple[Any, float]] = {}
-        self._cache_ttl = cache_ttl_seconds
+        # Simple per-instance memoization: repository instances are short-lived
+        # (one per analytics call), so this avoids redundant queries within a
+        # single request without the overhead of TTL bookkeeping.
+        self._cache: dict[tuple[str, ...], Any] = {}
 
     def _connect(self) -> sqlite3.Connection:
         uri = f"file:{self._db_path}?mode=ro"
         connection = sqlite3.connect(uri, uri=True)
         connection.row_factory = sqlite3.Row
+        # 64 MB page cache (negative value = kibibytes): reduces page faults on
+        # large table scans at the cost of up to 64 MB of process memory.
         connection.execute("PRAGMA cache_size = -64000")
+        # 256 MB memory-mapped I/O window: bypasses read() syscall overhead for
+        # repeated page access. Adds up to 256 MB of virtual address space; does
+        # not pin that much physical RAM unless pages are actually touched.
         connection.execute("PRAGMA mmap_size = 268435456")
+        # Keep internal temp tables (sorts, grouping) in RAM instead of a temp
+        # file. Safe for read-only connections; bounded by available memory.
         connection.execute("PRAGMA temp_store = MEMORY")
+        # NORMAL durability: skips fsync after each write group. Read-only
+        # connections are unaffected by this, but it avoids any implicit
+        # sync overhead if SQLite ever needs to roll back a read transaction.
         connection.execute("PRAGMA synchronous = NORMAL")
         return connection
 
@@ -43,15 +51,10 @@ class SQLiteUsageRepository:
         return tuple(parts)
 
     def _get_cached(self, key: tuple[str, ...]) -> Any | None:
-        if key in self._cache:
-            result, timestamp = self._cache[key]
-            if (datetime.now(tz=UTC).timestamp() - timestamp) < self._cache_ttl:
-                return result
-            del self._cache[key]
-        return None
+        return self._cache.get(key)
 
     def _set_cached(self, key: tuple[str, ...], result: Any) -> None:
-        self._cache[key] = (result, datetime.now(tz=UTC).timestamp())
+        self._cache[key] = result
 
     @staticmethod
     def _time_filter(days: int | None, *, time_expr: str) -> tuple[str, list[int]]:
