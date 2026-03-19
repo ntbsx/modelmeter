@@ -168,7 +168,7 @@ export default function Overview() {
                     <>
                       <span className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider mr-2 opacity-60">Show:</span>
                       <button
-                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all cursor-pointer min-h-[44px] focus-ring ${
                           showSessions
                             ? 'text-[var(--chart-sessions)]'
                             : 'text-[var(--text-tertiary)] opacity-40'
@@ -181,7 +181,7 @@ export default function Overview() {
                         <span className="text-xs">Sessions</span>
                       </button>
                       <button
-                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all cursor-pointer min-h-[44px] focus-ring ${
                           showTokens
                             ? 'text-[var(--chart-tokens)]'
                             : 'text-[var(--text-tertiary)] opacity-40'
@@ -194,7 +194,7 @@ export default function Overview() {
                         <span className="text-xs">Tokens</span>
                       </button>
                       <button
-                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all cursor-pointer min-h-[44px] focus-ring ${
                           showCost
                             ? 'text-[var(--chart-cost)]'
                             : 'text-[var(--text-tertiary)] opacity-40'
@@ -362,7 +362,7 @@ export default function Overview() {
                   <div className="text-xl font-semibold text-[var(--text-primary)] ds-text-tabular text-right">
                     {formatTokens(latestDay?.tokens ?? 0)}
                   </div>
-                  <div className={`text-sm font-medium ds-text-tabular text-right ${tokensDelta ? (tokensDelta.isPositive ? 'text-emerald-400' : 'text-rose-400') : 'text-[var(--text-tertiary)]'}`}>
+                  <div className={`text-sm font-medium ds-text-tabular text-right ${tokensDelta ? (tokensDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
                     {tokensDelta ? `${tokensDelta.isPositive ? '+' : ''}${tokensDelta.percent}%` : '—'}
                   </div>
 
@@ -373,7 +373,7 @@ export default function Overview() {
                   <div className="text-lg text-[var(--text-secondary)] ds-text-tabular text-right">
                     {formatUsd(latestDay?.cost ?? 0)}
                   </div>
-                  <div className={`text-sm font-medium ds-text-tabular text-right ${costDelta ? (costDelta.isPositive ? 'text-emerald-400' : 'text-rose-400') : 'text-[var(--text-tertiary)]'}`}>
+                  <div className={`text-sm font-medium ds-text-tabular text-right ${costDelta ? (costDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
                     {costDelta ? `${costDelta.isPositive ? '+' : ''}${costDelta.percent}%` : '—'}
                   </div>
 
@@ -384,7 +384,7 @@ export default function Overview() {
                   <div className="text-lg text-[var(--text-secondary)] ds-text-tabular text-right">
                     {latestDay?.sessions ?? 0}
                   </div>
-                  <div className={`text-sm font-medium ds-text-tabular text-right ${sessionsDelta ? (sessionsDelta.isPositive ? 'text-emerald-400' : 'text-rose-400') : 'text-[var(--text-tertiary)]'}`}>
+                  <div className={`text-sm font-medium ds-text-tabular text-right ${sessionsDelta ? (sessionsDelta.isPositive ? 'text-[var(--color-success)]' : 'text-[var(--color-error)]') : 'text-[var(--text-tertiary)]'}`}>
                     {sessionsDelta?.diff !== undefined ? `${sessionsDelta.isPositive ? '+' : ''}${sessionsDelta.diff}` : '—'}
                     {sessionsDelta && sessionsDelta.diff !== undefined && (
                       <span className="text-xs opacity-60 ml-1">({sessionsDelta.percent}%)</span>

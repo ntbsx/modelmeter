@@ -77,5 +77,6 @@ describe('Providers page', () => {
     render(<Providers />)
 
     expect(await screen.findByText('No provider usage found in this period.')).toBeInTheDocument()
+    expect(screen.getByText('Make API calls to start tracking usage across your providers.')).toBeInTheDocument()
   })
 })

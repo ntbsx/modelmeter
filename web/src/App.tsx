@@ -5,6 +5,7 @@ import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, WifiOff, Za
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import SourceScopePicker from './components/SourceScopePicker'
 import DaysFilterPicker from './components/DaysFilterPicker'
 import { useAuth } from './hooks/useAuth'
@@ -70,10 +71,10 @@ function LogoutButton({ compact = false }: { compact?: boolean }) {
   return (
     <button
       onClick={logout}
-      className={className}
+      className={`${className} focus-ring`}
       title="Sign out"
     >
-      <LogOut className="w-4 h-4" />
+      <LogOut className="w-4 h-4" aria-hidden="true" />
       Sign out
     </button>
   )
@@ -151,13 +152,13 @@ function Nav() {
             <Link
               key={l.to}
               to={l.to}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors focus-ring ${
                 (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
                   ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary-muted-foreground)] font-medium' 
                   : 'text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]'
               }`}
             >
-              <Icon className="w-5 h-5" />
+              <Icon className="w-5 h-5" aria-hidden="true" />
               {l.label}
             </Link>
           )
@@ -185,28 +186,29 @@ function MobileNav() {
             const isActive = (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
 
             return (
-              <Link
-                key={l.to}
-                to={l.to}
-                className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] ${
-                  isActive
-                    ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary-muted-foreground)] font-medium'
-                    : 'text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="hidden sm:inline">{l.label}</span>
-              </Link>
+            <Link
+              key={l.to}
+              to={l.to}
+              className={`inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] focus-ring ${
+                isActive
+                  ? 'bg-[var(--accent-primary-muted)] text-[var(--accent-primary-muted-foreground)] font-medium'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]'
+              }`}
+            >
+              <Icon className="w-4 h-4" aria-hidden="true" />
+              <span className="hidden sm:inline">{l.label}</span>
+              <span className="sr-only sm:hidden">{l.label}</span>
+            </Link>
             )
           })}
           {authRequired && (
             <button
               onClick={logout}
-              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] sm:hidden"
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] sm:hidden focus-ring"
               aria-label="Sign out"
               title="Sign out"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -260,23 +262,25 @@ function AuthGate() {
         </header>
         <MobileNav />
         <main className="flex-1 bg-[var(--surface-secondary)]/50 transition-colors duration-200">
-          <Suspense
-            fallback={
-              <div className="px-4 py-6 sm:p-8 text-[var(--text-tertiary)]">Loading page...</div>
-            }
-          >
-            <Routes>
-              <Route path="/" element={<Overview />} />
-              <Route path="/models" element={<Providers />} />
-              <Route path="/models/provider/:providerId" element={<Models />} />
-              <Route path="/models/:modelId" element={<ModelDetail />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/projects/:projectId" element={<ProjectDetail />} />
-              <Route path="/live" element={<Live />} />
-              <Route path="/sources" element={<Sources />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+          <ErrorBoundary>
+            <Suspense
+              fallback={
+                <div className="px-4 py-6 sm:p-8 text-[var(--text-tertiary)]">Loading page...</div>
+              }
+            >
+              <Routes>
+                <Route path="/" element={<Overview />} />
+                <Route path="/models" element={<Providers />} />
+                <Route path="/models/provider/:providerId" element={<Models />} />
+                <Route path="/models/:modelId" element={<ModelDetail />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/projects/:projectId" element={<ProjectDetail />} />
+                <Route path="/live" element={<Live />} />
+                <Route path="/sources" element={<Sources />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

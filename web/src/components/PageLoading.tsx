@@ -1,11 +1,26 @@
+import { useState } from 'react'
+
 type PageLoadingProps = {
   title: string
   subtitle?: string
   cards?: number
 }
 
+const loadingMessages = [
+  'Gathering your data...',
+  'Preparing your view...',
+  'Crunching the numbers...',
+  'Loading usage metrics...',
+  'Syncing sources...',
+]
+
+function getLoadingMessage() {
+  return loadingMessages[Math.floor(Math.random() * loadingMessages.length)]
+}
+
 export default function PageLoading({ title, subtitle, cards = 3 }: PageLoadingProps) {
   const cardsClass = cards >= 4 ? 'lg:grid-cols-4' : cards === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'
+  const [message] = useState(getLoadingMessage)
 
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto w-full min-w-0">
@@ -17,6 +32,7 @@ export default function PageLoading({ title, subtitle, cards = 3 }: PageLoadingP
       <div className="mb-8 sm:mb-10 text-sm text-[var(--text-tertiary)] animate-pulse">
         <span className="font-medium text-[var(--text-secondary)]">{title}</span>
         {subtitle ? <span> · {subtitle}</span> : null}
+        <span className="ml-2 opacity-60">· {message}</span>
       </div>
 
       <div className={`grid grid-cols-2 ${cardsClass} gap-4 sm:gap-5 mb-8 sm:mb-10`}>

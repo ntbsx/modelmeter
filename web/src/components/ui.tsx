@@ -41,10 +41,10 @@ type StatCardProps = {
 
 const accentStyles = {
   default: '',
-  blue: 'border-l-4 border-l-[var(--accent-primary)] bg-[var(--surface-accent)]/30',
-  green: 'border-l-4 border-l-[var(--color-success)] bg-[var(--surface-success)]/30',
-  amber: 'border-l-4 border-l-[var(--color-warning)] bg-[var(--surface-warning)]/30',
-  purple: 'border-l-4 border-l-[var(--color-info)] bg-[var(--color-info-muted)]/30',
+  blue: 'border-l-4 border-l-[var(--accent-primary)] bg-[var(--accent-primary-muted)]/20',
+  green: 'border-l-4 border-l-[var(--color-success)] bg-[var(--color-success-muted)]/20',
+  amber: 'border-l-4 border-l-[var(--color-warning)] bg-[var(--color-warning-muted)]/20',
+  purple: 'border-l-4 border-l-[var(--color-info)] bg-[var(--color-info-muted)]/20',
 }
 
 const iconColors = {
@@ -55,19 +55,27 @@ const iconColors = {
   purple: 'text-[var(--color-info)]',
 }
 
+const iconBgColors = {
+  default: 'bg-[var(--surface-tertiary)]',
+  blue: 'bg-[var(--accent-primary-muted)]',
+  green: 'bg-[var(--color-success-muted)]',
+  amber: 'bg-[var(--color-warning-muted)]',
+  purple: 'bg-[var(--color-info-muted)]',
+}
+
 export function StatCard({ label, value, subtitle, trend, className = '', delay = 0, accent = 'default', icon }: StatCardProps) {
   return (
     <div 
-      className={`ds-surface p-5 sm:p-6 animate-slide-up ${accentStyles[accent]} ${className}`}
+      className={`ds-surface p-5 sm:p-6 animate-slide-up relative overflow-hidden ${accentStyles[accent]} ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 relative z-10">
         <div className="flex-1 min-w-0">
-          <div className="ds-text-label">{label}</div>
-          <div className="ds-text-metric mt-1">{value}</div>
+          <div className="ds-text-label uppercase tracking-wider">{label}</div>
+          <div className="ds-text-metric mt-1 font-bold">{value}</div>
           {subtitle && <div className="ds-text-muted mt-1.5">{subtitle}</div>}
           {trend && (
-            <div className={`mt-2 flex items-center gap-1.5 text-xs font-medium ${
+            <div className={`mt-2 flex items-center gap-1.5 text-xs font-semibold ${
               trend.direction === 'up' ? 'text-[var(--color-success)]' :
               trend.direction === 'down' ? 'text-[var(--color-error)]' :
               'text-[var(--text-tertiary)]'
@@ -84,7 +92,7 @@ export function StatCard({ label, value, subtitle, trend, className = '', delay 
           )}
         </div>
         {icon && (
-          <div className={`shrink-0 ${iconColors[accent]}`}>
+          <div className={`shrink-0 p-2.5 rounded-lg ${iconBgColors[accent]} ${iconColors[accent]}`}>
             {icon}
           </div>
         )}
