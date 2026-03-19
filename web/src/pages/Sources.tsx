@@ -215,7 +215,7 @@ export default function Sources() {
             type="button"
             onClick={() => checkMutation.mutate()}
             disabled={checkMutation.isPending}
-            className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-sm hover:bg-[var(--surface-hover)] disabled:opacity-50 transition-colors"
+            className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-sm hover:bg-[var(--surface-tertiary)] disabled:opacity-50 transition-colors"
           >
             {checkMutation.isPending ? 'Checking...' : 'Run Health Check'}
           </button>
@@ -371,7 +371,7 @@ export default function Sources() {
                       <td className="px-4 sm:px-6 py-4 text-sm">
                         {source.kind === 'http' ? (
                           <span className={source.has_auth ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                            {source.has_auth ? '✓ Configured' : '✓ None'}
+                            {source.has_auth ? '✓ Configured' : '✗ None'}
                           </span>
                         ) : (
                           <span className="text-[var(--text-tertiary)]">—</span>
@@ -379,7 +379,7 @@ export default function Sources() {
                       </td>
                       <td className="px-4 sm:px-6 py-4 text-sm">
                         <span className={source.enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-secondary)]'}>
-                          {source.enabled ? '✓ Yes' : '✓ No'}
+                          {source.enabled ? '✓ Yes' : '✗ No'}
                         </span>
                       </td>
                       <td className="px-4 sm:px-6 py-4">

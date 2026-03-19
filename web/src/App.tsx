@@ -117,6 +117,7 @@ function Nav() {
 
 function MobileNav() {
   const location = useLocation()
+  const { authRequired, logout } = useAuth()
 
   return (
     <nav className="lg:hidden border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 backdrop-blur-sm">
@@ -141,6 +142,16 @@ function MobileNav() {
               </Link>
             )
           })}
+          {authRequired && (
+            <button
+              onClick={logout}
+              className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm transition-colors min-h-[44px] text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] sm:hidden"
+              aria-label="Sign out"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
     </nav>
