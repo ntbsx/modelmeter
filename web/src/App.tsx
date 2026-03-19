@@ -247,21 +247,17 @@ function AuthGate() {
     <div className="flex min-h-screen bg-[var(--surface-secondary)] text-[var(--text-primary)] transition-colors duration-200">
       <Nav />
       <div className="flex-1 min-w-0 flex flex-col min-h-screen overflow-x-hidden">
-        <header className="h-14 lg:h-16 border-b border-[var(--border-default)] bg-[var(--surface-primary)] flex items-center justify-between px-4 lg:px-8 transition-colors duration-200 relative z-20">
+        <header className="h-14 lg:h-16 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/95 backdrop-blur-sm flex items-center justify-between lg:justify-end px-4 lg:px-8 transition-colors duration-200 relative z-20">
           <div className="lg:hidden font-semibold text-[var(--accent-primary)] flex items-center gap-2">
             <Activity className="w-5 h-5" />
             ModelMeter
           </div>
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <SourceScopePicker />
             <HeaderSourceStatus />
             {showDaysFilter && <DaysFilterPicker />}
-            <LogoutButton compact />
-            <ThemeToggle />
-          </div>
-          <div className="lg:hidden flex items-center gap-1 sm:gap-2">
-            <div className="hidden min-[380px]:block">
-              <HeaderSourceStatus />
+            <div className="hidden sm:block">
+              <LogoutButton compact />
             </div>
             <ThemeToggle />
           </div>
