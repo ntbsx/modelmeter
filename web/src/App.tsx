@@ -8,7 +8,6 @@ import { AuthProvider } from './components/AuthProvider'
 import SourceScopePicker from './components/SourceScopePicker'
 import DaysFilterPicker from './components/DaysFilterPicker'
 import { useAuth } from './hooks/useAuth'
-import { useSourceScope } from './hooks/useSourceScope'
 import { fetchApi } from './lib/api'
 import type { SourceHealth } from './types'
 
@@ -81,24 +80,23 @@ function LogoutButton({ compact = false }: { compact?: boolean }) {
 }
 
 function HeaderSourceStatus() {
-  const { sourceScope } = useSourceScope()
   const { data, isLoading } = useQuery<SourceHealth[]>({
     queryKey: ['sources-health-check'],
     queryFn: () => fetchApi('/sources/check') as Promise<SourceHealth[]>,
-    enabled: sourceScope !== 'self',
     staleTime: 30_000,
     retry: 1,
   })
 
-  if (sourceScope === 'self') {
-    return <div className="w-4" />
+  const hasSources = (data?.length ?? 0) > 0
+  if (!hasSources) {
+    return <div className="w-6" />
   }
 
   if (isLoading) {
     return (
       <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
-        <div className="w-3.5 h-3.5 rounded-full border border-current animate-pulse" />
-        <span>Checking sources...</span>
+        <div className="w-3 h-3 rounded-full bg-[var(--text-tertiary)] animate-pulse" />
+        <span>Checking...</span>
       </div>
     )
   }
@@ -107,17 +105,17 @@ function HeaderSourceStatus() {
   
   if (failedSources.length === 0) {
     return (
-      <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]" title="All sources reachable">
+      <div className="flex items-center gap-1 text-xs text-[var(--color-success)]" title="All sources healthy">
         <Zap className="w-3 h-3" />
       </div>
     )
   }
 
   return (
-    <div className="flex items-center gap-1.5 text-xs">
-      <WifiOff className="w-3.5 h-3.5 text-[var(--color-error)]" />
+    <div className="flex items-center gap-1 text-xs">
+      <WifiOff className="w-3 h-3 text-[var(--color-error)]" />
       <span className="text-[var(--color-error)] font-medium">
-        {failedSources.length} source{failedSources.length > 1 ? 's' : ''} unreachable
+        {failedSources.length}
       </span>
     </div>
   )
