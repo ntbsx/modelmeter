@@ -311,6 +311,12 @@
   .ds-btn-primary:active {
     transform: translateY(1px);
   }
+
+  .ds-btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
   
   .ds-btn-secondary {
     display: inline-flex;
