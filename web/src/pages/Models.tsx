@@ -38,8 +38,8 @@ export default function Models() {
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto">
       <div className="mb-10 sm:mb-12 space-y-4">
-        <Link 
-          to="/models" 
+        <Link
+          to="/models"
           className="inline-flex items-center gap-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />

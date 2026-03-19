@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Clock, Folder } from 'lucide-react'
+import { ArrowLeft, Clock, Folder, Info } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
@@ -13,7 +13,7 @@ export default function ProjectDetail() {
   const { projectId } = useParams()
   const decodedProjectId = decodeURIComponent(projectId ?? '')
   const { sourceScope } = useSourceScope()
-  const detailScope = sourceScope === 'self' ? sourceScope : 'self'
+  const detailScope = 'self' as const
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState<'last_updated' | 'tokens' | 'cost' | 'interactions'>(
     'last_updated'
@@ -142,14 +142,15 @@ export default function ProjectDetail() {
           <p className="text-[var(--text-secondary)] mt-2">
             Session activity across all available history.
           </p>
-        </div>
+          </div>
       </div>
 
-      {sourceScope !== 'self' ? (
-        <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300">
-          Project detail currently supports This Server only. Showing local data for this view.
+      {sourceScope !== 'self' && (
+        <div className="mb-6 flex items-start gap-3 rounded-lg border border-[var(--border-default)] bg-[var(--surface-secondary)] px-4 py-3 text-sm text-[var(--text-secondary)]">
+          <Info className="h-4 w-4 shrink-0 mt-0.5 text-[var(--text-tertiary)]" />
+          <span>Project detail always shows data from this server only — federated project detail is not yet supported. The source scope selector does not affect this view.</span>
         </div>
-      ) : null}
+      )}
 
       <section className="mb-8 sm:mb-10">
         <div className="grid grid-cols-3 gap-4 sm:gap-5">

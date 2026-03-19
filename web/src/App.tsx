@@ -1,13 +1,15 @@
 import { Suspense, lazy, useMemo } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server } from 'lucide-react'
+import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, WifiOff, Zap } from 'lucide-react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
 import SourceScopePicker from './components/SourceScopePicker'
 import DaysFilterPicker from './components/DaysFilterPicker'
 import { useAuth } from './hooks/useAuth'
+import { fetchApi } from './lib/api'
+import type { SourceHealth } from './types'
 
 const queryClient = new QueryClient()
 
@@ -77,6 +79,62 @@ function LogoutButton({ compact = false }: { compact?: boolean }) {
   )
 }
 
+function HeaderSourceStatus() {
+  const { data, isLoading } = useQuery<SourceHealth[]>({
+    queryKey: ['sources-health-check'],
+    queryFn: () => fetchApi('/sources/check') as Promise<SourceHealth[]>,
+    staleTime: 30_000,
+    retry: 1,
+  })
+
+  const hasSources = (data?.length ?? 0) > 0
+
+  if (isLoading) {
+    return (
+      <div 
+        className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]" 
+        title="Checking source connectivity..."
+      >
+        <div className="w-3 h-3 rounded-full bg-[var(--text-tertiary)] animate-pulse" />
+      </div>
+    )
+  }
+
+  if (!hasSources) {
+    return <div className="w-6" />
+  }
+
+  const failedSources = data?.filter(s => !s.is_reachable) ?? []
+  const healthySources = data?.filter(s => s.is_reachable) ?? []
+  
+  if (failedSources.length === 0) {
+    const sourceNames = healthySources.map(s => s.source_id).join(', ')
+    return (
+      <div 
+        className="flex items-center gap-1 text-xs text-[var(--color-success)]" 
+        title={`Federation active: ${sourceNames}`}
+      >
+        <Zap className="w-3 h-3" />
+      </div>
+    )
+  }
+
+  const failedNames = failedSources.map(s => s.source_id).join(', ')
+  const healthyNames = healthySources.map(s => s.source_id).join(', ')
+  const tooltip = failedNames 
+    ? `Unreachable: ${failedNames}${healthyNames ? ` | Healthy: ${healthyNames}` : ''}`
+    : 'Sources unreachable'
+
+  return (
+    <div className="flex items-center gap-1 text-xs" title={tooltip}>
+      <WifiOff className="w-3 h-3 text-[var(--color-error)]" />
+      <span className="text-[var(--color-error)] font-medium">
+        {failedSources.length}
+      </span>
+    </div>
+  )
+}
+
 function Nav() {
   const location = useLocation()
 
@@ -105,8 +163,7 @@ function Nav() {
           )
         })}
       </div>
-      <div className="space-y-2 border-t border-[var(--border-default)] pt-4 mt-4">
-        <LogoutButton />
+      <div className="border-t border-[var(--border-default)] pt-4 mt-4">
         <div className="px-4 text-xs text-[var(--text-tertiary)]">
           <VersionBadge className="text-xs text-[var(--text-tertiary)]" />
         </div>
@@ -186,13 +243,14 @@ function AuthGate() {
     <div className="flex min-h-screen bg-[var(--surface-secondary)] text-[var(--text-primary)] transition-colors duration-200">
       <Nav />
       <div className="flex-1 min-w-0 flex flex-col min-h-screen overflow-x-hidden">
-        <header className="h-14 lg:h-16 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 backdrop-blur-sm flex items-center justify-between lg:justify-end px-4 lg:px-8 transition-colors duration-200">
+        <header className="h-14 lg:h-16 border-b border-[var(--border-default)] bg-[var(--surface-primary)]/80 backdrop-blur-sm flex items-center justify-between lg:justify-end px-4 lg:px-8 transition-colors duration-200 relative z-20">
           <div className="lg:hidden font-semibold text-[var(--accent-primary)] flex items-center gap-2">
             <Activity className="w-5 h-5" />
             ModelMeter
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-3">
             <SourceScopePicker />
+            <HeaderSourceStatus />
             {showDaysFilter && <DaysFilterPicker />}
             <div className="hidden sm:block">
               <LogoutButton compact />

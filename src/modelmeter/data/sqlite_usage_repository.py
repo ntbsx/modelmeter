@@ -370,6 +370,11 @@ class SQLiteUsageRepository:
         params = [model_id, *params]
         query = f"""
             SELECT
+                MAX(COALESCE(
+                    json_extract(data, '$.providerID'),
+                    json_extract(data, '$.model.providerID'),
+                    NULL
+                )) AS provider_id,
                 COUNT(*) AS total_interactions,
                 COUNT(DISTINCT session_id) AS total_sessions,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.input'), 0) > 0
