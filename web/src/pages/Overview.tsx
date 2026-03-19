@@ -79,6 +79,7 @@ export default function Overview() {
   const hasEnoughData = chartData.length >= 3
   const showTrendChart = hasEnoughData
   const showComparisonView = hasMultipleDays && !hasEnoughData
+  const showSingleDay = chartData.length === 1
 
   const latestDay = chartData[chartData.length - 1]
   const previousDay = chartData.length >= 2 ? chartData[chartData.length - 2] : null
@@ -462,6 +463,10 @@ export default function Overview() {
                   </ResponsiveContainer>
                 </div>
               )}
+            </div>
+          ) : showSingleDay ? (
+            <div className="p-4 sm:p-6 text-center text-[var(--text-tertiary)]">
+              Showing data for {latestDay?.date}
             </div>
           ) : (
             <div className="p-4 sm:p-6 text-center text-[var(--text-tertiary)]">
