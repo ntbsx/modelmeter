@@ -1,7 +1,7 @@
 import { Suspense, lazy, useMemo } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, WifiOff } from 'lucide-react'
+import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, WifiOff, Zap } from 'lucide-react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
@@ -104,8 +104,13 @@ function HeaderSourceStatus() {
   }
 
   const failedSources = data?.filter(s => !s.is_reachable) ?? []
+  
   if (failedSources.length === 0) {
-    return null
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]" title="All sources reachable">
+        <Zap className="w-3 h-3" />
+      </div>
+    )
   }
 
   return (
