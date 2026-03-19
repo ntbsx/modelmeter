@@ -262,6 +262,9 @@ function AuthGate() {
             <ThemeToggle />
           </div>
           <div className="lg:hidden flex items-center gap-2">
+            <div className="hidden sm:block">
+              <DaysFilterPicker />
+            </div>
             <HeaderSourceStatus />
             <ThemeToggle />
           </div>
