@@ -10,18 +10,38 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
 
 ## Active Work
 
-### Phase 5: Next Product Slice (Planning)
+### Phase 5: Analytics UX and Exploration (In Progress)
 
-- [ ] Phase 5 plan set is not created yet
-  - Status: Planning
+- [ ] `phase-5/22-per-page-filters-and-date-insights.md`
+  - Status: Planned
   - Priority: High
-  - Description: Define first implementation slice and acceptance criteria for Phase 5
+  - Estimated: 6-8 hours
+  - Description: Move date filters to each page, add date-specific spend breakdown, and add auth-disabled warning (web + terminal)
+
+- [ ] `phase-5/23-card-layout-infinite-scroll-and-charts.md`
+  - Status: Planned
+  - Priority: High
+  - Estimated: 8-12 hours
+  - Description: Replace table-heavy list views with card feeds, lazy loading, and charts
+
+- [ ] `phase-5/24-live-multi-session-and-scope-simplification.md`
+  - Status: Planned
+  - Priority: High
+  - Estimated: 6-10 hours
+  - Description: Add multi-session live panels (local or server self) and remove ineffective live-only source selector behavior
+
+- [ ] `phase-5/25-sources-page-card-redesign.md`
+  - Status: Planned
+  - Priority: Medium
+  - Estimated: 4-6 hours
+  - Description: Redesign Sources listing into cards while keeping source management flows intact
 
 ### Phase Milestones
 
 - **Phase 1-3:** ✅ Complete (Core Platform, Analytics, CLI, Web)
 - **Phase 4 Part 1:** ✅ Complete (Federation, Provider Analytics, Update Flow, Source Management)
 - **Phase 4 Part 2:** ✅ Complete (Plans 20-21)
+- **Phase 5:** 🔄 In Progress (Plans 22-25)
 
 ## Completed Work
 
@@ -55,15 +75,19 @@ Historical plans are organized in `completed/` by phase:
 
 ## Dependency Graph (Active Work Only)
 
-- Phase 5 planning is currently open and will define new dependencies.
+- `22-per-page-filters-and-date-insights` → foundation for page-local data flow and date drill-down UX
+- `23-card-layout-infinite-scroll-and-charts` → depends on `22` for page-local filter ownership
+- `24-live-multi-session-and-scope-simplification` → can run in parallel with `23` after `22`
+- `25-sources-page-card-redesign` → independent, can run in parallel with `23`/`24`
 
-## Definition of Done (Phase 4 Exit Status)
+## Definition of Done (Current Phase)
 
-- [x] Source status banner and loading states implemented across all data pages
-- [x] Provider detection correctly attributes GitHub Copilot and OpenCode models
-- [x] All tests pass and coverage is maintained
-- [x] CHANGELOG.md updated with release notes
-- [x] Release candidate tagged and published
+- [ ] Per-page time filters implemented across target analytics pages
+- [ ] Date insights page supports one-day spend and token analysis by model/provider/project
+- [ ] Models/Providers/Projects migrated to cards with lazy loading and charts
+- [ ] Live page supports multi-session panels on local/server (self) with simplified scope UX
+- [ ] Sources page migrated to card-based listing
+- [ ] Frontend and backend validation suites pass
 
 ## Quick Reference
 
@@ -71,6 +95,7 @@ Historical plans are organized in `completed/` by phase:
 - **Latest Release:** See `git describe --tags --abbrev=0`
 - **Roadmap Index:** See `00-roadmap-index.md`
 - **Phase 4 Tracking:** See `completed/phase-4_part_2/README.md`
+- **Phase 5 Tracking:** See `phase-5/README.md`
 
 ## Historical Dependency Graph (Archived)
 

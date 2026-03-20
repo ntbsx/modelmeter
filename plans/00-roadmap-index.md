@@ -62,12 +62,24 @@ Key milestones:
 - Source status banner provides visual feedback during loading/source issues
 - Provider detection uses providerID field (0% misattribution)
 
+## Active Roadmap
+
+### Phase 5: Analytics UX and Exploration (In Progress)
+
+Plan set: `phase-5/` (22-25)
+
+Focus areas:
+- Per-page time filters (source scope remains global)
+- Date-specific breakdown page for spend/tokens by model, provider, and project
+- Card-first list views with lazy loading (infinite scroll)
+- Charts on models, providers, and projects pages
+- Multi-panel live monitoring across multiple sessions on local or server (self)
+- Sources page card redesign
+
 ## Future Phases
 
-Plans for Phase 5 and beyond will be designed after Phase 4 completion.
-
-Potential areas:
-- Advanced federation features (ModelDetail, Live)
+Potential areas after Phase 5:
+- Advanced federation support for deeper detail endpoints
 - Custom dashboards and saved queries
 - Alerting and notifications
 - Team/workspace management
@@ -78,4 +90,5 @@ Potential areas:
 - **Phase 1-3 Archive:** `completed/phase-1-3/phase-1-3-README.md`
 - **Phase 4 Part 1 Archive:** `completed/phase-4_part_1/phase-4-part-1-README.md`
 - **Phase 4 Part 2 Archive:** `completed/phase-4_part_2/`
+- **Phase 5 Plans:** `phase-5/README.md`
 - **Planning Guide:** `README.md`
