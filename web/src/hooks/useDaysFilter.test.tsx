@@ -46,7 +46,7 @@ describe('useDaysFilter', () => {
   })
 
   describe('normalization', () => {
-    it('clamps days to MAX_DAYS (365) from URL param', () => {
+    it('falls back to default when URL param exceeds MAX_DAYS (365)', () => {
       const { result } = renderHook(() => useDaysFilter('overview'), {
         wrapper: makeWrapper('?days=9999'),
       })

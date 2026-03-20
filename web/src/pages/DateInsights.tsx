@@ -12,7 +12,8 @@ import { PageHeader } from '../components/DataTable'
 import DatePicker from '../components/DatePicker'
 
 function getTodayDateValue(): string {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 function parseYMD(dateStr: string): { year: number; month: number; day: number } | null {
@@ -90,6 +91,19 @@ export default function DateInsights() {
   const models = useMemo<ModelUsage[]>(() => data?.models ?? [], [data?.models])
   const projectModels = useMemo<ProjectModelUsage[]>(() => data?.project_models ?? [], [data?.project_models])
 
+  const projectModelsByProjectId = useMemo(() => {
+    const map = new Map<string, ProjectModelUsage[]>()
+    for (const pm of projectModels) {
+      let list = map.get(pm.project_id)
+      if (!list) {
+        list = []
+        map.set(pm.project_id, list)
+      }
+      list.push(pm)
+    }
+    return map
+  }, [projectModels])
+
   const totals = useMemo(() => {
     if (!data) return null
     const costValue = typeof data.cost_usd === 'number' ? formatUsd(data.cost_usd) : 'N/A'
@@ -133,15 +147,31 @@ export default function DateInsights() {
     }))
   }, [models, providerColorMap])
 
-  // Dominant provider color per project
+  // Dominant provider color per project (by highest total tokens)
   const projectDominantColor = useMemo(() => {
-    const map = new Map<string, { provider: string; colorIdx: number }>()
+    const projectProviderTokens = new Map<string, Map<string, number>>()
     for (const pm of projectModels) {
       const p = pm.provider ?? 'unknown'
-      const colorIdx = providerColorMap.get(p) ?? 0
-      if (!map.has(pm.project_id)) {
-        map.set(pm.project_id, { provider: p, colorIdx })
+      const tokens = pm.usage?.total_tokens ?? 0
+      let providerMap = projectProviderTokens.get(pm.project_id)
+      if (!providerMap) {
+        providerMap = new Map<string, number>()
+        projectProviderTokens.set(pm.project_id, providerMap)
       }
+      providerMap.set(p, (providerMap.get(p) ?? 0) + tokens)
+    }
+    const map = new Map<string, { provider: string; colorIdx: number }>()
+    for (const [projectId, providerMap] of projectProviderTokens.entries()) {
+      let dominantProvider = 'unknown'
+      let maxTokens = -1
+      for (const [provider, tokens] of providerMap.entries()) {
+        if (tokens > maxTokens) {
+          maxTokens = tokens
+          dominantProvider = provider
+        }
+      }
+      const colorIdx = providerColorMap.get(dominantProvider) ?? 0
+      map.set(projectId, { provider: dominantProvider, colorIdx })
     }
     return map
   }, [projectModels, providerColorMap])
@@ -216,7 +246,7 @@ export default function DateInsights() {
             <button
               type="button"
               onClick={() => setShowPicker((v) => !v)}
-              className="ds-btn-secondary text-sm"
+              className="ds-btn-secondary text-sm focus-ring"
             >
               <CalendarDays className="w-4 h-4" aria-hidden="true" />
               <span>{formattedDay}</span>
@@ -250,13 +280,13 @@ export default function DateInsights() {
           <button
             type="button"
             onClick={() => setActiveTab('providers')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 focus-ring ${
               activeTab === 'providers'
                 ? 'bg-[var(--surface-tertiary)] text-[var(--text-primary)] shadow-sm'
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >
-            <LayoutGrid className="w-3.5 h-3.5" />
+            <LayoutGrid className="w-3.5 h-3.5" aria-hidden="true" />
             Providers
             <span
               className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
@@ -271,13 +301,13 @@ export default function DateInsights() {
           <button
             type="button"
             onClick={() => setActiveTab('projects')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 focus-ring ${
               activeTab === 'projects'
                 ? 'bg-[var(--surface-tertiary)] text-[var(--text-primary)] shadow-sm'
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
             }`}
           >
-            <FolderOpen className="w-3.5 h-3.5" />
+            <FolderOpen className="w-3.5 h-3.5" aria-hidden="true" />
             Projects
             <span
               className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
@@ -431,9 +461,7 @@ export default function DateInsights() {
               const dominantColor = dominant
                 ? PROVIDER_COLORS[dominant.colorIdx % PROVIDER_COLORS.length]
                 : PROVIDER_COLORS[i % PROVIDER_COLORS.length]
-              const projectPmModels = projectModels.filter(
-                (pm) => pm.project_id === project.project_id,
-              )
+              const projectPmModels = projectModelsByProjectId.get(project.project_id) ?? []
               return (
                 <div
                   key={project.project_id}
@@ -469,7 +497,7 @@ export default function DateInsights() {
                         const pColor = providerColor(providerColorMap.get(pm.provider ?? 'unknown') ?? 0)
                         return (
                           <div
-                            key={pm.model_id}
+                            key={`${project.project_id}:${pm.provider ?? 'unknown'}:${pm.model_id}`}
                             className="flex items-center justify-between gap-3 py-2 px-2.5 rounded-md hover:bg-[var(--surface-tertiary)]/50 transition-colors duration-100 group"
                           >
                             <div className="flex items-center gap-2 min-w-0 flex-1">

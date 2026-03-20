@@ -80,9 +80,9 @@ export default function DatePicker({ value, onChange, maxDate }: DatePickerProps
         <button
           type="button"
           onClick={prevMonth}
-          className="p-1 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors"
+          className="p-1 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors focus-ring"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-4 h-4" aria-hidden="true" />
         </button>
         <span className="text-sm font-semibold text-[var(--text-primary)]">
           {monthName} {viewYear}
@@ -90,9 +90,9 @@ export default function DatePicker({ value, onChange, maxDate }: DatePickerProps
         <button
           type="button"
           onClick={nextMonth}
-          className="p-1 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors"
+          className="p-1 rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)] transition-colors focus-ring"
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4" aria-hidden="true" />
         </button>
       </div>
 
@@ -144,12 +144,12 @@ export default function DatePicker({ value, onChange, maxDate }: DatePickerProps
         <button
           type="button"
           onClick={() => {
-            const t = today.toISOString().slice(0, 10)
+            const t = toLocalDateStr(today.getFullYear(), today.getMonth(), today.getDate())
             onChange(t)
             setViewYear(today.getFullYear())
             setViewMonth(today.getMonth())
           }}
-          className="text-xs text-[var(--accent-primary)] hover:underline"
+          className="text-xs text-[var(--accent-primary)] hover:underline focus-ring rounded"
         >
           Jump to today
         </button>
