@@ -5,6 +5,7 @@ import Sources from './Sources'
 describe('Sources page', () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    localStorage.clear()
   })
 
   it('renders configured sources from API', async () => {
@@ -31,7 +32,7 @@ describe('Sources page', () => {
 
     expect(await screen.findByText('remote-prod')).toBeInTheDocument()
     expect(screen.getByText('https://example.com')).toBeInTheDocument()
-    expect(screen.getByText('✓ Configured')).toBeInTheDocument()
+    expect(screen.getByText('Configured')).toBeInTheDocument()
   })
 
   it('runs source health checks and displays status', async () => {
@@ -119,6 +120,80 @@ describe('Sources page', () => {
       expect(fetchMock).toHaveBeenCalledWith(
         expect.stringContaining('/api/sources/remote-server'),
         expect.objectContaining({ method: 'PUT' })
+      )
+    })
+  })
+
+  it('opens edit form from source card', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        version: 1,
+        sources: [
+          {
+            source_id: 'remote-prod',
+            kind: 'http',
+            label: 'Production',
+            base_url: 'https://example.com',
+            db_path: null,
+            has_auth: true,
+            enabled: true,
+          },
+        ],
+      }),
+    } as Response)
+
+    render(<Sources />)
+
+    expect(await screen.findByText('remote-prod')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Edit remote-prod' }))
+
+    expect(await screen.findByText('Edit Source: remote-prod')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('https://example.com')).toBeInTheDocument()
+  })
+
+  it('removes source from card action with DELETE request', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/api/sources/remote-prod') && init?.method === 'DELETE') {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ version: 1, sources: [] }),
+        } as Response
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          version: 1,
+          sources: [
+            {
+              source_id: 'remote-prod',
+              kind: 'http',
+              label: 'Production',
+              base_url: 'https://example.com',
+              db_path: null,
+              has_auth: true,
+              enabled: true,
+            },
+          ],
+        }),
+      } as Response
+    })
+
+    render(<Sources />)
+
+    expect(await screen.findByText('remote-prod')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Remove remote-prod' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        expect.stringContaining('/api/sources/remote-prod'),
+        expect.objectContaining({ method: 'DELETE' })
       )
     })
   })

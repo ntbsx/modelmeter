@@ -4,6 +4,7 @@ import { fetchApi } from '../lib/api'
 import type { DataSourcePublic, SourceHealth, SourceRegistryPublic } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
+import { Badge } from '../components/ui'
 
 const HEALTH_STORAGE_KEY = 'modelmeter-source-health'
 
@@ -336,103 +337,101 @@ export default function Sources() {
       )}
 
       {!showForm && (
-        <div className="bg-[var(--surface-primary)] rounded-xl border border-[var(--border-default)] shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[var(--surface-secondary)] border-b border-[var(--border-default)]">
-                <tr>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Source</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Type</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Connection</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Credentials</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Active</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Status</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {(registry.sources ?? []).map((source) => {
-                  const result = storedHealth[source.source_id]
-                  return (
-                    <tr key={source.source_id} className="hover:bg-[var(--surface-accent)]/50 transition-colors">
-                      <td className="px-4 sm:px-6 py-4 font-medium text-[var(--text-primary)]">{source.source_id}</td>
-                      <td className="px-4 sm:px-6 py-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          source.kind === 'http' 
-                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-                            : 'bg-[var(--surface-secondary)] text-[var(--text-secondary)]'
-                        }`}>
-                          {source.kind === 'http' ? '🌐 API' : '💾 Local'}
-                        </span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-[var(--text-secondary)] max-w-[200px] truncate" title={sourceTarget(source)}>
-                        {sourceTarget(source)}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-sm">
-                        {source.kind === 'http' ? (
-                          <span className={source.has_auth ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                            {source.has_auth ? '✓ Configured' : '✗ None'}
-                          </span>
-                        ) : (
-                          <span className="text-[var(--text-tertiary)]">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-sm">
-                        <span className={source.enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-secondary)]'}>
-                          {source.enabled ? '✓ Yes' : '✗ No'}
-                        </span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4">
-                        {result ? (
-                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium animate-fade-in ${
-                            result.is_reachable 
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${result.is_reachable ? 'bg-emerald-500 animate-pulse-subtle' : 'bg-red-500'}`} />
-                            {result.is_reachable ? 'Healthy' : 'Unreachable'}
-                          </span>
-                        ) : (
-                          <span className="text-[var(--text-tertiary)] text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => onEdit(source)}
-                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] hover:bg-[var(--accent-primary-muted)] transition-colors"
-                            title="Edit"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTarget(source)}
-                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-muted)] transition-colors"
-                            title="Remove"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+        <div>
+          {(registry.sources ?? []).length === 0 ? (
+            <div className="ds-surface p-8 sm:p-10 text-center">
+              <p className="text-base font-medium text-[var(--text-primary)]">No sources configured yet.</p>
+              <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                Add your local or remote source to start collecting analytics data.
+              </p>
+              <button type="button" onClick={onAddNew} className="ds-btn-secondary mt-5">
+                Add Your First Source
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {(registry.sources ?? []).map((source) => {
+                const result = storedHealth[source.source_id]
+                const connectionTarget = sourceTarget(source)
+
+                return (
+                  <article
+                    key={source.source_id}
+                    className="ds-surface p-5 sm:p-6 transition-colors hover:bg-[var(--surface-accent)]/40"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-2">
+                        <p className="text-base font-semibold text-[var(--text-primary)] break-all">{source.source_id}</p>
+                        {source.label ? <p className="text-sm text-[var(--text-secondary)] break-all">{source.label}</p> : null}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={source.kind === 'http' ? 'primary' : 'default'}>
+                            {source.kind === 'http' ? 'HTTP API' : 'SQLite'}
+                          </Badge>
+                          <Badge variant={source.enabled ? 'success' : 'default'}>
+                            {source.enabled ? 'Enabled' : 'Disabled'}
+                          </Badge>
                         </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-                {(registry.sources ?? []).length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 sm:px-6 py-12 text-center text-[var(--text-secondary)]">
-                      No sources configured yet.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(source)}
+                          className="ds-btn-ghost"
+                          aria-label={`Edit ${source.source_id}`}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(source)}
+                          className="ds-btn-ghost text-[var(--color-error)] hover:bg-[var(--color-error-muted)]"
+                          aria-label={`Remove ${source.source_id}`}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]">Connection</p>
+                        <p className="mt-1 text-sm text-[var(--text-primary)] break-all" title={connectionTarget}>
+                          {connectionTarget}
+                        </p>
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]">Credentials</p>
+                        <div className="mt-1">
+                          {source.kind === 'http' ? (
+                            <Badge variant={source.has_auth ? 'success' : 'warning'}>
+                              {source.has_auth ? 'Configured' : 'None'}
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-[var(--text-tertiary)]">N/A for SQLite</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <p className="text-xs font-medium uppercase tracking-wide text-[var(--text-tertiary)]">Health</p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          {result ? (
+                            <Badge variant={result.is_reachable ? 'success' : 'error'} dot>
+                              {result.is_reachable ? 'Healthy' : 'Unreachable'}
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-[var(--text-tertiary)]">No health check run yet</span>
+                          )}
+                          {result?.error ? <p className="text-sm text-[var(--color-error)] break-all">{result.error}</p> : null}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
