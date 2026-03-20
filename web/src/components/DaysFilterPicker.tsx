@@ -8,8 +8,12 @@ const PRESET_OPTIONS = [
   { days: 30, label: '30d' },
 ] as const
 
-export default function DaysFilterPicker() {
-  const { days, setDays } = useDaysFilter()
+type DaysFilterPickerProps = {
+  scope?: string
+}
+
+export default function DaysFilterPicker({ scope }: DaysFilterPickerProps) {
+  const { days, setDays } = useDaysFilter(scope)
   const [showPicker, setShowPicker] = useState(false)
   const [customDays, setCustomDays] = useState('')
   const pickerRef = useRef<HTMLDivElement>(null)

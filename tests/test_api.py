@@ -581,6 +581,37 @@ def test_daily_endpoint_uses_timezone_offset_for_day_buckets(tmp_path: Path) -> 
     assert local_payload["daily"][0]["day"] == "2026-03-14"
 
 
+def test_date_insights_endpoint_returns_daily_breakdowns(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client()
+    today = datetime.now(tz=UTC).date().isoformat()
+    response = client.get(
+        "/api/date-insights",
+        params={"db_path": str(db_path), "day": today, "timezone_offset_minutes": 0},
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["day"] == today
+    assert payload["total_sessions"] == 1
+    assert payload["total_interactions"] == 1
+    assert payload["usage"]["total_tokens"] == 18
+    assert payload["models"][0]["model_id"] == "anthropic/claude-sonnet-4-5"
+    assert payload["providers"][0]["provider"] == "anthropic"
+    assert payload["projects"][0]["project_id"] == "p1"
+
+
+def test_date_insights_endpoint_rejects_invalid_day_format() -> None:
+    client = _new_client()
+    response = client.get("/api/date-insights", params={"day": "03-20-2026"})
+
+    assert response.status_code == 400
+    payload = _get_json(response)
+    assert payload["detail"] == "Invalid day format. Use YYYY-MM-DD."
+
+
 def test_live_snapshot_endpoint(tmp_path: Path) -> None:
     db_path = tmp_path / "opencode.db"
     _create_api_fixture(db_path)
