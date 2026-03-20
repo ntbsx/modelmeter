@@ -484,6 +484,10 @@ def get_date_insights(
             timezone_offset_minutes=timezone_offset_minutes,
         )
 
+    # Guard: both paths either return a Row or raise RuntimeError
+    if summary_row is None:
+        raise RuntimeError("Date summary query returned no row")
+
     model_rows = repository.fetch_model_usage_detail_for_day(
         day=day_str,
         timezone_offset_minutes=timezone_offset_minutes,
