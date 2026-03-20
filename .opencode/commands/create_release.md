@@ -76,14 +76,17 @@ Execution steps:
 7. Ensure `CHANGELOG.md` contains `## [Unreleased]`.
 
 8. Promote unreleased section:
-   - Replace the first `## [Unreleased]` heading with `## [${RELEASE_VERSION}] - <YYYY-MM-DD>`.
-   - Insert a fresh empty unreleased section directly above it:
+   - Insert a new release heading directly below `## [Unreleased]`:
 
 ```markdown
 ## [Unreleased]
 
 ## [${RELEASE_VERSION}] - <YYYY-MM-DD>
 ```
+
+   - Keep all previously released sections unchanged (never rewrite prior release headings/bodies).
+   - Move unreleased notes into the new `${RELEASE_VERSION}` section when present.
+   - If the unreleased section is empty, create a concise release note body from commits since the previous release tag.
 
 9. Keep existing release note body as-is unless empty.
 
@@ -95,7 +98,8 @@ Execution steps:
 ## Phase 5: Commit, Tag, and Push
 
 11. Stage release metadata:
-    - `git add CHANGELOG.md pyproject.toml web/package.json`
+    - `git add CHANGELOG.md pyproject.toml web/package.json uv.lock web/openapi.json web/src/generated/api.ts web/src/generated/openapi.sha256`
+    - If a listed file did not change, that's fine; continue.
 
 12. Commit message:
     - Stable: `release: bump to ${RELEASE_VERSION}`
@@ -123,7 +127,9 @@ Dry-run behavior:
   - branch policy result
   - computed next version/tag
   - exact commands that would run in order
-  - files expected to change (`CHANGELOG.md`, `pyproject.toml`, `web/package.json` for stable; `CHANGELOG.md` for rc)
+  - files expected to change:
+    - stable: `CHANGELOG.md`, `pyproject.toml`, `web/package.json`, and generated artifacts when touched by checks (`uv.lock`, `web/openapi.json`, `web/src/generated/api.ts`, `web/src/generated/openapi.sha256`)
+    - rc: `CHANGELOG.md` (plus generated artifacts only if checks modify them)
 
 Error handling:
 
