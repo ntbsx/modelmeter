@@ -10,25 +10,18 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
 
 ## Active Work
 
-### Phase 4: Distributed Analytics and Lifecycle Automation (Remaining)
+### Phase 5: Next Product Slice (Planning)
 
-- [ ] `phase-4-remaining/20-source-status-banner-and-loading-states.md`
-  - Status: Planned
+- [ ] Phase 5 plan set is not created yet
+  - Status: Planning
   - Priority: High
-  - Estimated: 4-5 hours
-  - Description: Visual feedback for data loading, source failures, and partial federation
-
-- [ ] `phase-4-remaining/21-provider-detection-from-providerid-field.md`
-  - Status: Planned
-  - Priority: High
-  - Estimated: 4 hours
-  - Description: Fix provider detection bug (~20% misattribution)
+  - Description: Define first implementation slice and acceptance criteria for Phase 5
 
 ### Phase Milestones
 
 - **Phase 1-3:** ✅ Complete (Core Platform, Analytics, CLI, Web)
 - **Phase 4 Part 1:** ✅ Complete (Federation, Provider Analytics, Update Flow, Source Management)
-- **Phase 4 Part 2:** 🔄 In Progress (Plans 20-21)
+- **Phase 4 Part 2:** ✅ Complete (Plans 20-21)
 
 ## Completed Work
 
@@ -41,11 +34,16 @@ Historical plans are organized in `completed/` by phase:
   - Packaging Quality, Future Extensions
   - See `phase-1-3-README.md` for details
 
-- **`completed/phase-4-part-1/`** - First half of Phase 4 (16-19)
+- **`completed/phase-4_part_1/`** - First half of Phase 4 (16-19)
   - Federation Core, Provider Analytics
   - Auto-Update & Release Awareness
   - Dashboard Source Management
-  - See `phase-4-part-1-README.md` for details
+  - See `completed/phase-4_part_1/phase-4-part-1-README.md` for details
+
+- **`completed/phase-4_part_2/`** - Second half of Phase 4 (20-21)
+  - Source status banner and loading states
+  - Provider detection from providerID field
+  - See `completed/phase-4_part_2/README.md` for details
 
 ## Engineering Standards (Applies to all phases)
 
@@ -57,23 +55,22 @@ Historical plans are organized in `completed/` by phase:
 
 ## Dependency Graph (Active Work Only)
 
-- `20-source-status-banner-and-loading-states` → depends on `16-federation-core`, `19-dashboard-source-management-and-filtering`
-- `21-provider-detection-from-providerid-field` → independent fix, no dependencies
+- Phase 5 planning is currently open and will define new dependencies.
 
-## Definition of Done (Current Phase)
+## Definition of Done (Phase 4 Exit Status)
 
-- [ ] Source status banner and loading states implemented across all data pages
-- [ ] Provider detection correctly attributes GitHub Copilot and OpenCode models
-- [ ] All tests pass and coverage is maintained
-- [ ] CHANGELOG.md updated with release notes
-- [ ] Release candidate tagged and published
+- [x] Source status banner and loading states implemented across all data pages
+- [x] Provider detection correctly attributes GitHub Copilot and OpenCode models
+- [x] All tests pass and coverage is maintained
+- [x] CHANGELOG.md updated with release notes
+- [x] Release candidate tagged and published
 
 ## Quick Reference
 
 - **Current Version:** See `pyproject.toml` `[project].version`
 - **Latest Release:** See `git describe --tags --abbrev=0`
 - **Roadmap Index:** See `00-roadmap-index.md`
-- **Phase Tracking:** See `phase-4-remaining/README.md`
+- **Phase 4 Tracking:** See `completed/phase-4_part_2/README.md`
 
 ## Historical Dependency Graph (Archived)
 

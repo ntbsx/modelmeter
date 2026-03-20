@@ -16,7 +16,7 @@ Phase 4 Part 1 (Plans 16-19) was completed on 2026-03-18:
 
 These features are already released in v2026.3.16 - v2026.3.21.
 
-See `../phase-4_part_1/phase-4_part_1-README.md` for detailed implementation notes.
+See `../phase-4_part_1/phase-4-part-1-README.md` for detailed implementation notes.
 
 ## Completed Plans (20-21)
 
@@ -82,8 +82,8 @@ Phase 4 is complete! ✅
 - [x] Plan 20 implemented and tested
 - [x] Plan 21 implemented and tested
 - [x] All tests pass (133 backend, 38 frontend)
-- [ ] CHANGELOG.md updated (pending release)
-- [ ] v2026.3.22 release tagged (pending merge)
+- [x] CHANGELOG.md updated
+- [x] v2026.3.22 release tagged and published
 
 ## Dependencies
 
@@ -100,12 +100,8 @@ Phase 4 is complete! ✅
 ## Historical Tracking
 
 Previous tracking file (`TRACKING.md`) has been archived with Phase 4 Part 1.
-See `../completed/phase-4-part-1/phase-4-part-1-README.md` for historical PR and milestone tracking.
+See `../phase-4_part_1/phase-4-part-1-README.md` for historical PR and milestone tracking.
 
 ## Next Steps After Phase 4
 
-Phase 4 is complete! 🎉
-
-1. Update CHANGELOG.md with Phase 4 completion notes (after merge)
-2. Tag and release v2026.3.22 (after merge)
-3. Begin Phase 5 planning
+Phase 4 is complete. Next work starts with Phase 5 planning and scoping.

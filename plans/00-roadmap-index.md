@@ -76,6 +76,6 @@ Potential areas:
 ## Quick Reference
 
 - **Phase 1-3 Archive:** `completed/phase-1-3/phase-1-3-README.md`
-- **Phase 4 Part 1 Archive:** `completed/phase-4_part_1/phase-4_part_1-README.md`
+- **Phase 4 Part 1 Archive:** `completed/phase-4_part_1/phase-4-part-1-README.md`
 - **Phase 4 Part 2 Archive:** `completed/phase-4_part_2/`
 - **Planning Guide:** `README.md`

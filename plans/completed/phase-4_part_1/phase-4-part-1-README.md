@@ -162,8 +162,7 @@ Sources are stored in SQLite with:
 
 ## Next Steps
 
-Phase 4 continues with:
-- **Plan 20**: Source status banner and loading states
-- **Plan 21**: Provider detection bug fix (providerID field)
+Phase 4 is complete.
 
-See `../../phase-4-remaining/` for active work.
+- Start Phase 5 planning and define the next implementation slice.
+- Use `../../README.md` and `../../00-roadmap-index.md` as the active planning references.
