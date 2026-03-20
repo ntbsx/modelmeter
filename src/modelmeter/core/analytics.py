@@ -10,6 +10,7 @@ from typing import Any, Literal, cast
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.doctor import generate_doctor_report
 from modelmeter.core.models import (
+    DateInsightsResponse,
     DailyResponse,
     DailyUsage,
     ModelDetailResponse,
@@ -432,6 +433,184 @@ def get_daily(
         sources_succeeded=["local"]
         if source_scope is None or source_scope.kind == SourceScopeKind.LOCAL
         else [],
+        sources_failed=[],
+    )
+
+
+def get_date_insights(
+    *,
+    settings: AppSettings,
+    day: date,
+    timezone_offset_minutes: int = 0,
+    db_path_override: Path | None = None,
+    pricing_file_override: Path | None = None,
+    token_source: Literal["auto", "message", "steps"] = "auto",
+    source_scope: SourceScope | None = None,
+) -> DateInsightsResponse:
+    """Return date-specific totals and breakdowns."""
+    if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
+        raise NotImplementedError("Federated date insights are not yet implemented")
+
+    sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
+    repository = SQLiteUsageRepository(sqlite_db_path)
+    day_str = day.isoformat()
+
+    # Match get_summary auto-preference logic: prefer steps (part table),
+    # fall back to message table when steps are empty.
+    use_steps = False
+    if token_source == "auto":
+        steps_row = repository.fetch_summary_for_day_steps(
+            day=day_str,
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        if steps_row is not None and int(steps_row["total_sessions"]) > 0:
+            summary_row = steps_row
+            use_steps = True
+        else:
+            summary_row = repository.fetch_summary_for_day(
+                day=day_str,
+                timezone_offset_minutes=timezone_offset_minutes,
+            )
+    elif token_source == "steps":
+        summary_row = repository.fetch_summary_for_day_steps(
+            day=day_str,
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        use_steps = True
+    else:
+        summary_row = repository.fetch_summary_for_day(
+            day=day_str,
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+
+    model_rows = repository.fetch_model_usage_detail_for_day(
+        day=day_str,
+        timezone_offset_minutes=timezone_offset_minutes,
+    )
+    project_rows = repository.fetch_project_usage_detail_for_day(
+        day=day_str,
+        timezone_offset_minutes=timezone_offset_minutes,
+    )
+    project_model_rows = repository.fetch_project_model_usage_for_day(
+        day=day_str,
+        timezone_offset_minutes=timezone_offset_minutes,
+    )
+
+    pricing_book, pricing_source = load_pricing_book(
+        settings=settings,
+        pricing_file_override=pricing_file_override,
+    )
+
+    models: list[ModelUsage] = []
+    provider_map: dict[str, ProviderUsage] = {}
+    total_cost_usd: float | None = 0.0 if pricing_book else None
+    total_interactions_from_models = 0
+
+    for row in model_rows:
+        model_id = str(row["model_id"])
+        usage = _token_usage_from_row(row)
+        pricing = pricing_book.get(model_id)
+        cost_usd: float | None = None
+        if pricing is not None:
+            cost_usd = round(calculate_usage_cost(usage, pricing), 8)
+            if total_cost_usd is not None:
+                total_cost_usd += cost_usd
+
+        provider = provider_from_model_id_and_provider_field(model_id, row["provider_id"])
+        model = ModelUsage(
+            model_id=model_id,
+            provider=provider,
+            usage=usage,
+            total_sessions=int(row["total_sessions"]),
+            total_interactions=int(row["total_interactions"]),
+            cost_usd=cost_usd,
+            has_pricing=pricing is not None,
+        )
+        models.append(model)
+        total_interactions_from_models += int(row["total_interactions"])
+        existing_provider = provider_map.get(provider)
+        if existing_provider is None:
+            provider_map[provider] = ProviderUsage(
+                provider=provider,
+                usage=TokenUsage(
+                    input_tokens=usage.input_tokens,
+                    output_tokens=usage.output_tokens,
+                    cache_read_tokens=usage.cache_read_tokens,
+                    cache_write_tokens=usage.cache_write_tokens,
+                ),
+                total_models=1,
+                total_interactions=model.total_interactions,
+                cost_usd=cost_usd,
+                has_pricing=cost_usd is not None,
+            )
+        else:
+            existing_provider.usage.input_tokens += usage.input_tokens
+            existing_provider.usage.output_tokens += usage.output_tokens
+            existing_provider.usage.cache_read_tokens += usage.cache_read_tokens
+            existing_provider.usage.cache_write_tokens += usage.cache_write_tokens
+            existing_provider.total_models += 1
+            existing_provider.total_interactions += model.total_interactions
+            if cost_usd is not None:
+                existing_provider.has_pricing = True
+                if existing_provider.cost_usd is None:
+                    existing_provider.cost_usd = cost_usd
+                else:
+                    existing_provider.cost_usd = round(existing_provider.cost_usd + cost_usd, 8)
+
+    models.sort(key=lambda item: item.usage.total_tokens, reverse=True)
+    providers = sorted(
+        provider_map.values(), key=lambda item: item.usage.total_tokens, reverse=True
+    )
+
+    project_cost_map: dict[str, float] = {}
+    for row in project_model_rows:
+        project_id = str(row["project_id"])
+        pricing = pricing_book.get(str(row["model_id"]))
+        if pricing is None:
+            continue
+        cost = calculate_usage_cost(_token_usage_from_row(row), pricing)
+        project_cost_map[project_id] = project_cost_map.get(project_id, 0.0) + cost
+
+    projects: list[ProjectUsage] = []
+    for row in project_rows:
+        project_id = str(row["project_id"])
+        project_cost = project_cost_map.get(project_id)
+        projects.append(
+            ProjectUsage(
+                project_id=project_id,
+                project_name=str(row["project_name"]),
+                project_path=str(row["project_path"]) if row["project_path"] is not None else None,
+                usage=_token_usage_from_row(row),
+                total_sessions=int(row["total_sessions"]),
+                total_interactions=int(row["total_interactions"]),
+                cost_usd=round(project_cost, 8) if project_cost is not None else None,
+                has_pricing=project_cost is not None,
+                sources=["local"],
+            )
+        )
+    projects.sort(key=lambda item: item.usage.total_tokens, reverse=True)
+
+    total_interactions: int
+    if use_steps:
+        # steps row has no total_interactions column; derive from model rows
+        total_interactions = total_interactions_from_models
+    else:
+        total_interactions = int(summary_row["total_interactions"])
+
+    return DateInsightsResponse(
+        day=day,
+        timezone_offset_minutes=timezone_offset_minutes,
+        usage=_token_usage_from_row(summary_row),
+        total_sessions=int(summary_row["total_sessions"]),
+        total_interactions=total_interactions,
+        cost_usd=round(total_cost_usd, 8) if total_cost_usd is not None else None,
+        pricing_source=pricing_source,
+        models=models,
+        providers=providers,
+        projects=projects,
+        source_scope=source_scope.kind.value if source_scope else "local",
+        sources_considered=["local"],
+        sources_succeeded=["local"],
         sources_failed=[],
     )
 

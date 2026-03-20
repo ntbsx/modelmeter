@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/date-insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Date Insights */
+        get: operations["date_insights_api_date_insights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/doctor": {
         parameters: {
             query?: never;
@@ -360,6 +377,53 @@ export interface components {
             source_id: string;
         };
         /**
+         * DateInsightsResponse
+         * @description Date-specific usage breakdown contract.
+         */
+        DateInsightsResponse: {
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /**
+             * Day
+             * Format: date
+             */
+            day: string;
+            /** Models */
+            models?: components["schemas"]["ModelUsage"][];
+            /** Pricing Source */
+            pricing_source?: string | null;
+            /** Projects */
+            projects?: components["schemas"]["ProjectUsage"][];
+            /** Providers */
+            providers?: components["schemas"]["ProviderUsage"][];
+            /** Source Scope */
+            source_scope?: string | null;
+            /** Sources Considered */
+            sources_considered?: string[];
+            /** Sources Failed */
+            sources_failed?: {
+                [key: string]: string;
+            }[];
+            /** Sources Succeeded */
+            sources_succeeded?: string[];
+            /**
+             * Timezone Offset Minutes
+             * @default 0
+             */
+            timezone_offset_minutes: number;
+            /**
+             * Total Interactions
+             * @default 0
+             */
+            total_interactions: number;
+            /**
+             * Total Sessions
+             * @default 0
+             */
+            total_sessions: number;
+            usage: components["schemas"]["TokenUsage"];
+        };
+        /**
          * DoctorReport
          * @description Top-level health diagnostics payload.
          */
@@ -541,6 +605,8 @@ export interface components {
             has_pricing: boolean;
             /** Model Id */
             model_id: string;
+            /** Provider */
+            provider?: string | null;
             /**
              * Total Interactions
              * @default 0
@@ -1099,6 +1165,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DailyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    date_insights_api_date_insights_get: {
+        parameters: {
+            query: {
+                /** @description Date in YYYY-MM-DD format */
+                day: string;
+                timezone_offset_minutes?: number;
+                db_path?: string | null;
+                pricing_file?: string | null;
+                /** @description Source scope: local, all, or source:<id> */
+                source_scope?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DateInsightsResponse"];
                 };
             };
             /** @description Validation Error */

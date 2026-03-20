@@ -1128,6 +1128,10 @@ def serve(
     """Run the web dashboard server."""
     server_password = os.getenv("MODELMETER_SERVER_PASSWORD")
     server_username = os.getenv("MODELMETER_SERVER_USERNAME") or "modelmeter"
+    if not server_password:
+        typer.echo(
+            "Warning: MODELMETER_SERVER_PASSWORD is not set; the server is running without authentication."
+        )
     app_instance = create_app(
         extra_cors_origins=cors,
         server_username=server_username,

@@ -20,9 +20,10 @@ import { useDaysFilter } from '../hooks/useDaysFilter'
 import { StatCard } from '../components/ui'
 import { PageHeader, StatGrid, SectionHeader } from '../components/DataTable'
 import { useChartColors } from '../components/useChartColors'
+import DaysFilterPicker from '../components/DaysFilterPicker'
 
 export default function Overview() {
-  const { days } = useDaysFilter()
+  const { days } = useDaysFilter('overview')
   const [showTokens, setShowTokens] = useState(true)
   const [showSessions, setShowSessions] = useState(true)
   const [showCost, setShowCost] = useState(true)
@@ -120,6 +121,7 @@ export default function Overview() {
       <PageHeader
         title="Overview"
         description={`${days === 1 ? 'Last 24 hours' : `Last ${days} days`} of OpenCode usage`}
+        actions={<DaysFilterPicker scope="overview" />}
       />
 
       <section>

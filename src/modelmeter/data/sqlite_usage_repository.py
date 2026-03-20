@@ -76,6 +76,19 @@ class SQLiteUsageRepository:
         offset_modifier = f"{timezone_offset_minutes:+d} minutes"
         return f"date({time_expr} / 1000, 'unixepoch', '{offset_modifier}')"
 
+    def _target_day_filter(
+        self,
+        *,
+        day: str,
+        time_expr: str,
+        timezone_offset_minutes: int = 0,
+    ) -> tuple[str, list[str]]:
+        day_expr = self._day_bucket_expr(
+            time_expr=time_expr,
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        return f"AND {day_expr} = ?", [day]
+
     def fetch_summary(self, *, days: int | None = None) -> sqlite3.Row:
         """Fetch aggregate usage totals and distinct session count."""
         cache_key = self._cache_key("fetch_summary", days=days)
@@ -131,6 +144,99 @@ class SQLiteUsageRepository:
             result = 0 if row is None else int(row["total_sessions"])
             self._set_cached(cache_key, result)
             return result
+
+    def fetch_summary_for_day(
+        self,
+        *,
+        day: str,
+        timezone_offset_minutes: int = 0,
+    ) -> sqlite3.Row:
+        """Fetch aggregate usage totals for one local day."""
+        cache_key = self._cache_key(
+            "fetch_summary_for_day",
+            day=day,
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
+        day_filter, params = self._target_day_filter(
+            day=day,
+            time_expr="json_extract(data, '$.time.created')",
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        query = f"""
+            SELECT
+                COUNT(*) AS total_interactions,
+                COUNT(DISTINCT session_id) AS total_sessions,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.input'), 0) > 0
+                    THEN json_extract(data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.output'), 0) > 0
+                    THEN json_extract(data, '$.tokens.output') ELSE 0 END), 0) AS output_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.cache.read'), 0) > 0
+                    THEN json_extract(data, '$.tokens.cache.read') ELSE 0 END), 0) AS cache_read,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.cache.write'), 0) > 0
+                    THEN json_extract(data, '$.tokens.cache.write') ELSE 0 END), 0) AS cache_write
+            FROM message
+            WHERE json_valid(data) = 1
+              AND json_extract(data, '$.role') = 'assistant'
+              AND COALESCE(json_extract(data, '$.time.created'), 0) > 0
+              {day_filter}
+        """
+
+        with self._connect() as conn:
+            row = conn.execute(query, params).fetchone()
+            if row is None:
+                raise RuntimeError("Date summary query returned no row")
+            self._set_cached(cache_key, row)
+            return row
+
+    def fetch_summary_for_day_steps(
+        self,
+        *,
+        day: str,
+        timezone_offset_minutes: int = 0,
+    ) -> sqlite3.Row | None:
+        """Fetch aggregate usage totals from step-finish parts for one local day."""
+        cache_key = self._cache_key(
+            "fetch_summary_for_day_steps",
+            day=day,
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        cached = self._get_cached(cache_key)
+        if cached is not None:
+            return cached
+
+        day_filter, params = self._target_day_filter(
+            day=day,
+            time_expr="time_created",
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        query = f"""
+            SELECT
+                COUNT(DISTINCT session_id) AS total_sessions,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.input'), 0) > 0
+                    THEN json_extract(data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.output'), 0) > 0
+                    THEN json_extract(data, '$.tokens.output') ELSE 0 END), 0) AS output_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.cache.read'), 0) > 0
+                    THEN json_extract(data, '$.tokens.cache.read') ELSE 0 END), 0) AS cache_read,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.cache.write'), 0) > 0
+                    THEN json_extract(data, '$.tokens.cache.write') ELSE 0 END), 0) AS cache_write
+            FROM part
+            WHERE json_valid(data) = 1
+              AND json_extract(data, '$.type') = 'step-finish'
+              {day_filter}
+        """
+
+        with self._connect() as conn:
+            row = conn.execute(query, params).fetchone()
+            if row is None:
+                self._set_cached(cache_key, None)
+                return None
+            self._set_cached(cache_key, row)
+            return row
 
     def fetch_daily_session_counts(
         self,
@@ -446,6 +552,52 @@ class SQLiteUsageRepository:
             self._set_cached(cache_key, result)
             return result
 
+    def fetch_model_usage_detail_for_day(
+        self,
+        *,
+        day: str,
+        timezone_offset_minutes: int = 0,
+    ) -> list[sqlite3.Row]:
+        """Fetch usage grouped by model for one local day."""
+        day_filter, params = self._target_day_filter(
+            day=day,
+            time_expr="json_extract(data, '$.time.created')",
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        query = f"""
+            SELECT
+                COALESCE(
+                    json_extract(data, '$.modelID'),
+                    json_extract(data, '$.model.modelID'),
+                    'unknown'
+                ) AS model_id,
+                COALESCE(
+                    json_extract(data, '$.providerID'),
+                    json_extract(data, '$.model.providerID'),
+                    NULL
+                ) AS provider_id,
+                COUNT(*) AS total_interactions,
+                COUNT(DISTINCT session_id) AS total_sessions,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.input'), 0) > 0
+                    THEN json_extract(data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.output'), 0) > 0
+                    THEN json_extract(data, '$.tokens.output') ELSE 0 END), 0) AS output_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.cache.read'), 0) > 0
+                    THEN json_extract(data, '$.tokens.cache.read') ELSE 0 END), 0) AS cache_read,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(data, '$.tokens.cache.write'), 0) > 0
+                    THEN json_extract(data, '$.tokens.cache.write') ELSE 0 END), 0) AS cache_write
+            FROM message
+            WHERE json_valid(data) = 1
+              AND json_extract(data, '$.role') = 'assistant'
+              AND COALESCE(json_extract(data, '$.time.created'), 0) > 0
+              {day_filter}
+            GROUP BY model_id, provider_id
+            ORDER BY input_tokens + output_tokens + cache_read + cache_write DESC
+        """
+
+        with self._connect() as conn:
+            return conn.execute(query, params).fetchall()
+
     def fetch_model_detail(self, *, model_id: str, days: int | None = None) -> sqlite3.Row | None:
         """Fetch aggregate usage detail for one model."""
         time_filter, params = self._time_filter(
@@ -564,6 +716,47 @@ class SQLiteUsageRepository:
             self._set_cached(cache_key, result)
             return result
 
+    def fetch_project_usage_detail_for_day(
+        self,
+        *,
+        day: str,
+        timezone_offset_minutes: int = 0,
+    ) -> list[sqlite3.Row]:
+        """Fetch usage grouped by project for one local day."""
+        day_filter, params = self._target_day_filter(
+            day=day,
+            time_expr="json_extract(m.data, '$.time.created')",
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        query = f"""
+            SELECT
+                s.project_id AS project_id,
+                COALESCE(p.name, p.worktree, s.project_id) AS project_name,
+                p.worktree AS project_path,
+                COUNT(*) AS total_interactions,
+                COUNT(DISTINCT m.session_id) AS total_sessions,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.input'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.output'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.output') ELSE 0 END), 0) AS output_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.read'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.cache.read') ELSE 0 END), 0) AS cache_read,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.write'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.cache.write') ELSE 0 END), 0) AS cache_write
+            FROM message m
+            JOIN session s ON s.id = m.session_id
+            LEFT JOIN project p ON p.id = s.project_id
+            WHERE json_valid(m.data) = 1
+              AND json_extract(m.data, '$.role') = 'assistant'
+              AND COALESCE(json_extract(m.data, '$.time.created'), 0) > 0
+              {day_filter}
+            GROUP BY s.project_id, project_name, project_path
+            ORDER BY input_tokens + output_tokens + cache_read + cache_write DESC
+        """
+
+        with self._connect() as conn:
+            return conn.execute(query, params).fetchall()
+
     def fetch_project_model_usage(self, *, days: int | None = None) -> list[sqlite3.Row]:
         """Fetch usage grouped by project and model for cost calculation."""
         time_filter, params = self._time_filter(
@@ -596,6 +789,46 @@ class SQLiteUsageRepository:
             WHERE json_valid(m.data) = 1
               AND json_extract(m.data, '$.role') = 'assistant'
               {time_filter}
+            GROUP BY s.project_id, model_id
+        """
+
+        with self._connect() as conn:
+            return conn.execute(query, params).fetchall()
+
+    def fetch_project_model_usage_for_day(
+        self,
+        *,
+        day: str,
+        timezone_offset_minutes: int = 0,
+    ) -> list[sqlite3.Row]:
+        """Fetch usage grouped by project and model for one local day."""
+        day_filter, params = self._target_day_filter(
+            day=day,
+            time_expr="json_extract(m.data, '$.time.created')",
+            timezone_offset_minutes=timezone_offset_minutes,
+        )
+        query = f"""
+            SELECT
+                s.project_id AS project_id,
+                COALESCE(
+                    json_extract(m.data, '$.modelID'),
+                    json_extract(m.data, '$.model.modelID'),
+                    'unknown'
+                ) AS model_id,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.input'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.output'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.output') ELSE 0 END), 0) AS output_tokens,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.read'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.cache.read') ELSE 0 END), 0) AS cache_read,
+                COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.write'), 0) > 0
+                    THEN json_extract(m.data, '$.tokens.cache.write') ELSE 0 END), 0) AS cache_write
+            FROM message m
+            JOIN session s ON s.id = m.session_id
+            WHERE json_valid(m.data) = 1
+              AND json_extract(m.data, '$.role') = 'assistant'
+              AND COALESCE(json_extract(m.data, '$.time.created'), 0) > 0
+              {day_filter}
             GROUP BY s.project_id, model_id
         """
 

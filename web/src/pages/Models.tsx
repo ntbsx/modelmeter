@@ -8,10 +8,11 @@ import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import { useSourceScope } from '../hooks/useSourceScope'
 import { useDaysFilter } from '../hooks/useDaysFilter'
+import DaysFilterPicker from '../components/DaysFilterPicker'
 
 export default function Models() {
   const { providerId } = useParams<{ providerId: string }>()
-  const { days } = useDaysFilter()
+  const { days } = useDaysFilter('models')
   const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ModelsResponse>({
@@ -54,6 +55,7 @@ export default function Models() {
               Usage breakdown by model ({days === 1 ? 'last 24 hours' : `last ${days} days`})
             </p>
           </div>
+          <DaysFilterPicker scope="models" />
         </div>
       </div>
 

@@ -9,9 +9,10 @@ import { useSourceScope } from '../hooks/useSourceScope'
 import { useDaysFilter } from '../hooks/useDaysFilter'
 import { PageHeader } from '../components/DataTable'
 import { Badge } from '../components/ui'
+import DaysFilterPicker from '../components/DaysFilterPicker'
 
 export default function Providers() {
-  const { days } = useDaysFilter()
+  const { days } = useDaysFilter('providers')
   const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ProvidersResponse>({
@@ -34,6 +35,7 @@ export default function Providers() {
       <PageHeader
         title="Providers"
         description={`Usage breakdown by provider (${days === 1 ? 'last 24 hours' : `last ${days} days`})`}
+        actions={<DaysFilterPicker scope="providers" />}
       />
 
       <div className="ds-surface overflow-hidden">

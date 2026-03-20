@@ -105,6 +105,7 @@ class ModelUsage(BaseModel):
     """Per-model usage aggregate."""
 
     model_id: str
+    provider: str | None = None
     usage: TokenUsage
     total_sessions: int = Field(default=0, ge=0)
     total_interactions: int = Field(default=0, ge=0)
@@ -304,3 +305,22 @@ class UpdateCheckResponse(BaseModel):
     release_url: str | None = None
     checked_at_ms: int = Field(default=0, ge=0)
     error: str | None = None
+
+
+class DateInsightsResponse(BaseModel):
+    """Date-specific usage breakdown contract."""
+
+    day: date
+    timezone_offset_minutes: int = Field(default=0, ge=-840, le=840)
+    usage: TokenUsage
+    total_sessions: int = Field(default=0, ge=0)
+    total_interactions: int = Field(default=0, ge=0)
+    cost_usd: float | None = None
+    pricing_source: str | None = None
+    models: list[ModelUsage] = Field(default_factory=_default_model_usage_list)
+    providers: list[ProviderUsage] = Field(default_factory=_default_provider_usage_list)
+    projects: list[ProjectUsage] = Field(default_factory=_default_project_usage_list)
+    source_scope: str | None = None
+    sources_considered: list[str] = Field(default_factory=_default_str_list)
+    sources_succeeded: list[str] = Field(default_factory=_default_str_list)
+    sources_failed: list[dict[str, str]] = Field(default_factory=_default_dict_str_list)

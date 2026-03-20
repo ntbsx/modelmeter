@@ -1,13 +1,23 @@
-import { Suspense, lazy, useMemo } from 'react'
+import { Suspense, lazy } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { BrowserRouter, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
-import { Activity, BarChart2, FolderGit2, Building2, LogOut, Server, WifiOff, Zap } from 'lucide-react'
+import {
+  Activity,
+  AlertTriangle,
+  BarChart2,
+  CalendarDays,
+  FolderGit2,
+  Building2,
+  LogOut,
+  Server,
+  WifiOff,
+  Zap,
+} from 'lucide-react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import SourceScopePicker from './components/SourceScopePicker'
-import DaysFilterPicker from './components/DaysFilterPicker'
 import { useAuth } from './hooks/useAuth'
 import { fetchApi } from './lib/api'
 import type { SourceHealth } from './types'
@@ -22,6 +32,7 @@ const ProjectDetail = lazy(() => import('./pages/ProjectDetail'))
 const Providers = lazy(() => import('./pages/Providers'))
 const Live = lazy(() => import('./pages/Live'))
 const Sources = lazy(() => import('./pages/Sources'))
+const DateInsights = lazy(() => import('./pages/DateInsights'))
 const Login = lazy(() => import('./pages/Login'))
 
 type HealthResponse = {
@@ -55,9 +66,26 @@ const links = [
   { to: '/', icon: BarChart2, label: 'Overview' },
   { to: '/models', icon: Building2, label: 'Providers' },
   { to: '/projects', icon: FolderGit2, label: 'Projects' },
+  { to: '/date-insights', icon: CalendarDays, label: 'Date Insights' },
   { to: '/live', icon: Activity, label: 'Live' },
   { to: '/sources', icon: Server, label: 'Sources' },
 ]
+
+function AuthDisabledWarning() {
+  const { authRequired } = useAuth()
+  if (authRequired !== false) {
+    return null
+  }
+
+  return (
+    <div className="border-b border-[var(--color-warning)]/30 bg-[var(--color-warning-muted)] px-4 py-2 text-sm text-[var(--color-warning-muted-foreground)] lg:px-8">
+      <div className="mx-auto flex max-w-6xl items-center gap-2">
+        <AlertTriangle className="h-4 w-4 text-[var(--color-warning)]" aria-hidden="true" />
+        <span>Authentication is disabled. This server is currently running without password protection.</span>
+      </div>
+    </div>
+  )
+}
 
 function LogoutButton({ compact = false }: { compact?: boolean }) {
   const { authRequired, logout } = useAuth()
@@ -221,15 +249,6 @@ function MobileBottomNav() {
 
 function AuthGate() {
   const { authRequired, isAuthenticated } = useAuth()
-  const location = useLocation()
-
-  const showDaysFilter = useMemo(() => {
-    const path = location.pathname
-    return path === '/' || 
-           path === '/models' || 
-           path.startsWith('/models/') || 
-           path === '/projects'
-  }, [location.pathname])
 
   if (authRequired === null) {
     return (
@@ -255,18 +274,17 @@ function AuthGate() {
           <div className="hidden lg:flex items-center gap-3">
             <SourceScopePicker />
             <HeaderSourceStatus />
-            {showDaysFilter && <DaysFilterPicker />}
             <div className="hidden sm:block">
               <LogoutButton compact />
             </div>
             <ThemeToggle />
           </div>
           <div className="lg:hidden flex items-center gap-2">
-            <DaysFilterPicker />
             <HeaderSourceStatus />
             <ThemeToggle />
           </div>
         </header>
+        <AuthDisabledWarning />
         <main className="flex-1 bg-[var(--surface-secondary)]/50 transition-colors duration-200 pb-20 lg:pb-0">
           <ErrorBoundary>
             <Suspense
@@ -281,6 +299,7 @@ function AuthGate() {
                 <Route path="/models/:modelId" element={<ModelDetail />} />
                 <Route path="/projects" element={<Projects />} />
                 <Route path="/projects/:projectId" element={<ProjectDetail />} />
+                <Route path="/date-insights" element={<DateInsights />} />
                 <Route path="/live" element={<Live />} />
                 <Route path="/sources" element={<Sources />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

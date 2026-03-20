@@ -199,6 +199,122 @@
         "title": "DataSourcePublic",
         "type": "object"
       },
+      "DateInsightsResponse": {
+        "description": "Date-specific usage breakdown contract.",
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "day": {
+            "format": "date",
+            "title": "Day",
+            "type": "string"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelUsage"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "pricing_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pricing Source"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectUsage"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderUsage"
+            },
+            "title": "Providers",
+            "type": "array"
+          },
+          "source_scope": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scope"
+          },
+          "sources_considered": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Considered",
+            "type": "array"
+          },
+          "sources_failed": {
+            "items": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "title": "Sources Failed",
+            "type": "array"
+          },
+          "sources_succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources Succeeded",
+            "type": "array"
+          },
+          "timezone_offset_minutes": {
+            "default": 0,
+            "maximum": 840.0,
+            "minimum": -840.0,
+            "title": "Timezone Offset Minutes",
+            "type": "integer"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "total_sessions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Sessions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": [
+          "day",
+          "usage"
+        ],
+        "title": "DateInsightsResponse",
+        "type": "object"
+      },
       "DoctorReport": {
         "description": "Top-level health diagnostics payload.",
         "properties": {
@@ -621,6 +737,17 @@
           "model_id": {
             "title": "Model Id",
             "type": "string"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
           },
           "total_interactions": {
             "default": 0,
@@ -2014,6 +2141,109 @@
           }
         },
         "summary": "Daily"
+      }
+    },
+    "/api/date-insights": {
+      "get": {
+        "operationId": "date_insights_api_date_insights_get",
+        "parameters": [
+          {
+            "description": "Date in YYYY-MM-DD format",
+            "in": "query",
+            "name": "day",
+            "required": true,
+            "schema": {
+              "description": "Date in YYYY-MM-DD format",
+              "title": "Day",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "timezone_offset_minutes",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "maximum": 840,
+              "minimum": -840,
+              "title": "Timezone Offset Minutes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          },
+          {
+            "description": "Source scope: local, all, or source:<id>",
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Source scope: local, all, or source:<id>",
+              "title": "Source Scope"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DateInsightsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Date Insights"
       }
     },
     "/api/doctor": {
