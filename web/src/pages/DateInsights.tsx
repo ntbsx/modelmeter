@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { CalendarDays, LayoutGrid, FolderOpen } from 'lucide-react'
+import { CalendarDays, LayoutGrid, FolderOpen, ChevronDown } from 'lucide-react'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { DateInsightsResponse, ModelUsage, ProjectModelUsage } from '../types'
@@ -206,7 +206,7 @@ export default function DateInsights() {
   const projectList = data.projects ?? []
 
   return (
-    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto space-y-8">
+    <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <PageHeader
         title="Date Insights"
@@ -244,33 +244,55 @@ export default function DateInsights() {
         ))}
       </section>
 
-      {/* Tab switcher */}
+      {/* Tab switcher — segmented control */}
       <div className="flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab('providers')}
-          className={`ds-btn-secondary text-sm transition-all duration-150 ${
-            activeTab === 'providers' ? 'ds-btn-primary' : ''
-          }`}
-        >
-          <LayoutGrid className="w-3.5 h-3.5" />
-          Provider &amp; Model
-          <span className="text-xs opacity-70">{providerGroups.length}</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('projects')}
-          className={`ds-btn-secondary text-sm transition-all duration-150 ${
-            activeTab === 'projects' ? 'ds-btn-primary' : ''
-          }`}
-        >
-          <FolderOpen className="w-3.5 h-3.5" />
-          Projects
-          <span className="text-xs opacity-70">{projectList.length}</span>
-        </button>
+        <div className="ds-surface px-1 py-1 rounded-lg flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => setActiveTab('providers')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
+              activeTab === 'providers'
+                ? 'bg-[var(--surface-tertiary)] text-[var(--text-primary)] shadow-sm'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            Providers
+            <span
+              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                activeTab === 'providers'
+                  ? 'bg-[var(--accent-primary)] text-white'
+                  : 'bg-[var(--surface-tertiary)] text-[var(--text-tertiary)]'
+              }`}
+            >
+              {providerGroups.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('projects')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 ${
+              activeTab === 'projects'
+                ? 'bg-[var(--surface-tertiary)] text-[var(--text-primary)] shadow-sm'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            <FolderOpen className="w-3.5 h-3.5" />
+            Projects
+            <span
+              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                activeTab === 'projects'
+                  ? 'bg-[var(--accent-primary)] text-white'
+                  : 'bg-[var(--surface-tertiary)] text-[var(--text-tertiary)]'
+              }`}
+            >
+              {projectList.length}
+            </span>
+          </button>
+        </div>
       </div>
 
-      {/* Provider & Model cards */}
+      {/* Provider cards */}
       {activeTab === 'providers' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {providerGroups.length === 0 ? (
@@ -294,89 +316,91 @@ export default function DateInsights() {
                 }}
               >
                 {/* Provider header */}
-                <div className="flex flex-col gap-0.5 mb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="inline-block px-2 py-0.5 text-xs font-semibold rounded-full"
-                        style={{ backgroundColor: color.bg, color: color.text }}
-                      >
-                        {provider}
-                      </span>
-                    </div>
-                    <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">
-                      {pModels.length} model{pModels.length !== 1 ? 's' : ''}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="inline-block px-2 py-0.5 text-xs font-semibold rounded-full"
+                      style={{ backgroundColor: color.bg, color: color.text }}
+                    >
+                      {provider}
                     </span>
                   </div>
+                  <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">
+                    {pModels.length} model{pModels.length !== 1 ? 's' : ''}
+                  </span>
                 </div>
 
                 {/* Model breakdown */}
                 {pModels.length > 0 ? (
-                  <div className="flex flex-col gap-1 flex-1">
+                  <div className="flex flex-col gap-0.5 flex-1">
                     {(expandedProviders.has(provider)
                       ? pModels
                       : pModels.slice(0, 3)
                     ).map((model) => (
-                        <div
-                          key={model.model_id}
-                          className="group flex items-center justify-between gap-2 py-1.5 px-2.5 rounded-md hover:bg-[var(--surface-tertiary)]/60 transition-colors duration-100"
+                      <div
+                        key={model.model_id}
+                        className="flex items-center justify-between gap-3 py-2 px-2.5 rounded-md hover:bg-[var(--surface-tertiary)]/50 transition-colors duration-100 group"
+                      >
+                        <span
+                          className="ds-text-body text-[var(--text-secondary)] truncate text-sm font-medium"
+                          title={model.model_id}
                         >
-                          <span
-                            className="ds-text-body text-[var(--text-secondary)] truncate text-sm"
-                            title={model.model_id}
-                          >
-                            {model.model_id.split('/').pop() || model.model_id}
-                          </span>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="ds-text-tabular text-xs font-semibold text-[var(--text-primary)] tabular-nums">
-                              {formatTokens(model.usage.total_tokens)}
+                          {model.model_id.split('/').pop() || model.model_id}
+                        </span>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          {model.total_interactions > 0 && (
+                            <span className="text-[var(--text-tertiary)] text-xs tabular-nums hidden sm:inline">
+                              {model.total_interactions.toLocaleString()} req
                             </span>
-                            {typeof model.cost_usd === 'number' ? (
-                              <span className="text-[var(--color-success)] font-semibold text-xs tabular-nums">
-                                {formatUsd(model.cost_usd)}
-                              </span>
-                            ) : null}
-                          </div>
+                          )}
+                          <span className="ds-text-tabular font-semibold text-[var(--text-primary)] tabular-nums text-sm">
+                            {formatTokens(model.usage.total_tokens)}
+                          </span>
+                          {typeof model.cost_usd === 'number' ? (
+                            <span className="text-[var(--color-success)] font-semibold tabular-nums text-xs min-w-[3.5rem] text-right">
+                              {formatUsd(model.cost_usd)}
+                            </span>
+                          ) : null}
                         </div>
-                      ))}
+                      </div>
+                    ))}
                     {pModels.length > 3 && (
                       <button
                         type="button"
                         onClick={() => toggleProviderExpanded(provider)}
-                        className="ds-text-muted text-xs text-center py-0.5 hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer"
+                        className="flex items-center justify-center gap-1 py-1.5 mt-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer rounded-md hover:bg-[var(--surface-tertiary)]/40"
                       >
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedProviders.has(provider) ? 'rotate-180' : ''}`}
+                        />
                         {expandedProviders.has(provider)
                           ? 'Show less'
-                          : `Show ${pModels.length - 3} more`}
+                          : `${pModels.length - 3} more`}
                       </button>
                     )}
                   </div>
                 ) : null}
 
                 {/* Provider totals */}
-                <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-subtle)]">
+                <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--border-subtle)]">
                   <div className="flex flex-col gap-0.5">
-                    <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Tokens</span>
-                    <span className="ds-text-tabular font-bold tabular-nums text-sm">
-                      {formatTokens(
-                        pModels.reduce((s, m) => s + m.usage.total_tokens, 0),
-                      )}
+                    <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Tokens</span>
+                    <span className="ds-text-tabular font-bold tabular-nums">
+                      {formatTokens(pModels.reduce((s, m) => s + m.usage.total_tokens, 0))}
                     </span>
                   </div>
                   {pModels.some((m) => typeof m.cost_usd === 'number') && (
                     <div className="flex flex-col gap-0.5 items-end">
-                      <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Cost</span>
-                      <span className="ds-text-tabular font-bold text-[var(--color-success)] tabular-nums text-sm">
-                        {formatUsd(
-                          pModels.reduce((s, m) => s + (m.cost_usd ?? 0), 0),
-                        )}
+                      <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Cost</span>
+                      <span className="ds-text-tabular font-bold text-[var(--color-success)] tabular-nums">
+                        {formatUsd(pModels.reduce((s, m) => s + (m.cost_usd ?? 0), 0))}
                       </span>
                     </div>
                   )}
                   {pModels.some((m) => m.total_interactions > 0) && (
                     <div className="flex flex-col gap-0.5 items-end">
-                      <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Interactions</span>
-                      <span className="ds-text-tabular font-bold tabular-nums text-sm">
+                      <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Requests</span>
+                      <span className="ds-text-tabular font-bold tabular-nums">
                         {pModels.reduce((s, m) => s + m.total_interactions, 0).toLocaleString()}
                       </span>
                     </div>
@@ -437,7 +461,7 @@ export default function DateInsights() {
 
                   {/* Model breakdown */}
                   {projectPmModels.length > 0 ? (
-                    <div className="flex flex-col gap-1 flex-1">
+                    <div className="flex flex-col gap-0.5 flex-1">
                       {(expandedProjects.has(project.project_id)
                         ? projectPmModels
                         : projectPmModels.slice(0, 3)
@@ -446,7 +470,7 @@ export default function DateInsights() {
                         return (
                           <div
                             key={pm.model_id}
-                            className="group flex items-center justify-between gap-2 py-1.5 px-2.5 rounded-md hover:bg-[var(--surface-tertiary)]/60 transition-colors duration-100"
+                            className="flex items-center justify-between gap-3 py-2 px-2.5 rounded-md hover:bg-[var(--surface-tertiary)]/50 transition-colors duration-100 group"
                           >
                             <div className="flex items-center gap-2 min-w-0 flex-1">
                               <span
@@ -456,18 +480,18 @@ export default function DateInsights() {
                                 {pm.provider ?? '?'}
                               </span>
                               <span
-                                className="ds-text-body text-[var(--text-secondary)] truncate text-sm"
+                                className="ds-text-body text-[var(--text-secondary)] truncate text-sm font-medium"
                                 title={pm.model_id}
                               >
                                 {pm.model_id.split('/').pop() || pm.model_id}
                               </span>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <span className="ds-text-tabular text-xs font-semibold text-[var(--text-primary)] tabular-nums">
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span className="ds-text-tabular font-semibold text-[var(--text-primary)] tabular-nums text-sm">
                                 {formatTokens(pm.usage.total_tokens)}
                               </span>
                               {typeof pm.cost_usd === 'number' ? (
-                                <span className="text-[var(--color-success)] font-semibold text-xs tabular-nums">
+                                <span className="text-[var(--color-success)] font-semibold tabular-nums text-xs min-w-[3.5rem] text-right">
                                   {formatUsd(pm.cost_usd)}
                                 </span>
                               ) : null}
@@ -479,11 +503,14 @@ export default function DateInsights() {
                         <button
                           type="button"
                           onClick={() => toggleProjectExpanded(project.project_id)}
-                          className="ds-text-muted text-xs text-center py-0.5 hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer"
+                          className="flex items-center justify-center gap-1 py-1.5 mt-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer rounded-md hover:bg-[var(--surface-tertiary)]/40"
                         >
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedProjects.has(project.project_id) ? 'rotate-180' : ''}`}
+                          />
                           {expandedProjects.has(project.project_id)
                             ? 'Show less'
-                            : `Show ${projectPmModels.length - 3} more`}
+                            : `${projectPmModels.length - 3} more`}
                         </button>
                       )}
                     </div>
@@ -494,25 +521,25 @@ export default function DateInsights() {
                   )}
 
                   {/* Project totals */}
-                  <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-subtle)]">
+                  <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--border-subtle)]">
                     <div className="flex flex-col gap-0.5">
-                      <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Tokens</span>
-                      <span className="ds-text-tabular font-bold tabular-nums text-sm">
+                      <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Tokens</span>
+                      <span className="ds-text-tabular font-bold tabular-nums">
                         {formatTokens(project.usage.total_tokens)}
                       </span>
                     </div>
                     {typeof project.cost_usd === 'number' ? (
                       <div className="flex flex-col gap-0.5 items-end">
-                        <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Cost</span>
-                        <span className="ds-text-tabular font-bold text-[var(--color-success)] tabular-nums text-sm">
+                        <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Cost</span>
+                        <span className="ds-text-tabular font-bold text-[var(--color-success)] tabular-nums">
                           {formatUsd(project.cost_usd)}
                         </span>
                       </div>
                     ) : null}
                     {project.total_interactions > 0 && (
                       <div className="flex flex-col gap-0.5 items-end">
-                        <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Interactions</span>
-                        <span className="ds-text-tabular font-bold tabular-nums text-sm">
+                        <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Requests</span>
+                        <span className="ds-text-tabular font-bold tabular-nums">
                           {project.total_interactions.toLocaleString()}
                         </span>
                       </div>
