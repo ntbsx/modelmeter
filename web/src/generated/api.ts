@@ -392,6 +392,8 @@ export interface components {
             models?: components["schemas"]["ModelUsage"][];
             /** Pricing Source */
             pricing_source?: string | null;
+            /** Project Models */
+            project_models?: components["schemas"]["ProjectModelUsage"][];
             /** Projects */
             projects?: components["schemas"]["ProjectUsage"][];
             /** Providers */
@@ -728,6 +730,31 @@ export interface components {
             usage: components["schemas"]["TokenUsage"];
             /** Window Days */
             window_days?: number | null;
+        };
+        /**
+         * ProjectModelUsage
+         * @description Per-model usage within a single project, for date insights.
+         */
+        ProjectModelUsage: {
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /**
+             * Has Pricing
+             * @default false
+             */
+            has_pricing: boolean;
+            /** Model Id */
+            model_id: string;
+            /** Project Id */
+            project_id: string;
+            /** Provider */
+            provider?: string | null;
+            /**
+             * Total Interactions
+             * @default 0
+             */
+            total_interactions: number;
+            usage: components["schemas"]["TokenUsage"];
         };
         /**
          * ProjectSessionUsage

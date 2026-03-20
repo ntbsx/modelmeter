@@ -31,6 +31,10 @@ def _default_project_usage_list() -> list[ProjectUsage]:
     return []
 
 
+def _default_project_model_usage_list() -> list[ProjectModelUsage]:
+    return []
+
+
 def _default_project_session_usage_list() -> list[ProjectSessionUsage]:
     return []
 
@@ -196,6 +200,18 @@ class ProjectUsage(BaseModel):
     sources: list[str] = Field(default_factory=_default_str_list)
 
 
+class ProjectModelUsage(BaseModel):
+    """Per-model usage within a single project, for date insights."""
+
+    project_id: str
+    model_id: str
+    provider: str | None = None
+    usage: TokenUsage
+    total_interactions: int = Field(default=0, ge=0)
+    cost_usd: float | None = None
+    has_pricing: bool = False
+
+
 class ProjectsResponse(BaseModel):
     """Top projects usage response contract."""
 
@@ -320,6 +336,9 @@ class DateInsightsResponse(BaseModel):
     models: list[ModelUsage] = Field(default_factory=_default_model_usage_list)
     providers: list[ProviderUsage] = Field(default_factory=_default_provider_usage_list)
     projects: list[ProjectUsage] = Field(default_factory=_default_project_usage_list)
+    project_models: list[ProjectModelUsage] = Field(
+        default_factory=_default_project_model_usage_list
+    )
     source_scope: str | None = None
     sources_considered: list[str] = Field(default_factory=_default_str_list)
     sources_succeeded: list[str] = Field(default_factory=_default_str_list)

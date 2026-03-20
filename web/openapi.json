@@ -236,6 +236,13 @@
             ],
             "title": "Pricing Source"
           },
+          "project_models": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectModelUsage"
+            },
+            "title": "Project Models",
+            "type": "array"
+          },
           "projects": {
             "items": {
               "$ref": "#/components/schemas/ProjectUsage"
@@ -1053,6 +1060,62 @@
           "usage"
         ],
         "title": "ProjectDetailResponse",
+        "type": "object"
+      },
+      "ProjectModelUsage": {
+        "description": "Per-model usage within a single project, for date insights.",
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "has_pricing": {
+            "default": false,
+            "title": "Has Pricing",
+            "type": "boolean"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": [
+          "project_id",
+          "model_id",
+          "usage"
+        ],
+        "title": "ProjectModelUsage",
         "type": "object"
       },
       "ProjectSessionUsage": {

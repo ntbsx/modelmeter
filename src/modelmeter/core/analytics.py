@@ -17,6 +17,7 @@ from modelmeter.core.models import (
     ModelsResponse,
     ModelUsage,
     ProjectDetailResponse,
+    ProjectModelUsage,
     ProjectSessionUsage,
     ProjectsResponse,
     ProjectUsage,
@@ -588,7 +589,31 @@ def get_date_insights(
                 sources=["local"],
             )
         )
-    projects.sort(key=lambda item: item.usage.total_tokens, reverse=True)
+    projects.sort(key=lambda item: item.cost_usd if item.cost_usd is not None else -1, reverse=True)
+
+    # Build per-model breakdown for each project
+    project_models: list[ProjectModelUsage] = []
+    for row in project_model_rows:
+        project_id = str(row["project_id"])
+        model_id = str(row["model_id"])
+        usage = _token_usage_from_row(row)
+        pricing = pricing_book.get(model_id)
+        cost_usd: float | None = None
+        if pricing is not None:
+            cost_usd = round(calculate_usage_cost(usage, pricing), 8)
+        provider = provider_from_model_id_and_provider_field(model_id, row["provider_id"])
+        project_models.append(
+            ProjectModelUsage(
+                project_id=project_id,
+                model_id=model_id,
+                provider=provider,
+                usage=usage,
+                total_interactions=0,  # project_model_rows has no per-model interaction count
+                cost_usd=cost_usd,
+                has_pricing=pricing is not None,
+            )
+        )
+    project_models.sort(key=lambda item: item.usage.total_tokens, reverse=True)
 
     total_interactions: int
     if use_steps:
@@ -608,6 +633,7 @@ def get_date_insights(
         models=models,
         providers=providers,
         projects=projects,
+        project_models=project_models,
         source_scope=source_scope.kind.value if source_scope else "local",
         sources_considered=["local"],
         sources_succeeded=["local"],

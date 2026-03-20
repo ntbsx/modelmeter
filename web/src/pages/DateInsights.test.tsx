@@ -85,7 +85,7 @@ describe('DateInsights page', () => {
 
     render(<DateInsights />)
 
-    expect(await screen.findByText('openai/gpt-5')).toBeInTheDocument()
+    expect(await screen.findByText('gpt-5')).toBeInTheDocument()
     expect(screen.getByText('openai')).toBeInTheDocument()
     expect(screen.getByText('My Project')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(

@@ -815,6 +815,11 @@ class SQLiteUsageRepository:
                     json_extract(m.data, '$.model.modelID'),
                     'unknown'
                 ) AS model_id,
+                COALESCE(
+                    json_extract(m.data, '$.providerID'),
+                    json_extract(m.data, '$.model.providerID'),
+                    NULL
+                ) AS provider_id,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.input'), 0) > 0
                     THEN json_extract(m.data, '$.tokens.input') ELSE 0 END), 0) AS input_tokens,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.output'), 0) > 0
@@ -829,7 +834,7 @@ class SQLiteUsageRepository:
               AND json_extract(m.data, '$.role') = 'assistant'
               AND COALESCE(json_extract(m.data, '$.time.created'), 0) > 0
               {day_filter}
-            GROUP BY s.project_id, model_id
+            GROUP BY s.project_id, model_id, provider_id
         """
 
         with self._connect() as conn:
