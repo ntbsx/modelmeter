@@ -20,14 +20,14 @@ Phase 5 covers:
 1. `22-per-page-filters-and-date-insights.md` ✅
 2. `23-card-layout-infinite-scroll-and-charts.md`
 3. `24-live-multi-session-and-scope-simplification.md`
-4. `25-sources-page-card-redesign.md` ✅
+4. `25-sources-page-card-redesign.md`
 5. `26-date-insights-session-cards.md` *(planned)*
 
 ## Execution Order
 
-- `22` ✅ — completed, foundation for date drill-down UX
+- `22` ✅ — completed, foundation for date drill-down UX (Providers + Projects tabs, card layout)
 - `23` and `24` — in parallel after `22`
-- `25` ✅ — completed independently in parallel
+- `25` — Sources page card redesign (independent, not started)
 - `26` — Sessions tab for Date Insights, depends on `22`
 
 ## Phase Exit Criteria
@@ -36,7 +36,7 @@ Phase 5 covers:
 - [x] New date insights page supports one-day spend and token breakdowns (Providers + Projects tabs, card layout)
 - [ ] Models, Providers, and Projects pages use cards + lazy loading + charts
 - [ ] Live page supports viewing multiple local/server (self) live session panels in one screen
-- [x] Sources page listing uses cards instead of table rows
+- [ ] Sources page listing uses cards instead of table rows (Plan 25 — not started on this branch)
 - [x] Web and terminal show a clear warning when server auth is disabled
 - [x] Frontend tests updated for changed interactions and layout
 - [x] Backend/API tests updated for new date insights contract

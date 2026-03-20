@@ -30,8 +30,8 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
   - Estimated: 6-10 hours
   - Description: Add multi-session live panels (local or server self) and remove ineffective live-only source selector behavior
 
-- [x] `phase-5/25-sources-page-card-redesign.md`
-  - Status: Completed
+- [ ] `phase-5/25-sources-page-card-redesign.md`
+  - Status: Planned
   - Priority: Medium
   - Estimated: 4-6 hours
   - Description: Redesign Sources listing into cards while keeping source management flows intact
@@ -47,7 +47,7 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
 - **Phase 1-3:** ✅ Complete (Core Platform, Analytics, CLI, Web)
 - **Phase 4 Part 1:** ✅ Complete (Federation, Provider Analytics, Update Flow, Source Management)
 - **Phase 4 Part 2:** ✅ Complete (Plans 20-21)
-- **Phase 5:** 🔄 In Progress (Plans 22, 25 done; 23, 24, 26 pending)
+- **Phase 5:** 🔄 In Progress (Plan 22 done; 23, 24, 25, 26 pending)
 
 ## Completed Work
 
@@ -84,7 +84,7 @@ Historical plans are organized in `completed/` by phase:
 - `22-per-page-filters-and-date-insights` → foundation for page-local data flow and date drill-down UX ✅
 - `23-card-layout-infinite-scroll-and-charts` → depends on `22` for page-local filter ownership
 - `24-live-multi-session-and-scope-simplification` → can run in parallel with `23` after `22`
-- `25-sources-page-card-redesign` → independent, can run in parallel with `23`/`24` ✅
+- `25-sources-page-card-redesign` → independent, can run in parallel with `23`/`24`
 - `26-date-insights-session-cards` → depends on `22` (adds Sessions tab to Date Insights)
 
 ## Definition of Done (Current Phase)
