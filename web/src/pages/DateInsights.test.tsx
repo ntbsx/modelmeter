@@ -86,8 +86,12 @@ describe('DateInsights page', () => {
     render(<DateInsights />)
 
     expect(await screen.findByText('gpt-5')).toBeInTheDocument()
-    expect(screen.getByText('openai')).toBeInTheDocument()
-    expect(screen.getByText('My Project')).toBeInTheDocument()
+    expect(screen.getAllByText('openai').length).toBeGreaterThanOrEqual(1)
+
+    // Switch to Projects tab
+    const projectsTab = screen.getByRole('button', { name: /projects/i })
+    await projectsTab.click()
+    expect(await screen.findByText('My Project')).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/date-insights?day='),
       expect.objectContaining({ headers: {} })

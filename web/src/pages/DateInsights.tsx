@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { CalendarDays, FolderOpen } from 'lucide-react'
+import { CalendarDays, LayoutGrid, FolderOpen } from 'lucide-react'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { DateInsightsResponse, ModelUsage, ProjectModelUsage } from '../types'
@@ -25,7 +25,7 @@ function parseYMD(dateStr: string): { year: number; month: number; day: number }
   return { year, month, day }
 }
 
-// Consistent color per provider using brand-adjacent palette
+// Consistent color per provider
 const PROVIDER_COLORS = [
   { bg: '#dbeafe', text: '#1e40af' },  // blue
   { bg: '#dcfce7', text: '#166534' },  // green
@@ -41,6 +41,8 @@ function providerColor(index: number) {
   return PROVIDER_COLORS[index % PROVIDER_COLORS.length]
 }
 
+type Tab = 'providers' | 'projects'
+
 export default function DateInsights() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { sourceScope } = useSourceScope()
@@ -48,6 +50,8 @@ export default function DateInsights() {
   const timezoneOffsetMinutes = -new Date().getTimezoneOffset()
 
   const [showPicker, setShowPicker] = useState(false)
+  const [activeTab, setActiveTab] = useState<Tab>('providers')
+  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set())
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const pickerRef = useRef<HTMLDivElement>(null)
 
@@ -97,7 +101,7 @@ export default function DateInsights() {
     ]
   }, [data])
 
-  // Build provider groups with color assignments (shared color map across page)
+  // Build provider groups with color assignments
   const providerColorMap = useMemo(() => {
     const map = new Map<string, number>()
     const allProviders = [
@@ -129,7 +133,7 @@ export default function DateInsights() {
     }))
   }, [models, providerColorMap])
 
-  // Dominant provider color per project (for card accent)
+  // Dominant provider color per project
   const projectDominantColor = useMemo(() => {
     const map = new Map<string, { provider: string; colorIdx: number }>()
     for (const pm of projectModels) {
@@ -151,14 +155,20 @@ export default function DateInsights() {
     setShowPicker(false)
   }
 
+  const toggleProviderExpanded = (provider: string) => {
+    setExpandedProviders((prev) => {
+      const next = new Set(prev)
+      if (next.has(provider)) next.delete(provider)
+      else next.add(provider)
+      return next
+    })
+  }
+
   const toggleProjectExpanded = (projectId: string) => {
     setExpandedProjects((prev) => {
       const next = new Set(prev)
-      if (next.has(projectId)) {
-        next.delete(projectId)
-      } else {
-        next.add(projectId)
-      }
+      if (next.has(projectId)) next.delete(projectId)
+      else next.add(projectId)
       return next
     })
   }
@@ -221,10 +231,7 @@ export default function DateInsights() {
       />
 
       {/* KPI cards */}
-      <section
-        className="grid grid-cols-2 lg:grid-cols-4 gap-3"
-        style={{ '--stagger': 0 } as React.CSSProperties}
-      >
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {totals?.map((item, i) => (
           <div
             key={item.label}
@@ -237,102 +244,176 @@ export default function DateInsights() {
         ))}
       </section>
 
-      {/* Provider + Model table */}
-      <section className="ds-surface overflow-hidden animate-slide-up" style={{ animationDelay: '240ms' }}>
-        <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
-          <h2 className="ds-text-label font-semibold">Provider &amp; Model</h2>
-          <span className="ds-text-label-uppercase">{models.length} models</span>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full ds-table">
-            <thead>
-              <tr className="border-b border-[var(--border-subtle)]">
-                <th className="px-5 py-3 text-left ds-text-label-uppercase font-semibold">Provider</th>
-                <th className="px-5 py-3 text-left ds-text-label-uppercase font-semibold">Model</th>
-                <th className="px-5 py-3 text-right ds-text-label-uppercase font-semibold">Interactions</th>
-                <th className="px-5 py-3 text-right ds-text-label-uppercase font-semibold">Tokens</th>
-                <th className="px-5 py-3 text-right ds-text-label-uppercase font-semibold">Cost</th>
-              </tr>
-            </thead>
-            <tbody>
-              {providerGroups.map(({ provider, color, models: pModels }, gi) =>
-                pModels.map((model, mi) => (
-                  <tr
-                    key={model.model_id}
-                    className="group animate-fade-in hover:bg-[var(--surface-tertiary)]/40 transition-colors duration-150"
-                    style={{ animationDelay: `${300 + gi * 80 + mi * 40}ms` }}
-                  >
-                    {/* Provider cell — only first model in group renders it */}
-                    {mi === 0 ? (
-                      <td
-                        rowSpan={pModels.length}
-                        className="px-5 py-3 align-top"
-                        style={{ borderLeft: `3px solid ${color.text}` }}
+      {/* Tab switcher */}
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => setActiveTab('providers')}
+          className={`ds-btn-secondary text-sm transition-all duration-150 ${
+            activeTab === 'providers' ? 'ds-btn-primary' : ''
+          }`}
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          Provider &amp; Model
+          <span className="text-xs opacity-70">{providerGroups.length}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('projects')}
+          className={`ds-btn-secondary text-sm transition-all duration-150 ${
+            activeTab === 'projects' ? 'ds-btn-primary' : ''
+          }`}
+        >
+          <FolderOpen className="w-3.5 h-3.5" />
+          Projects
+          <span className="text-xs opacity-70">{projectList.length}</span>
+        </button>
+      </div>
+
+      {/* Provider & Model cards */}
+      {activeTab === 'providers' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {providerGroups.length === 0 ? (
+            <div className="ds-surface flex flex-col items-center justify-center py-16 gap-3 text-center lg:col-span-2">
+              <div className="w-10 h-10 rounded-full bg-[var(--surface-tertiary)] flex items-center justify-center">
+                <LayoutGrid className="w-5 h-5 text-[var(--text-tertiary)]" />
+              </div>
+              <div>
+                <p className="ds-text-body font-medium text-[var(--text-secondary)]">No provider usage for this date</p>
+                <p className="ds-text-muted mt-0.5">Active models will appear here</p>
+              </div>
+            </div>
+          ) : (
+            providerGroups.map(({ provider, color, models: pModels }, gi) => (
+              <div
+                key={provider}
+                className="ds-surface flex flex-col p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-default animate-slide-up"
+                style={{
+                  borderTop: `3px solid ${color.text}`,
+                  animationDelay: `${Math.min(gi, 4) * 60}ms`,
+                }}
+              >
+                {/* Provider header */}
+                <div className="flex flex-col gap-0.5 mb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="inline-block px-2 py-0.5 text-xs font-semibold rounded-full"
+                        style={{ backgroundColor: color.bg, color: color.text }}
                       >
-                        <span
-                          className="inline-block px-2 py-0.5 text-xs font-semibold rounded-full"
-                          style={{ backgroundColor: color.bg, color: color.text }}
+                        {provider}
+                      </span>
+                    </div>
+                    <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">
+                      {pModels.length} model{pModels.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Model breakdown */}
+                {pModels.length > 0 ? (
+                  <div className="flex flex-col gap-1 flex-1">
+                    {(expandedProviders.has(provider)
+                      ? pModels
+                      : pModels.slice(0, 3)
+                    ).map((model) => {
+                      const pColor = providerColor(providerColorMap.get(provider) ?? 0)
+                      return (
+                        <div
+                          key={model.model_id}
+                          className="group flex items-center justify-between gap-2 py-1.5 px-2.5 rounded-md hover:bg-[var(--surface-tertiary)]/60 transition-colors duration-100"
                         >
-                          {provider}
-                        </span>
-                      </td>
-                    ) : null}
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span
+                              className="inline-block px-1.5 py-0.5 text-xs font-semibold rounded flex-shrink-0"
+                              style={{ backgroundColor: pColor.bg, color: pColor.text }}
+                            >
+                              {model.provider ?? '?'}
+                            </span>
+                            <span
+                              className="ds-text-body text-[var(--text-secondary)] truncate text-sm"
+                              title={model.model_id}
+                            >
+                              {model.model_id.split('/').pop() || model.model_id}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <span className="ds-text-tabular text-xs font-semibold text-[var(--text-primary)] tabular-nums">
+                              {formatTokens(model.usage.total_tokens)}
+                            </span>
+                            {typeof model.cost_usd === 'number' ? (
+                              <span className="text-[var(--color-success)] font-semibold text-xs tabular-nums">
+                                {formatUsd(model.cost_usd)}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {pModels.length > 3 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleProviderExpanded(provider)}
+                        className="ds-text-muted text-xs text-center py-0.5 hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer"
+                      >
+                        {expandedProviders.has(provider)
+                          ? 'Show less'
+                          : `Show ${pModels.length - 3} more`}
+                      </button>
+                    )}
+                  </div>
+                ) : null}
 
-                    {/* Model */}
-                    <td
-                      className="px-5 py-3 text-[var(--text-secondary)] truncate max-w-[12rem]"
-                      title={model.model_id}
-                    >
-                      {model.model_id.split('/').pop() || model.model_id}
-                    </td>
-
-                    {/* Interactions */}
-                    <td className="px-5 py-3 text-right text-[var(--text-secondary)] font-medium tabular-nums">
-                      {model.total_interactions.toLocaleString()}
-                    </td>
-
-                    {/* Tokens */}
-                    <td className="px-5 py-3 text-right text-[var(--text-primary)] font-semibold tabular-nums">
-                      {formatTokens(model.usage.total_tokens)}
-                    </td>
-
-                    {/* Cost */}
-                    <td className="px-5 py-3 text-right tabular-nums">
-                      {typeof model.cost_usd === 'number' ? (
-                        <span className="text-[var(--color-success)] font-semibold">
-                          {formatUsd(model.cost_usd)}
-                        </span>
-                      ) : (
-                        <span className="text-[var(--text-tertiary)]">—</span>
+                {/* Provider totals */}
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-subtle)]">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Tokens</span>
+                    <span className="ds-text-tabular font-bold tabular-nums text-sm">
+                      {formatTokens(
+                        pModels.reduce((s, m) => s + m.usage.total_tokens, 0),
                       )}
-                    </td>
-                  </tr>
-                )),
-              )}
-            </tbody>
-          </table>
+                    </span>
+                  </div>
+                  {pModels.some((m) => typeof m.cost_usd === 'number') && (
+                    <div className="flex flex-col gap-0.5 items-end">
+                      <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Cost</span>
+                      <span className="ds-text-tabular font-bold text-[var(--color-success)] tabular-nums text-sm">
+                        {formatUsd(
+                          pModels.reduce((s, m) => s + (m.cost_usd ?? 0), 0),
+                        )}
+                      </span>
+                    </div>
+                  )}
+                  {pModels.some((m) => m.total_interactions > 0) && (
+                    <div className="flex flex-col gap-0.5 items-end">
+                      <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Interactions</span>
+                      <span className="ds-text-tabular font-bold tabular-nums text-sm">
+                        {pModels.reduce((s, m) => s + m.total_interactions, 0).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      </section>
+      )}
 
-      {/* Projects cards */}
-      <section className="animate-slide-up" style={{ animationDelay: '360ms' }}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="ds-text-label font-semibold">Projects</h2>
-          <span className="ds-text-label-uppercase">{projectList.length} projects</span>
-        </div>
-        {projectList.length === 0 ? (
-          <div className="ds-surface flex flex-col items-center justify-center py-16 gap-3 text-center">
-            <div className="w-10 h-10 rounded-full bg-[var(--surface-tertiary)] flex items-center justify-center">
-              <FolderOpen className="w-5 h-5 text-[var(--text-tertiary)]" />
+      {/* Project cards */}
+      {activeTab === 'projects' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {projectList.length === 0 ? (
+            <div className="ds-surface flex flex-col items-center justify-center py-16 gap-3 text-center lg:col-span-2">
+              <div className="w-10 h-10 rounded-full bg-[var(--surface-tertiary)] flex items-center justify-center">
+                <FolderOpen className="w-5 h-5 text-[var(--text-tertiary)]" />
+              </div>
+              <div>
+                <p className="ds-text-body font-medium text-[var(--text-secondary)]">No project usage for this date</p>
+                <p className="ds-text-muted mt-0.5">Projects with active sessions will appear here</p>
+              </div>
             </div>
-            <div>
-              <p className="ds-text-body font-medium text-[var(--text-secondary)]">No project usage for this date</p>
-              <p className="ds-text-muted mt-0.5">Projects with active sessions will appear here</p>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {projectList.map((project, i) => {
+          ) : (
+            projectList.map((project, i) => {
               const dominant = projectDominantColor.get(project.project_id)
               const dominantColor = dominant
                 ? PROVIDER_COLORS[dominant.colorIdx % PROVIDER_COLORS.length]
@@ -343,7 +424,7 @@ export default function DateInsights() {
               return (
                 <div
                   key={project.project_id}
-                  className="ds-surface flex flex-col p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-default"
+                  className="ds-surface flex flex-col p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-default animate-slide-up"
                   style={{
                     borderTop: `3px solid ${dominantColor.text}`,
                     animationDelay: `${Math.min(i, 4) * 60}ms`,
@@ -423,7 +504,7 @@ export default function DateInsights() {
                     </div>
                   )}
 
-                  {/* Project totals bar */}
+                  {/* Project totals */}
                   <div className="flex items-center justify-between pt-3 mt-3 border-t border-[var(--border-subtle)]">
                     <div className="flex flex-col gap-0.5">
                       <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[10px]">Tokens</span>
@@ -450,10 +531,10 @@ export default function DateInsights() {
                   </div>
                 </div>
               )
-            })}
-          </div>
-        )}
-      </section>
+            })
+          )}
+        </div>
+      )}
     </div>
   )
 }
