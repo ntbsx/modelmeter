@@ -213,12 +213,16 @@ make format && make lint && make typecheck && make test
 - Start with smallest relevant verification, then widen coverage.
 - Update docs when changing developer workflows.
 
-OpenCode custom command in this repo:
-- `.opencode/commands/cleanup-local-branches.md`
+OpenCode custom commands in this repo:
+- `.opencode/commands/cleanup_local_branches.md`
+- `.opencode/commands/create_release.md`
 - Usage in OpenCode TUI:
   - `/cleanup-local-branches` (dry-run)
   - `/cleanup-local-branches apply`
   - `/cleanup-local-branches force`
+  - `/create_release` (dry-run stable)
+  - `/create_release apply stable`
+  - `/create_release apply rc`
 - Purpose: clean local branches while keeping branches that have open PRs.
 - Safety: never delete `main`, `master`, `develop`, or current branch.
 

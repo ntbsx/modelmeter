@@ -25,6 +25,27 @@ make test
 
 ## Release Preparation
 
+Preferred path (OpenCode command):
+
+```bash
+/create_release dry-run stable
+/create_release apply stable
+```
+
+For release candidates:
+
+```bash
+/create_release dry-run rc
+/create_release apply rc
+```
+
+Branch policy:
+
+- Stable releases are allowed only on `main`.
+- RC releases are allowed on any branch, including `main`.
+
+Manual path:
+
 1. Stamp version and sync frontend:
 
 ```bash
@@ -48,6 +69,7 @@ make release-check
 
 ```bash
 git tag -a "v$(uv run python -c \"import tomllib, pathlib;print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])\")" -m "Release"
+git push origin main
 git push --tags
 ```
 

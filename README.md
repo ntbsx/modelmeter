@@ -189,14 +189,23 @@ make release-check
 
 ## OpenCode Custom Commands
 
-This repo includes a project-level OpenCode command at `.opencode/commands/cleanup-local-branches.md`.
+This repo includes project-level OpenCode commands:
 
-Use it from OpenCode TUI:
+- `.opencode/commands/cleanup_local_branches.md`
+- `.opencode/commands/create_release.md`
+
+Use them from OpenCode TUI:
 
 ```bash
 /cleanup-local-branches
 /cleanup-local-branches apply
 /cleanup-local-branches force
+
+/create_release
+/create_release dry-run stable
+/create_release dry-run rc
+/create_release apply stable
+/create_release apply rc
 ```
 
 Behavior:
@@ -206,6 +215,13 @@ Behavior:
 - `force`: if safe delete fails, force-delete remaining non-PR branches (`git branch -D`)
 - protected branches are never deleted: `main`, `master`, `develop`, and current branch
 - command requires `gh` CLI installed and authenticated (`gh auth status`)
+
+Release command behavior:
+
+- default (`dry-run stable`): show release plan without changes
+- `stable`: only allowed from `main`
+- `rc`: allowed from any branch, including `main`
+- `apply`: stamps/checks/commits/tags/pushes and triggers `.github/workflows/release.yml`
 
 ## Versioning
 

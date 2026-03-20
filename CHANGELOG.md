@@ -4,6 +4,23 @@ All notable changes to ModelMeter are documented in this file.
 
 The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.D`).
 
+## [Unreleased]
+
+## [2026.3.22] - 2026-03-20
+
+### Added
+- `/create_release` OpenCode command to automate stable and release-candidate preparation.
+- Source status banner and loading states in the web dashboard.
+
+### Changed
+- Improved web dashboard UX quality with hardening, polish, and responsive behavior updates.
+- Optimized SQLite analytics query performance with caching and targeted PRAGMA tuning.
+
+### Fixed
+- Corrected `sources_considered` completeness in federated responses.
+- Resolved frontend TypeScript strict-nullability issues on analytics pages.
+- Replaced environment-dependent federation tests with CI-safe test behavior.
+
 ## [2026.3.21] - 2026-03-19
 
 ### Added
@@ -19,23 +36,6 @@ The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.
 - CSS token alignment for chart and purple color scales.
 - DataTable row accessibility with proper ARIA roles.
 - Command file naming consistency (snake_case).
-
-## [Unreleased]
-
-### Added
-- Federated source scoping for analytics responses using `local`, `all`, and `source:<id>` semantics.
-- Source management in the web dashboard, including source listing, add/remove flows, and source health checks.
-- Shared web source-scope state and selector behavior across Overview, Providers, Models, Projects, Project Detail, and Live pages.
-- Project-level source attribution in dashboard project views.
-
-### Changed
-- Improved federation merge behavior and pagination correctness for `all` scope aggregation.
-- Updated OpenAPI snapshot and generated TypeScript client types for source-aware API contracts.
-
-### Fixed
-- Corrected `sources_considered` completeness in federated responses.
-- Resolved frontend TypeScript strict-nullability issues on analytics pages.
-- Replaced environment-dependent federation tests with CI-safe test behavior.
 
 ## [2026.3.18] - 2026-03-16
 

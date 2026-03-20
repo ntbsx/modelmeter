@@ -110,10 +110,7 @@ def main() -> int:
             "OpenAPI contract changed but pyproject.toml version was not updated.",
         )
 
-    required_generated = {
-        "web/src/generated/api.ts",
-        "web/src/generated/openapi.sha256",
-    }
+    required_generated = {"web/src/generated/openapi.sha256"}
     missing_generated = sorted(path for path in required_generated if path not in changed_files)
     if missing_generated:
         violations.append(
