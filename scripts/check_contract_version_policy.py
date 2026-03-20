@@ -105,10 +105,20 @@ def main() -> int:
 
     violations: list[str] = []
 
+    # Version bump is only required when pushing directly to main (release-time),
+    # not on pull requests (feature branches). Version bumps happen at release
+    # preparation, not during feature development.
+    is_pr = os.getenv("GITHUB_EVENT_NAME", "").strip().lower() == "pull_request"
     if "pyproject.toml" not in changed_files:
-        violations.append(
-            "OpenAPI contract changed but pyproject.toml version was not updated.",
-        )
+        if is_pr:
+            print(
+                "Contract check: OpenAPI changed on feature branch; "
+                "version bump deferred to release preparation.",
+            )
+        else:
+            violations.append(
+                "OpenAPI contract changed but pyproject.toml version was not updated.",
+            )
 
     required_generated = {"web/src/generated/openapi.sha256"}
     missing_generated = sorted(path for path in required_generated if path not in changed_files)
