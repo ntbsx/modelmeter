@@ -52,13 +52,17 @@ def test_serve_help_includes_cors_option() -> None:
 def test_serve_warns_when_password_not_set(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
     monkeypatch.delenv("MODELMETER_SERVER_PASSWORD", raising=False)
-    monkeypatch.setattr(cli_main_module, "create_app", lambda **_: object())
+
+    def _fake_create_app(**_kwargs: object) -> object:
+        return object()
+
+    monkeypatch.setattr(cli_main_module, "create_app", _fake_create_app)
 
     recorded: dict[str, object] = {}
 
-    def _fake_uvicorn_run(app: object, **kwargs: object) -> None:
+    def _fake_uvicorn_run(app: object, **_kwargs: object) -> None:
         recorded["app"] = app
-        recorded["kwargs"] = kwargs
+        recorded["kwargs"] = _kwargs
 
     monkeypatch.setattr(cli_main_module.uvicorn, "run", _fake_uvicorn_run)
 
@@ -77,8 +81,16 @@ def test_serve_warns_when_password_not_set(monkeypatch: pytest.MonkeyPatch) -> N
 def test_serve_does_not_warn_when_password_is_set(monkeypatch: pytest.MonkeyPatch) -> None:
     runner = CliRunner()
     monkeypatch.setenv("MODELMETER_SERVER_PASSWORD", "secret")
-    monkeypatch.setattr(cli_main_module, "create_app", lambda **_: object())
-    monkeypatch.setattr(cli_main_module.uvicorn, "run", lambda *_args, **_kwargs: None)
+
+    def _fake_create_app(**_kwargs: object) -> object:
+        return object()
+
+    monkeypatch.setattr(cli_main_module, "create_app", _fake_create_app)
+
+    def _fake_uvicorn_run(*_args: object, **_kwargs: object) -> None:
+        pass
+
+    monkeypatch.setattr(cli_main_module.uvicorn, "run", _fake_uvicorn_run)
 
     result = runner.invoke(app, ["serve", "--host", "127.0.0.1", "--port", "8001"])
 
