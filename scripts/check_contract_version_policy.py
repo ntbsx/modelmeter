@@ -109,8 +109,10 @@ def main() -> int:
     # not on pull requests (feature branches). Version bumps happen at release
     # preparation, not during feature development.
     is_pr = os.getenv("GITHUB_EVENT_NAME", "").strip().lower() == "pull_request"
+    version_deferred = False
     if "pyproject.toml" not in changed_files:
         if is_pr:
+            version_deferred = True
             print(
                 "Contract check: OpenAPI changed on feature branch; "
                 "version bump deferred to release preparation.",
@@ -134,7 +136,15 @@ def main() -> int:
             print(f"- {violation}")
         return 1
 
-    print("Contract check passed: OpenAPI change is accompanied by version + generated updates.")
+    if version_deferred:
+        print(
+            "Contract check passed: OpenAPI change detected; "
+            "generated artifacts updated; version bump deferred.",
+        )
+    else:
+        print(
+            "Contract check passed: OpenAPI change is accompanied by version + generated updates.",
+        )
     return 0
 
 

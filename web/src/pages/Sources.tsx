@@ -167,11 +167,11 @@ function SourceCard({ source, health, onEdit, onRemove, animationDelay = 0 }: So
           <button
             type="button"
             onClick={() => setExpanded(!expanded)}
-            className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-error-muted)]/20 hover:bg-[var(--color-error-muted)]/30 transition-colors duration-150"
+            className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-error-muted)]/20 hover:bg-[var(--color-error-muted)]/30 transition-colors duration-150 focus-ring focus:outline-none"
           >
             <span className="text-xs text-[var(--color-error)] flex items-center gap-2">
               <AlertCircle className="w-3.5 h-3.5" />
-              {health?.error ? 'View error details' : 'Hide error details'}
+              {expanded ? 'Hide error details' : 'View error details'}
             </span>
             <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-error)] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
           </button>
@@ -190,7 +190,7 @@ function SourceCard({ source, health, onEdit, onRemove, animationDelay = 0 }: So
         <button
           type="button"
           onClick={() => onEdit(source)}
-          className="ds-btn-ghost text-xs py-1.5 px-2"
+          className="ds-btn-ghost text-xs py-1.5 px-2 focus-ring"
           aria-label={`Edit ${source.source_id}`}
         >
           Edit
@@ -198,7 +198,7 @@ function SourceCard({ source, health, onEdit, onRemove, animationDelay = 0 }: So
         <button
           type="button"
           onClick={() => onRemove(source)}
-          className="ds-btn-ghost text-xs py-1.5 px-2 text-[var(--color-error)] hover:bg-[var(--color-error-muted)]"
+          className="ds-btn-ghost text-xs py-1.5 px-2 text-[var(--color-error)] hover:bg-[var(--color-error-muted)] focus-ring"
           aria-label={`Remove ${source.source_id}`}
         >
           Remove
