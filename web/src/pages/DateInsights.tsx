@@ -316,27 +316,17 @@ export default function DateInsights() {
                     {(expandedProviders.has(provider)
                       ? pModels
                       : pModels.slice(0, 3)
-                    ).map((model) => {
-                      const pColor = providerColor(providerColorMap.get(provider) ?? 0)
-                      return (
+                    ).map((model) => (
                         <div
                           key={model.model_id}
                           className="group flex items-center justify-between gap-2 py-1.5 px-2.5 rounded-md hover:bg-[var(--surface-tertiary)]/60 transition-colors duration-100"
                         >
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span
-                              className="inline-block px-1.5 py-0.5 text-xs font-semibold rounded flex-shrink-0"
-                              style={{ backgroundColor: pColor.bg, color: pColor.text }}
-                            >
-                              {model.provider ?? '?'}
-                            </span>
-                            <span
-                              className="ds-text-body text-[var(--text-secondary)] truncate text-sm"
-                              title={model.model_id}
-                            >
-                              {model.model_id.split('/').pop() || model.model_id}
-                            </span>
-                          </div>
+                          <span
+                            className="ds-text-body text-[var(--text-secondary)] truncate text-sm"
+                            title={model.model_id}
+                          >
+                            {model.model_id.split('/').pop() || model.model_id}
+                          </span>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <span className="ds-text-tabular text-xs font-semibold text-[var(--text-primary)] tabular-nums">
                               {formatTokens(model.usage.total_tokens)}
@@ -348,8 +338,7 @@ export default function DateInsights() {
                             ) : null}
                           </div>
                         </div>
-                      )
-                    })}
+                      ))}
                     {pModels.length > 3 && (
                       <button
                         type="button"
