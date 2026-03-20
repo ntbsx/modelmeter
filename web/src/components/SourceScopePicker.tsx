@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Globe2, House } from 'lucide-react'
 import { fetchApi } from '../lib/api'
 import type { SourceRegistryPublic } from '../types'
 import { useSourceScope, type SourceScopeValue } from '../hooks/useSourceScope'
@@ -42,11 +43,42 @@ export default function SourceScopePicker({ compact = false }: Props) {
   }, [enabledSources, hasMultipleSources])
 
   if (!hasMultipleSources) {
+    if (compact) {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 rounded-lg text-[var(--text-tertiary)]">
+          <House className="w-5 h-5" aria-hidden="true" />
+          <span className="text-[10px] font-medium">Scope</span>
+        </div>
+      )
+    }
+
     return (
       <span className="inline-flex items-center gap-1 text-[var(--text-tertiary)]">
         <span className="text-base">🏠</span>
         <span className={`font-medium ${compact ? 'text-[10px]' : 'text-xs'}`}>This Server</span>
       </span>
+    )
+  }
+
+  if (compact) {
+    return (
+      <div className="relative flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]/50">
+        <Globe2 className="w-5 h-5" aria-hidden="true" />
+        <span className="text-[10px] font-medium">Scope</span>
+        <select
+          id="source-scope-picker"
+          aria-label="Source scope"
+          value={sourceScope}
+          onChange={(event) => setSourceScope(event.target.value as SourceScopeValue)}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0 focus-ring"
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.group === 'Local' ? '🏠 ' : '🌐 '}{option.label}
+            </option>
+          ))}
+        </select>
+      </div>
     )
   }
 

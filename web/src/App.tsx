@@ -176,10 +176,12 @@ function Nav() {
 function MobileBottomNav() {
   const location = useLocation()
   const { authRequired, logout } = useAuth()
+  const mobileItemClass =
+    'flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 rounded-lg transition-colors focus-ring'
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.08)]" aria-label="Main navigation">
-      <div className="flex items-center justify-around h-16 px-1">
+      <div className="flex items-center h-16 px-1 gap-0.5">
         {links.map((l) => {
           const Icon = l.icon
           const isActive = (location.pathname.startsWith(l.to) && l.to !== '/') || (l.to === '/' && location.pathname === '/')
@@ -189,7 +191,7 @@ function MobileBottomNav() {
               key={l.to}
               to={l.to}
               aria-current={isActive ? 'page' : undefined}
-              className={`flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg transition-colors focus-ring min-w-[60px] ${
+              className={`${mobileItemClass} ${
                 isActive
                   ? 'text-[var(--accent-primary)] bg-[var(--accent-primary)]/10'
                   : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]/50'
@@ -200,13 +202,11 @@ function MobileBottomNav() {
             </Link>
           )
         })}
-        <div className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 min-w-[60px]">
-          <SourceScopePicker compact />
-        </div>
+        <SourceScopePicker compact />
         {authRequired && (
           <button
             onClick={logout}
-            className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors focus-ring min-w-[60px]"
+            className={`${mobileItemClass} text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-tertiary)]/50`}
             aria-label="Sign out"
             title="Sign out"
           >
