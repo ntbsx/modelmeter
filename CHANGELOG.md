@@ -6,6 +6,15 @@ The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.
 
 ## [Unreleased]
 
+## [2026.3.23] - 2026-03-20
+
+### Changed
+- Bumped frontend dev dependency `flatted`.
+
+### Fixed
+- Stabilized mobile bottom navigation so the scope selector no longer shifts the logout action.
+- Updated mobile scope icon styling to match other bottom navigation items.
+
 ## [2026.3.22] - 2026-03-20
 
 ### Added
