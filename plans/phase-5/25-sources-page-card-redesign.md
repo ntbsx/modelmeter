@@ -1,6 +1,6 @@
 # 25. Sources Page Card Redesign
 
-**Status:** Planned  
+**Status:** Completed  
 **Priority:** Medium  
 **Dependencies:** None
 
@@ -15,38 +15,26 @@ The Sources page uses a wide table for listing source configuration and health s
 3. Improve readability of status, auth, and target connection details.
 4. Preserve current behavior and API contracts.
 
-## Implementation Plan
+## What Was Built
 
-### 1) Card Listing Layout
+- Sources page listing converted from table to card layout.
+- Each source card shows: identity (id, label, kind), connection target, auth status, enabled state, latest health state.
+- Edit/remove actions preserved on each card.
+- Global health check action preserved.
+- Empty state improved.
+- Card styling consistent with broader design system.
 
-- Convert each source row into a card with sections:
-  - identity (id, label, kind)
-  - connection target
-  - auth status
-  - enabled state
-  - latest health state
-
-### 2) Action Model
-
-- Keep edit/remove actions on each card.
-- Keep global health check action.
-- Keep existing add/edit form flow.
-
-### 3) State and Feedback
-
-- Preserve stored health behavior from local storage.
-- Keep healthy/unreachable indicator clarity.
-- Improve empty-state presentation for zero sources.
+**Note:** Models, Providers, and Projects pages card conversions are handled separately in Plan 23 — they are NOT part of this plan.
 
 ## Acceptance Criteria
 
-- [ ] Source listing is card-based instead of table-based.
-- [ ] Add/edit/remove flows remain functional.
-- [ ] Health check states are clearly visible on cards.
-- [ ] Mobile and desktop layouts remain readable and stable.
+- [x] Source listing is card-based instead of table-based.
+- [x] Add/edit/remove flows remain functional.
+- [x] Health check states are clearly visible on cards.
+- [x] Mobile and desktop layouts remain readable and stable.
 
 ## Validation
 
-- `npm run --prefix web test -- --run`
-- `npm run --prefix web build`
-- `uv run pytest tests/test_sources.py`
+- `npm run --prefix web test -- --run` — 105 tests pass
+- `npm run --prefix web build` — builds cleanly
+- `uv run pytest tests/test_sources.py` — tests pass

@@ -8,6 +8,7 @@ import binascii
 import json
 import secrets
 from collections.abc import Awaitable, Callable
+from datetime import date
 from pathlib import Path
 from typing import Literal, NoReturn
 
@@ -26,6 +27,7 @@ from pydantic import BaseModel, ValidationError
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.analytics import (
     get_daily,
+    get_date_insights,
     get_model_detail,
     get_models,
     get_project_detail,
@@ -37,6 +39,7 @@ from modelmeter.core.doctor import DoctorReport, generate_doctor_report
 from modelmeter.core.live import get_live_snapshot
 from modelmeter.core.models import (
     DailyResponse,
+    DateInsightsResponse,
     LiveSnapshotResponse,
     ModelDetailResponse,
     ModelsResponse,
@@ -326,6 +329,40 @@ def create_app(
                 timezone_offset_minutes=timezone_offset_minutes,
                 token_source=token_source,
                 session_count_source=session_source,
+                db_path_override=_optional_path(db_path),
+                pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
+            )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/date-insights", response_model=DateInsightsResponse)
+    def date_insights(
+        day: str = Query(description="Date in YYYY-MM-DD format"),
+        timezone_offset_minutes: int = Query(default=0, ge=-840, le=840),
+        db_path: str | None = Query(default=None),
+        pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(
+            default=None, description="Source scope: local, all, or source:<id>"
+        ),
+    ) -> DateInsightsResponse:
+        try:
+            parsed_day = date.fromisoformat(day)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=400, detail="Invalid day format. Use YYYY-MM-DD."
+            ) from exc
+
+        try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
+            return get_date_insights(
+                settings=settings,
+                day=parsed_day,
+                timezone_offset_minutes=timezone_offset_minutes,
                 db_path_override=_optional_path(db_path),
                 pricing_file_override=_optional_path(pricing_file),
                 source_scope=scope,

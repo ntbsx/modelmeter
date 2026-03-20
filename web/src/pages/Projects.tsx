@@ -9,9 +9,10 @@ import { useSourceScope } from '../hooks/useSourceScope'
 import { useDaysFilter } from '../hooks/useDaysFilter'
 import { PageHeader } from '../components/DataTable'
 import { Badge } from '../components/ui'
+import DaysFilterPicker from '../components/DaysFilterPicker'
 
 export default function Projects() {
-  const { days } = useDaysFilter()
+  const { days } = useDaysFilter('projects')
   const { sourceScope } = useSourceScope()
 
   const { data, isLoading } = useQuery<ProjectsResponse>({
@@ -34,6 +35,7 @@ export default function Projects() {
       <PageHeader
         title="Projects"
         description={`Usage breakdown by project workspace (${days === 1 ? 'last 24 hours' : `last ${days} days`})`}
+        actions={<DaysFilterPicker scope="projects" />}
       />
 
       <div className="ds-surface overflow-hidden">
