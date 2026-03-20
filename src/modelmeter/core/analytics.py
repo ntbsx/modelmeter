@@ -10,9 +10,9 @@ from typing import Any, Literal, cast
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.doctor import generate_doctor_report
 from modelmeter.core.models import (
-    DateInsightsResponse,
     DailyResponse,
     DailyUsage,
+    DateInsightsResponse,
     ModelDetailResponse,
     ModelsResponse,
     ModelUsage,

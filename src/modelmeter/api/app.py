@@ -26,8 +26,8 @@ from pydantic import BaseModel, ValidationError
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.analytics import (
-    get_date_insights,
     get_daily,
+    get_date_insights,
     get_model_detail,
     get_models,
     get_project_detail,
@@ -38,8 +38,8 @@ from modelmeter.core.analytics import (
 from modelmeter.core.doctor import DoctorReport, generate_doctor_report
 from modelmeter.core.live import get_live_snapshot
 from modelmeter.core.models import (
-    DateInsightsResponse,
     DailyResponse,
+    DateInsightsResponse,
     LiveSnapshotResponse,
     ModelDetailResponse,
     ModelsResponse,
