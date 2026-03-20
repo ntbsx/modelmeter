@@ -45,17 +45,23 @@ function normalizeDays(raw: string | null, scope: string): number {
 }
 
 function normalizeScopeFromPath(pathname: string): string {
+  if (pathname === '/') {
+    return 'overview'
+  }
+  if (pathname === '/models') {
+    return 'models'
+  }
   if (pathname.startsWith('/models/provider/')) {
     return 'models'
   }
-  if (pathname === '/models') {
-    return 'providers'
+  if (pathname.startsWith('/models/')) {
+    return 'model-detail'
   }
   if (pathname === '/projects') {
     return 'projects'
   }
-  if (pathname === '/') {
-    return 'overview'
+  if (pathname.startsWith('/projects/')) {
+    return 'project-detail'
   }
   return pathname.replaceAll('/', '_') || 'default'
 }
