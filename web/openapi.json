@@ -1628,6 +1628,121 @@
         "title": "SQLiteDiagnostics",
         "type": "object"
       },
+      "SessionSummary": {
+        "description": "Session summary for selection UI.",
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "directory": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Directory"
+          },
+          "is_active": {
+            "default": false,
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "message_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Message Count",
+            "type": "integer"
+          },
+          "model_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Model Count",
+            "type": "integer"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "project_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Name"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "time_archived": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Archived"
+          },
+          "time_created": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Time Created",
+            "type": "integer"
+          },
+          "time_updated": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Time Updated",
+            "type": "integer"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "token_count": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Token Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "SessionSummary",
+        "type": "object"
+      },
       "SourceAuth": {
         "description": "Optional basic auth credentials for HTTP sources.",
         "properties": {
@@ -2503,6 +2618,298 @@
         "summary": "Live Events"
       }
     },
+    "/api/live/session/{session_id}": {
+      "get": {
+        "description": "Return live activity snapshot for a specific session.",
+        "operationId": "live_session_snapshot_api_live_session__session_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "window_minutes",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "minimum": 1,
+              "title": "Window Minutes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "token_source",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "message",
+                "steps"
+              ],
+              "title": "Token Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "models_limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "minimum": 1,
+              "title": "Models Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tools_limit",
+            "required": false,
+            "schema": {
+              "default": 8,
+              "minimum": 1,
+              "title": "Tools Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Scope"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LiveSnapshotResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Live Session Snapshot"
+      }
+    },
+    "/api/live/session/{session_id}/events": {
+      "get": {
+        "description": "SSE endpoint for live updates from a specific session.",
+        "operationId": "live_session_events_api_live_session__session_id__events_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "window_minutes",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "minimum": 1,
+              "title": "Window Minutes",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "token_source",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "message",
+                "steps"
+              ],
+              "title": "Token Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "models_limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "minimum": 1,
+              "title": "Models Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tools_limit",
+            "required": false,
+            "schema": {
+              "default": 8,
+              "minimum": 1,
+              "title": "Tools Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "interval_seconds",
+            "required": false,
+            "schema": {
+              "default": 3.0,
+              "maximum": 30.0,
+              "minimum": 1.0,
+              "title": "Interval Seconds",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "once",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Once",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "db_path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Db Path"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pricing_file",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pricing File"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Scope"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Live Session Events"
+      }
+    },
     "/api/live/snapshot": {
       "get": {
         "operationId": "live_snapshot_api_live_snapshot_get",
@@ -3246,6 +3653,97 @@
           }
         },
         "summary": "Providers"
+      }
+    },
+    "/api/sessions": {
+      "get": {
+        "description": "Return list of recent sessions with metadata for live panel selection.\n\nIf `active_since_hours` is provided, only return sessions updated within that time window.",
+        "operationId": "list_sessions_api_sessions_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Archived",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "source_scope",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Scope"
+            }
+          },
+          {
+            "in": "query",
+            "name": "active_since_hours",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 168,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Active Since Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SessionSummary"
+                  },
+                  "title": "Response List Sessions Api Sessions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Sessions"
       }
     },
     "/api/sources": {

@@ -18,8 +18,8 @@ Phase 5 covers:
 ## Plan Set
 
 1. `22-per-page-filters-and-date-insights.md` ✅
-2. `23-card-layout-infinite-scroll-and-charts.md`
-3. `24-live-multi-session-and-scope-simplification.md`
+2. `23-card-layout-infinite-scroll-and-charts.md` ✅
+3. `24-live-multi-session-and-scope-simplification.md` ✅
 4. `25-sources-page-card-redesign.md` ✅
 5. `26-date-insights-session-cards.md` *(planned)*
 
@@ -34,8 +34,8 @@ Phase 5 covers:
 
 - [x] No global days/date filter in app shell; each page owns its own filter UX
 - [x] New date insights page supports one-day spend and token breakdowns (Providers + Projects tabs, card layout)
-- [ ] Models, Providers, and Projects pages use cards + lazy loading + charts
-- [ ] Live page supports viewing multiple local/server (self) live session panels in one screen
+- [x] Models, Providers, and Projects pages use cards + lazy loading + charts
+- [x] Live page supports viewing multiple local/server (self) live session panels in one screen
 - [x] Sources page listing uses cards instead of table rows
 - [x] Web and terminal show a clear warning when server auth is disabled
 - [x] Frontend tests updated for changed interactions and layout

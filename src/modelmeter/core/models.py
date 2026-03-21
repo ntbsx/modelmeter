@@ -47,6 +47,24 @@ def _default_live_tool_usage_list() -> list[LiveToolUsage]:
     return []
 
 
+class SessionSummary(BaseModel):
+    """Session summary for selection UI."""
+
+    session_id: str
+    title: str | None = None
+    directory: str | None = None
+    project_id: str | None = None
+    project_name: str | None = None
+    time_created: int = Field(default=0, ge=0)
+    time_updated: int = Field(default=0, ge=0)
+    time_archived: int | None = None
+    message_count: int = Field(default=0, ge=0)
+    model_count: int = Field(default=0, ge=0)
+    token_count: int = Field(default=0, ge=0)
+    cost_usd: float | None = None
+    is_active: bool = False
+
+
 class TokenUsage(BaseModel):
     """Token usage counters."""
 

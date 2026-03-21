@@ -7,6 +7,7 @@ import base64
 import binascii
 import json
 import secrets
+import time
 from collections.abc import Awaitable, Callable
 from datetime import date
 from pathlib import Path
@@ -36,7 +37,7 @@ from modelmeter.core.analytics import (
     get_summary,
 )
 from modelmeter.core.doctor import DoctorReport, generate_doctor_report
-from modelmeter.core.live import get_live_snapshot
+from modelmeter.core.live import ACTIVE_SESSION_THRESHOLD_MS, get_live_snapshot
 from modelmeter.core.models import (
     DailyResponse,
     DateInsightsResponse,
@@ -46,6 +47,7 @@ from modelmeter.core.models import (
     ProjectDetailResponse,
     ProjectsResponse,
     ProvidersResponse,
+    SessionSummary,
     SummaryResponse,
     UpdateCheckResponse,
 )
@@ -56,6 +58,7 @@ from modelmeter.core.sources import (
     SourceRegistryError,
     SourceRegistryPublic,
     SourceScope,
+    SourceScopeKind,
     check_source_health,
     load_source_registry,
     remove_source,
@@ -63,6 +66,8 @@ from modelmeter.core.sources import (
     upsert_source,
 )
 from modelmeter.core.updater import check_for_updates
+from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
+from modelmeter.data.storage import resolve_storage_paths
 
 LOCAL_CORS_ORIGINS = [
     "http://localhost:3000",
@@ -93,6 +98,17 @@ def _optional_path(value: str | None) -> Path | None:
     if value is None:
         return None
     return Path(value)
+
+
+def _resolve_sqlite_path(settings: AppSettings, db_path_override: Path | None = None) -> Path:
+    report = generate_doctor_report(settings=settings, db_path_override=db_path_override)
+    if report.selected_source != "sqlite":
+        raise RuntimeError(
+            "SQLite data source is unavailable or incompatible. "
+            "Run `modelmeter doctor` for details."
+        )
+    paths = resolve_storage_paths(settings, db_path_override=db_path_override)
+    return paths.sqlite_db_path
 
 
 def _raise_http_error(exc: RuntimeError) -> NoReturn:
@@ -580,6 +596,162 @@ def create_app(
                             db_path_override=_optional_path(db_path),
                             pricing_file_override=_optional_path(pricing_file),
                             source_scope=scope,
+                        )
+                        payload = json.dumps(snapshot.model_dump(mode="json"))
+                        yield f"event: live.snapshot\ndata: {payload}\n\n"
+                    except (NotImplementedError, ValueError) as exc:
+                        payload = json.dumps({"detail": str(exc)})
+                        yield f"event: live.error\ndata: {payload}\n\n"
+                        if once:
+                            break
+                        await asyncio.sleep(interval_seconds)
+                        continue
+                    except RuntimeError as exc:
+                        payload = json.dumps({"detail": str(exc)})
+                        yield f"event: live.error\ndata: {payload}\n\n"
+
+                    if once:
+                        break
+
+                    await asyncio.sleep(interval_seconds)
+            except asyncio.CancelledError:
+                return
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            },
+        )
+
+    @app.get("/api/sessions", response_model=list[SessionSummary])
+    def list_sessions(
+        limit: int = Query(default=20, ge=1, le=100),
+        include_archived: bool = Query(default=False),
+        source_scope: str | None = Query(default=None),
+        active_since_hours: int | None = Query(default=None, ge=1, le=168),
+    ) -> list[SessionSummary]:
+        """Return list of recent sessions with metadata for live panel selection.
+
+        If `active_since_hours` is provided, only return sessions updated within that time window.
+        """
+        try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
+            if scope is not None and scope.kind != SourceScopeKind.LOCAL:
+                raise NotImplementedError("Federated session list not yet implemented")
+
+            sqlite_db_path = _resolve_sqlite_path(settings=settings, db_path_override=None)
+            repository = SQLiteUsageRepository(sqlite_db_path)
+
+            now_ms = int(time.time() * 1000)
+            # Calculate the cutoff for active_since_hours filter
+            active_since_ms: int | None = None
+            if active_since_hours is not None:
+                active_since_ms = now_ms - (active_since_hours * 60 * 60 * 1000)
+
+            session_rows = repository.fetch_sessions_summary(
+                limit=limit,
+                include_archived=include_archived,
+                min_time_updated_ms=active_since_ms,
+            )
+
+            sessions: list[SessionSummary] = []
+            for row in session_rows:
+                session = SessionSummary(
+                    session_id=str(row["session_id"]),
+                    title=str(row["title"]) if row["title"] else None,
+                    directory=str(row["directory"]) if row["directory"] else None,
+                    project_id=str(row["project_id"]) if row["project_id"] else None,
+                    project_name=str(row["project_name"]) if row["project_name"] else None,
+                    time_created=int(row["time_created"]),
+                    time_updated=int(row["time_updated"]),
+                    time_archived=int(row["time_archived"]) if row["time_archived"] else None,
+                    message_count=int(row["message_count"]),
+                    model_count=int(row["model_count"]),
+                    token_count=int(row["token_count"]),
+                    is_active=(not row["time_archived"])
+                    and (now_ms - int(row["time_updated"])) <= ACTIVE_SESSION_THRESHOLD_MS,
+                )
+                sessions.append(session)
+
+            return sessions
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/live/session/{session_id}", response_model=LiveSnapshotResponse)
+    def live_session_snapshot(
+        session_id: str,
+        window_minutes: int = Query(default=60, ge=1),
+        token_source: Literal["auto", "message", "steps"] = Query(default="auto"),
+        models_limit: int = Query(default=5, ge=1),
+        tools_limit: int = Query(default=8, ge=1),
+        db_path: str | None = Query(default=None),
+        pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(default=None),
+    ) -> LiveSnapshotResponse:
+        """Return live activity snapshot for a specific session."""
+        try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
+            return get_live_snapshot(
+                settings=settings,
+                window_minutes=window_minutes,
+                token_source=token_source,
+                models_limit=models_limit,
+                tools_limit=tools_limit,
+                db_path_override=_optional_path(db_path),
+                pricing_file_override=_optional_path(pricing_file),
+                source_scope=scope,
+                session_id=session_id,
+            )
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    @app.get("/api/live/session/{session_id}/events")
+    async def live_session_events(
+        session_id: str,
+        request: Request,
+        window_minutes: int = Query(default=60, ge=1),
+        token_source: Literal["auto", "message", "steps"] = Query(default="auto"),
+        models_limit: int = Query(default=5, ge=1),
+        tools_limit: int = Query(default=8, ge=1),
+        interval_seconds: float = Query(default=3.0, ge=1.0, le=30.0),
+        once: bool = Query(default=False),
+        db_path: str | None = Query(default=None),
+        pricing_file: str | None = Query(default=None),
+        source_scope: str | None = Query(default=None),
+    ) -> StreamingResponse:
+        """SSE endpoint for live updates from a specific session."""
+
+        async def event_generator():
+            try:
+                while True:
+                    if await request.is_disconnected():
+                        break
+
+                    try:
+                        scope = (
+                            SourceScope.parse(source_scope) if source_scope is not None else None
+                        )
+                        snapshot = get_live_snapshot(
+                            settings=settings,
+                            window_minutes=window_minutes,
+                            token_source=token_source,
+                            models_limit=models_limit,
+                            tools_limit=tools_limit,
+                            db_path_override=_optional_path(db_path),
+                            pricing_file_override=_optional_path(pricing_file),
+                            source_scope=scope,
+                            session_id=session_id,
                         )
                         payload = json.dumps(snapshot.model_dump(mode="json"))
                         yield f"event: live.snapshot\ndata: {payload}\n\n"

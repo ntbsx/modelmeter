@@ -89,6 +89,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/live/session/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live Session Snapshot
+         * @description Return live activity snapshot for a specific session.
+         */
+        get: operations["live_session_snapshot_api_live_session__session_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/live/session/{session_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live Session Events
+         * @description SSE endpoint for live updates from a specific session.
+         */
+        get: operations["live_session_events_api_live_session__session_id__events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/live/snapshot": {
         parameters: {
             query?: never;
@@ -183,6 +223,28 @@ export interface paths {
         };
         /** Providers */
         get: operations["providers_api_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sessions
+         * @description Return list of recent sessions with metadata for live panel selection.
+         *
+         *     If `active_since_hours` is provided, only return sessions updated within that time window.
+         */
+        get: operations["list_sessions_api_sessions_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -967,6 +1029,56 @@ export interface components {
             tables_present?: string[];
         };
         /**
+         * SessionSummary
+         * @description Session summary for selection UI.
+         */
+        SessionSummary: {
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /** Directory */
+            directory?: string | null;
+            /**
+             * Is Active
+             * @default false
+             */
+            is_active: boolean;
+            /**
+             * Message Count
+             * @default 0
+             */
+            message_count: number;
+            /**
+             * Model Count
+             * @default 0
+             */
+            model_count: number;
+            /** Project Id */
+            project_id?: string | null;
+            /** Project Name */
+            project_name?: string | null;
+            /** Session Id */
+            session_id: string;
+            /** Time Archived */
+            time_archived?: number | null;
+            /**
+             * Time Created
+             * @default 0
+             */
+            time_created: number;
+            /**
+             * Time Updated
+             * @default 0
+             */
+            time_updated: number;
+            /** Title */
+            title?: string | null;
+            /**
+             * Token Count
+             * @default 0
+             */
+            token_count: number;
+        };
+        /**
          * SourceAuth
          * @description Optional basic auth credentials for HTTP sources.
          */
@@ -1313,6 +1425,86 @@ export interface operations {
             };
         };
     };
+    live_session_snapshot_api_live_session__session_id__get: {
+        parameters: {
+            query?: {
+                window_minutes?: number;
+                token_source?: "auto" | "message" | "steps";
+                models_limit?: number;
+                tools_limit?: number;
+                db_path?: string | null;
+                pricing_file?: string | null;
+                source_scope?: string | null;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveSnapshotResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    live_session_events_api_live_session__session_id__events_get: {
+        parameters: {
+            query?: {
+                window_minutes?: number;
+                token_source?: "auto" | "message" | "steps";
+                models_limit?: number;
+                tools_limit?: number;
+                interval_seconds?: number;
+                once?: boolean;
+                db_path?: string | null;
+                pricing_file?: string | null;
+                source_scope?: string | null;
+            };
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     live_snapshot_api_live_snapshot_get: {
         parameters: {
             query?: {
@@ -1526,6 +1718,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProvidersResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sessions_api_sessions_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                include_archived?: boolean;
+                source_scope?: string | null;
+                active_since_hours?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionSummary"][];
                 };
             };
             /** @description Validation Error */
