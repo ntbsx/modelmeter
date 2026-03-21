@@ -21,14 +21,14 @@ Phase 5 covers:
 2. `23-card-layout-infinite-scroll-and-charts.md` ✅
 3. `24-live-multi-session-and-scope-simplification.md` ✅
 4. `25-sources-page-card-redesign.md` ✅
-5. `26-date-insights-session-cards.md` *(planned)*
+5. `26-date-insights-session-cards.md` ✅
 
 ## Execution Order
 
 - `22` ✅ — completed, foundation for date drill-down UX (Providers + Projects tabs, card layout)
 - `23` and `24` — in parallel after `22`
 - `25` ✅ — Sources page card redesign completed
-- `26` — Sessions tab for Date Insights, depends on `22`
+- `26` ✅ — Sessions tab for Date Insights completed
 
 ## Phase Exit Criteria
 

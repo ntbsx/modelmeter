@@ -64,17 +64,18 @@ Key milestones:
 
 ## Active Roadmap
 
-### Phase 5: Analytics UX and Exploration (In Progress)
+### Phase 5: Analytics UX and Exploration (Completed)
 
-Plan set: `phase-5/` (22-26)
+All plans (22-26) completed. See: `phase-5/README.md`
 
-Focus areas:
+Key milestones:
 - Per-page time filters (source scope remains global)
 - Date-specific breakdown page for spend/tokens by model, provider, and project
 - Card-first list views with lazy loading (infinite scroll)
 - Charts on models, providers, and projects pages
 - Multi-panel live monitoring across multiple sessions on local or server (self)
 - Sources page card redesign
+- Session cards in Date Insights with per-model breakdown
 
 ## Future Phases
 
