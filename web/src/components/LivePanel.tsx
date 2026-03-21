@@ -1,4 +1,16 @@
-import { Activity, Clock, Box, Terminal, Pause, Play, RotateCcw, X, AlertCircle, Loader2 } from 'lucide-react'
+import {
+  Activity,
+  Clock,
+  Box,
+  Terminal,
+  Pause,
+  Play,
+  RotateCcw,
+  X,
+  AlertCircle,
+  Loader2,
+  type LucideIcon,
+} from 'lucide-react'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { LivePanel } from '../hooks/useLivePanels'
 import { useLivePanelConnection, type ConnectionState } from '../hooks/useLivePanelConnection'
@@ -18,7 +30,7 @@ export default function LivePanel({ panel, sourceScope, globalPaused, onRemove, 
     globalPaused
   )
 
-  const statusConfig: Record<ConnectionState, { label: string; icon?: any }> = {
+  const statusConfig: Record<ConnectionState, { label: string; icon?: LucideIcon }> = {
     connecting: {
       label: 'Connecting...',
       icon: Loader2,

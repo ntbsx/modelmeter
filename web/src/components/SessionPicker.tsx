@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Search, X, Clock } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
@@ -19,6 +19,11 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
   const [searchQuery, setSearchQuery] = useState('')
   const previouslyFocusedRef = useRef<HTMLElement | null>(null)
 
+  const handleClose = useCallback(() => {
+    setSearchQuery('')
+    onClose()
+  }, [onClose])
+
   const { data, isLoading, error, refetch } = useQuery<SessionSummary[]>({
     queryKey: ['sessions-list', 'active-6h'],
     queryFn: () => {
@@ -29,6 +34,7 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
       }
       return fetchApi<SessionSummary[]>('/sessions', params)
     },
+    enabled: isOpen,
     staleTime: 30_000,
   })
 
@@ -53,12 +59,6 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
 
   useEffect(() => {
     if (!isOpen) {
-      setSearchQuery('')
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    if (!isOpen) {
       return
     }
 
@@ -66,7 +66,7 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose()
+        handleClose()
         return
       }
 
@@ -104,17 +104,17 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
       window.removeEventListener('keydown', onKeyDown)
       previouslyFocusedRef.current?.focus()
     }
-  }, [isOpen, onClose])
+  }, [isOpen, handleClose])
 
   const handleSelectSession = (session: SessionSummary) => {
     onSelectSession(session)
-    onClose()
+    handleClose()
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={handleClose}>
       <div
         className="bg-[var(--surface-primary)] rounded-xl shadow-xl max-w-4xl w-full mx-4 flex flex-col max-h-[80vh]"
         role="dialog"
@@ -129,12 +129,12 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
               Select a session to monitor in real-time
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="ds-btn-ghost"
-            aria-label="Close"
-          >
+            <button
+              type="button"
+              onClick={handleClose}
+              className="ds-btn-ghost"
+              aria-label="Close"
+            >
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -215,7 +215,7 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
             {availableSessions.length} session{availableSessions.length !== 1 ? 's' : ''} available
           </p>
           <div className="flex gap-2">
-            <button type="button" onClick={onClose} className="ds-btn-secondary">
+            <button type="button" onClick={handleClose} className="ds-btn-secondary">
               Cancel
             </button>
           </div>

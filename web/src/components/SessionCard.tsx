@@ -13,7 +13,7 @@ type Props = {
 
 export default function SessionCard({ session, isAdded, onSelect, animationDelay = 0 }: Props) {
   const isActive = session.is_active
-  const timeAgo = Math.floor((Date.now() - session.time_updated) / 1000 / 60)
+  const updatedLabel = new Date(session.time_updated).toLocaleTimeString()
 
   return (
     <button
@@ -61,7 +61,7 @@ export default function SessionCard({ session, isAdded, onSelect, animationDelay
           </div>
           <div className="flex items-center gap-1 text-[var(--text-tertiary)] text-xs">
             <Clock className="w-3 h-3" />
-            {timeAgo < 1 ? 'Just now' : timeAgo < 60 ? `${timeAgo}m ago` : `${Math.floor(timeAgo / 60)}h ago`}
+            Updated {updatedLabel}
           </div>
         </div>
       </div>

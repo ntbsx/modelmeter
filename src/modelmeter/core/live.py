@@ -12,7 +12,6 @@ from modelmeter.core.models import (
     LiveModelUsage,
     LiveSnapshotResponse,
     LiveToolUsage,
-    SessionSummary,
     TokenUsage,
 )
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
