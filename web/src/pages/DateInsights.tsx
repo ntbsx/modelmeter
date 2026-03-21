@@ -33,6 +33,20 @@ function providerColor(index: number) {
 
 type Tab = 'providers' | 'projects' | 'sessions'
 
+async function copySessionId(
+  sessionId: string,
+  onCopied: (id: string) => void,
+  onClear: () => void,
+) {
+  try {
+    await navigator.clipboard.writeText(sessionId)
+    onCopied(sessionId)
+    setTimeout(onClear, 1500)
+  } catch {
+    // clipboard unavailable or permission denied - fail silently
+  }
+}
+
 export default function DateInsights() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { sourceScope } = useSourceScope()
@@ -675,11 +689,13 @@ export default function DateInsights() {
                       {session.title && (
                         <button
                           type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(session.session_id)
-                            setCopiedSessionId(session.session_id)
-                            setTimeout(() => setCopiedSessionId((v) => v === session.session_id ? null : v), 1500)
-                          }}
+                          onClick={() =>
+                            copySessionId(
+                              session.session_id,
+                              setCopiedSessionId,
+                              () => setCopiedSessionId((v) => (v === session.session_id ? null : v)),
+                            )
+                          }
                           className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer"
                           title="Copy session ID"
                         >
@@ -694,11 +710,13 @@ export default function DateInsights() {
                       {!session.title && (
                         <button
                           type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(session.session_id)
-                            setCopiedSessionId(session.session_id)
-                            setTimeout(() => setCopiedSessionId((v) => v === session.session_id ? null : v), 1500)
-                          }}
+                          onClick={() =>
+                            copySessionId(
+                              session.session_id,
+                              setCopiedSessionId,
+                              () => setCopiedSessionId((v) => (v === session.session_id ? null : v)),
+                            )
+                          }
                           className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer"
                           title="Copy session ID"
                         >

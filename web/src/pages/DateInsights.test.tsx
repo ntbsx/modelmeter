@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '../test/test-utils'
 import DateInsights from './DateInsights'
 
@@ -172,8 +173,9 @@ describe('DateInsights page', () => {
     render(<DateInsights />)
 
     // Wait for data to load, then click Sessions tab
+    const user = userEvent.setup()
     const sessionsTab = await screen.findByRole('button', { name: /sessions/i })
-    await sessionsTab.click()
+    await user.click(sessionsTab)
 
     // Session card content
     expect(await screen.findByText('Test Project')).toBeInTheDocument()

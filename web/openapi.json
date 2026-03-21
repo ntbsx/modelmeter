@@ -1864,6 +1864,18 @@
             ],
             "title": "Started At"
           },
+          "started_at_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At Ms"
+          },
           "title": {
             "anyOf": [
               {

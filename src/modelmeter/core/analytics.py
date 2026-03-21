@@ -661,6 +661,7 @@ def get_date_insights(
                 cost_usd=model_cost,
                 has_pricing=pricing is not None,
                 started_at=started_at,
+                started_at_ms=started_ms,
             )
         else:
             existing.models.append(sm)
@@ -678,6 +679,7 @@ def get_date_insights(
                 candidate = datetime.fromtimestamp(int(row_ms) / 1000, tz=UTC).isoformat()
                 if candidate < existing.started_at:
                     existing.started_at = candidate
+                    existing.started_at_ms = int(row_ms)
 
     sessions = sorted(session_map.values(), key=lambda s: s.total_tokens, reverse=True)
 

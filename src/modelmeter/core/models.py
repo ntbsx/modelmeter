@@ -373,6 +373,7 @@ class SessionUsage(BaseModel):
     cost_usd: float | None = None
     has_pricing: bool = False
     started_at: str | None = None
+    started_at_ms: int | None = Field(default=None, ge=0)
 
 
 class DateInsightsResponse(BaseModel):

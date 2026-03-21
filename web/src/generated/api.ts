@@ -1125,6 +1125,8 @@ export interface components {
             session_id: string;
             /** Started At */
             started_at?: string | null;
+            /** Started At Ms */
+            started_at_ms?: number | null;
             /** Title */
             title?: string | null;
             /**
