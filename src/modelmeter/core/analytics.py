@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -23,6 +23,8 @@ from modelmeter.core.models import (
     ProjectUsage,
     ProvidersResponse,
     ProviderUsage,
+    SessionModelUsage,
+    SessionUsage,
     SummaryResponse,
     TokenUsage,
 )
@@ -619,6 +621,68 @@ def get_date_insights(
         )
     project_models.sort(key=lambda item: item.usage.total_tokens, reverse=True)
 
+    # Build per-session breakdown with per-model detail
+    session_model_rows = repository.fetch_session_model_usage_for_day(
+        day=day_str,
+        timezone_offset_minutes=timezone_offset_minutes,
+    )
+    session_map: dict[str, SessionUsage] = {}
+    for row in session_model_rows:
+        sid = str(row["session_id"])
+        model_id = str(row["model_id"])
+        usage = _token_usage_from_row(row)
+        pricing = pricing_book.get(model_id)
+        model_cost: float | None = None
+        if pricing is not None:
+            model_cost = round(calculate_usage_cost(usage, pricing), 8)
+        provider = provider_from_model_id_and_provider_field(model_id, row["provider_id"])
+        sm = SessionModelUsage(
+            model_id=model_id,
+            provider=provider,
+            usage=usage,
+            total_interactions=int(row["total_interactions"]),
+            cost_usd=model_cost,
+            has_pricing=pricing is not None,
+        )
+        existing = session_map.get(sid)
+        if existing is None:
+            started_ms = row["started_at_ms"]
+            started_at: str | None = None
+            if started_ms is not None and int(started_ms) > 0:
+                started_at = datetime.fromtimestamp(int(started_ms) / 1000, tz=UTC).isoformat()
+            session_map[sid] = SessionUsage(
+                session_id=sid,
+                title=str(row["session_title"]) if row["session_title"] else None,
+                project_id=str(row["project_id"]) if row["project_id"] else None,
+                project_name=str(row["project_name"]) if row["project_name"] else None,
+                models=[sm],
+                total_tokens=usage.total_tokens,
+                total_interactions=int(row["total_interactions"]),
+                cost_usd=model_cost,
+                has_pricing=pricing is not None,
+                started_at=started_at,
+                started_at_ms=started_ms,
+            )
+        else:
+            existing.models.append(sm)
+            existing.total_tokens += usage.total_tokens
+            existing.total_interactions += int(row["total_interactions"])
+            if model_cost is not None:
+                existing.has_pricing = True
+                if existing.cost_usd is None:
+                    existing.cost_usd = model_cost
+                else:
+                    existing.cost_usd = round(existing.cost_usd + model_cost, 8)
+            # Update started_at if this model group has an earlier timestamp
+            row_ms = row["started_at_ms"]
+            if row_ms is not None and int(row_ms) > 0 and existing.started_at is not None:
+                candidate = datetime.fromtimestamp(int(row_ms) / 1000, tz=UTC).isoformat()
+                if candidate < existing.started_at:
+                    existing.started_at = candidate
+                    existing.started_at_ms = int(row_ms)
+
+    sessions = sorted(session_map.values(), key=lambda s: s.total_tokens, reverse=True)
+
     total_interactions: int
     if use_steps:
         # steps row has no total_interactions column; derive from model rows
@@ -638,6 +702,7 @@ def get_date_insights(
         providers=providers,
         projects=projects,
         project_models=project_models,
+        sessions=sessions,
         source_scope=source_scope.kind.value if source_scope else "local",
         sources_considered=["local"],
         sources_succeeded=["local"],

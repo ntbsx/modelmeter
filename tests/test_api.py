@@ -618,6 +618,33 @@ def test_date_insights_endpoint_returns_daily_breakdowns(tmp_path: Path) -> None
     assert payload["projects"][0]["project_id"] == "p1"
 
 
+def test_date_insights_sessions_field(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+
+    client = _new_client()
+    today = datetime.now(tz=UTC).date().isoformat()
+    response = client.get(
+        "/api/date-insights",
+        params={"db_path": str(db_path), "day": today, "timezone_offset_minutes": 0},
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    sessions = payload["sessions"]
+    assert isinstance(sessions, list)
+    assert len(sessions) == 1  # type: ignore[reportUnknownArgumentType]
+    session = sessions[0]  # type: ignore[reportUnknownVariableType]
+    assert session["session_id"] == "s1"
+    assert session["project_id"] == "p1"
+    assert session["total_tokens"] > 0
+    assert session["total_interactions"] == 1
+    assert isinstance(session["models"], list)
+    assert len(session["models"]) == 1  # type: ignore[reportUnknownArgumentType]
+    assert session["models"][0]["model_id"] == "anthropic/claude-sonnet-4-5"
+    assert session["started_at"] is not None
+
+
 def test_date_insights_endpoint_rejects_invalid_day_format() -> None:
     client = _new_client()
     response = client.get("/api/date-insights", params={"day": "03-20-2026"})

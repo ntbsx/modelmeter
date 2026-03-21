@@ -257,6 +257,13 @@
             "title": "Providers",
             "type": "array"
           },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/SessionUsage"
+            },
+            "title": "Sessions",
+            "type": "array"
+          },
           "source_scope": {
             "anyOf": [
               {
@@ -1628,6 +1635,57 @@
         "title": "SQLiteDiagnostics",
         "type": "object"
       },
+      "SessionModelUsage": {
+        "description": "Per-model usage within a single session, for date insights.",
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "has_pricing": {
+            "default": false,
+            "title": "Has Pricing",
+            "type": "boolean"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": [
+          "model_id",
+          "usage"
+        ],
+        "title": "SessionModelUsage",
+        "type": "object"
+      },
       "SessionSummary": {
         "description": "Session summary for selection UI.",
         "properties": {
@@ -1741,6 +1799,111 @@
           "session_id"
         ],
         "title": "SessionSummary",
+        "type": "object"
+      },
+      "SessionUsage": {
+        "description": "Per-session usage for a single day.",
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "has_pricing": {
+            "default": false,
+            "title": "Has Pricing",
+            "type": "boolean"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/SessionModelUsage"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "project_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Name"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "started_at_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At Ms"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "total_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Interactions",
+            "type": "integer"
+          },
+          "total_tokens": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Total Tokens",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "SessionUsage",
         "type": "object"
       },
       "SourceAuth": {

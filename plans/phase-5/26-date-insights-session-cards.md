@@ -1,8 +1,9 @@
 # 26. Session Cards in Date Insights
 
-**Status:** Planned  
-**Priority:** Medium  
+**Status:** Completed
+**Priority:** Medium
 **Dependencies:** Plan 22 (Date Insights page foundation)
+**PR:** #49
 
 ## Problem Statement
 

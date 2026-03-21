@@ -39,6 +39,14 @@ def _default_project_session_usage_list() -> list[ProjectSessionUsage]:
     return []
 
 
+def _default_session_usage_list() -> list[SessionUsage]:
+    return []
+
+
+def _default_session_model_usage_list() -> list[SessionModelUsage]:
+    return []
+
+
 def _default_live_model_usage_list() -> list[LiveModelUsage]:
     return []
 
@@ -341,6 +349,33 @@ class UpdateCheckResponse(BaseModel):
     error: str | None = None
 
 
+class SessionModelUsage(BaseModel):
+    """Per-model usage within a single session, for date insights."""
+
+    model_id: str
+    provider: str | None = None
+    usage: TokenUsage
+    total_interactions: int = Field(default=0, ge=0)
+    cost_usd: float | None = None
+    has_pricing: bool = False
+
+
+class SessionUsage(BaseModel):
+    """Per-session usage for a single day."""
+
+    session_id: str
+    title: str | None = None
+    project_id: str | None = None
+    project_name: str | None = None
+    models: list[SessionModelUsage] = Field(default_factory=_default_session_model_usage_list)
+    total_tokens: int = Field(default=0, ge=0)
+    total_interactions: int = Field(default=0, ge=0)
+    cost_usd: float | None = None
+    has_pricing: bool = False
+    started_at: str | None = None
+    started_at_ms: int | None = Field(default=None, ge=0)
+
+
 class DateInsightsResponse(BaseModel):
     """Date-specific usage breakdown contract."""
 
@@ -357,6 +392,7 @@ class DateInsightsResponse(BaseModel):
     project_models: list[ProjectModelUsage] = Field(
         default_factory=_default_project_model_usage_list
     )
+    sessions: list[SessionUsage] = Field(default_factory=_default_session_usage_list)
     source_scope: str | None = None
     sources_considered: list[str] = Field(default_factory=_default_str_list)
     sources_succeeded: list[str] = Field(default_factory=_default_str_list)

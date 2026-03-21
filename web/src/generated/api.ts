@@ -460,6 +460,8 @@ export interface components {
             projects?: components["schemas"]["ProjectUsage"][];
             /** Providers */
             providers?: components["schemas"]["ProviderUsage"][];
+            /** Sessions */
+            sessions?: components["schemas"]["SessionUsage"][];
             /** Source Scope */
             source_scope?: string | null;
             /** Sources Considered */
@@ -1029,6 +1031,29 @@ export interface components {
             tables_present?: string[];
         };
         /**
+         * SessionModelUsage
+         * @description Per-model usage within a single session, for date insights.
+         */
+        SessionModelUsage: {
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /**
+             * Has Pricing
+             * @default false
+             */
+            has_pricing: boolean;
+            /** Model Id */
+            model_id: string;
+            /** Provider */
+            provider?: string | null;
+            /**
+             * Total Interactions
+             * @default 0
+             */
+            total_interactions: number;
+            usage: components["schemas"]["TokenUsage"];
+        };
+        /**
          * SessionSummary
          * @description Session summary for selection UI.
          */
@@ -1077,6 +1102,43 @@ export interface components {
              * @default 0
              */
             token_count: number;
+        };
+        /**
+         * SessionUsage
+         * @description Per-session usage for a single day.
+         */
+        SessionUsage: {
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /**
+             * Has Pricing
+             * @default false
+             */
+            has_pricing: boolean;
+            /** Models */
+            models?: components["schemas"]["SessionModelUsage"][];
+            /** Project Id */
+            project_id?: string | null;
+            /** Project Name */
+            project_name?: string | null;
+            /** Session Id */
+            session_id: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Started At Ms */
+            started_at_ms?: number | null;
+            /** Title */
+            title?: string | null;
+            /**
+             * Total Interactions
+             * @default 0
+             */
+            total_interactions: number;
+            /**
+             * Total Tokens
+             * @default 0
+             */
+            total_tokens: number;
         };
         /**
          * SourceAuth
