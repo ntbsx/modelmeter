@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import date, datetime, timezone as tz
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -649,7 +649,7 @@ def get_date_insights(
             started_ms = row["started_at_ms"]
             started_at: str | None = None
             if started_ms is not None and int(started_ms) > 0:
-                started_at = datetime.fromtimestamp(int(started_ms) / 1000, tz=tz.utc).isoformat()
+                started_at = datetime.fromtimestamp(int(started_ms) / 1000, tz=UTC).isoformat()
             session_map[sid] = SessionUsage(
                 session_id=sid,
                 title=str(row["session_title"]) if row["session_title"] else None,
@@ -675,7 +675,7 @@ def get_date_insights(
             # Update started_at if this model group has an earlier timestamp
             row_ms = row["started_at_ms"]
             if row_ms is not None and int(row_ms) > 0 and existing.started_at is not None:
-                candidate = datetime.fromtimestamp(int(row_ms) / 1000, tz=tz.utc).isoformat()
+                candidate = datetime.fromtimestamp(int(row_ms) / 1000, tz=UTC).isoformat()
                 if candidate < existing.started_at:
                     existing.started_at = candidate
 

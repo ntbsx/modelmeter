@@ -877,7 +877,8 @@ class SQLiteUsageRepository:
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.read'), 0) > 0
                     THEN json_extract(m.data, '$.tokens.cache.read') ELSE 0 END), 0) AS cache_read,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.write'), 0) > 0
-                    THEN json_extract(m.data, '$.tokens.cache.write') ELSE 0 END), 0) AS cache_write,
+                    THEN json_extract(m.data, '$.tokens.cache.write')
+                    ELSE 0 END), 0) AS cache_write,
                 COUNT(*) AS total_interactions,
                 MIN(json_extract(m.data, '$.time.created')) AS started_at_ms
             FROM message m
