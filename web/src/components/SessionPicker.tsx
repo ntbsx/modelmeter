@@ -141,8 +141,12 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
 
         <div className="p-4 border-b border-[var(--border-subtle)]">
           <div className="relative mb-3">
+            <label htmlFor="live-session-search" className="sr-only">
+              Search sessions
+            </label>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
             <input
+              id="live-session-search"
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

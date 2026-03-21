@@ -16,6 +16,8 @@ export default function Live() {
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [globalPaused, setGlobalPaused] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
+  const supportsSelectedScope = sourceScope === 'self'
+  const liveScope = supportsSelectedScope ? sourceScope : 'self'
 
   const handleToggleGlobalPause = () => {
     setGlobalPaused((prev) => !prev)
@@ -92,6 +94,14 @@ export default function Live() {
         </div>
       )}
 
+      {!supportsSelectedScope && (
+        <div className="ds-surface p-3 text-sm">
+          <span className="ds-text-muted">
+            Live multi-session currently supports This Server only. Switched to local scope.
+          </span>
+        </div>
+      )}
+
       <div className="ds-surface p-4 flex items-center gap-2 text-sm">
         <span className="ds-text-muted">
           Data source: This Server (self)
@@ -121,7 +131,7 @@ export default function Live() {
             <LivePanel
               key={panel.id}
               panel={panel}
-              sourceScope={sourceScope}
+              sourceScope={liveScope}
               globalPaused={globalPaused}
               onRemove={() => handleRemovePanel(panel.id)}
               animationDelay={Math.min(i, 4) * 50}

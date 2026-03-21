@@ -992,36 +992,37 @@ class SQLiteUsageRepository:
                 s.time_archived,
                 COALESCE(p.name, p.worktree, s.project_id) AS project_name,
                 s.project_id,
-                (
-                    SELECT COUNT(DISTINCT m.id)
-                    FROM message m
-                    WHERE m.session_id = s.id
-                ) AS message_count,
-                (
-                    SELECT COUNT(DISTINCT
-                        COALESCE(
-                            json_extract(m.data, '$.modelID'),
-                            json_extract(m.data, '$.model.modelID'),
-                            'unknown'
-                        )
-                    )
-                    FROM message m
-                    WHERE m.session_id = s.id
-                      AND (
-                          json_extract(m.data, '$.modelID') IS NOT NULL OR
-                          json_extract(m.data, '$.model.modelID') IS NOT NULL
-                      )
-                ) AS model_count,
-                (
-                    SELECT COALESCE(SUM(
-                        json_extract(m.data, '$.tokens.input') +
-                        json_extract(m.data, '$.tokens.output')
-                    ), 0)
-                    FROM message m
-                    WHERE m.session_id = s.id
-                ) AS token_count
+                COALESCE(msg_agg.message_count, 0) AS message_count,
+                COALESCE(msg_agg.model_count, 0) AS model_count,
+                COALESCE(msg_agg.token_count, 0) AS token_count
             FROM session s
             LEFT JOIN project p ON p.id = s.project_id
+            LEFT JOIN (
+                SELECT
+                    m.session_id,
+                    COUNT(DISTINCT m.id) AS message_count,
+                    COUNT(
+                        DISTINCT CASE
+                            WHEN json_extract(m.data, '$.modelID') IS NOT NULL
+                              OR json_extract(m.data, '$.model.modelID') IS NOT NULL
+                            THEN COALESCE(
+                                json_extract(m.data, '$.modelID'),
+                                json_extract(m.data, '$.model.modelID'),
+                                'unknown'
+                            )
+                            ELSE NULL
+                        END
+                    ) AS model_count,
+                    COALESCE(
+                        SUM(
+                            COALESCE(json_extract(m.data, '$.tokens.input'), 0)
+                            + COALESCE(json_extract(m.data, '$.tokens.output'), 0)
+                        ),
+                        0
+                    ) AS token_count
+                FROM message m
+                GROUP BY m.session_id
+            ) AS msg_agg ON msg_agg.session_id = s.id
             WHERE (COALESCE(s.time_archived, 0) = 0 OR ?)
         """
 
@@ -1044,7 +1045,10 @@ class SQLiteUsageRepository:
     def fetch_live_summary_messages(
         self, *, since_ms: int, session_id: str | None = None
     ) -> sqlite3.Row:
-        """Fetch aggregate usage totals from assistant messages since timestamp, optionally filtered by session_id."""
+        """Fetch aggregate usage totals from assistant messages since timestamp.
+
+        Optionally filtered by session_id.
+        """
         query = """
             SELECT
                 COUNT(*) AS total_interactions,
@@ -1078,7 +1082,10 @@ class SQLiteUsageRepository:
     def fetch_live_summary_steps(
         self, *, since_ms: int, session_id: str | None = None
     ) -> sqlite3.Row:
-        """Fetch aggregate usage totals from step-finish parts since timestamp, optionally filtered by session_id."""
+        """Fetch aggregate usage totals from step-finish parts since timestamp.
+
+        Optionally filtered by session_id.
+        """
         query = """
             SELECT
                 COUNT(*) AS total_interactions,

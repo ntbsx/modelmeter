@@ -159,7 +159,7 @@ export default function LivePanel({ panel, sourceScope, globalPaused, onRemove, 
         <div className="flex flex-col gap-0.5">
           <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Cost</span>
           <span className="ds-text-tabular font-bold tabular-nums text-[var(--text-primary)] text-sm">
-            {data.cost_usd ? formatUsd(data.cost_usd) : '–'}
+            {data.cost_usd != null ? formatUsd(data.cost_usd) : '–'}
           </span>
         </div>
         <div className="flex flex-col gap-0.5">

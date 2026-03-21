@@ -35,7 +35,7 @@ export function useLivePanelConnection(
 
   const eventSourceRef = useRef<EventSource | null>(null)
 
-  const liveScope = sourceScope === 'self' ? sourceScope : 'self'
+  const liveScope = sourceScope
 
   // Polling fallback
   const { data: polledData, isError: pollingError, refetch } = useQuery<LiveSnapshotResponse>({

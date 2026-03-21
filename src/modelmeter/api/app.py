@@ -26,8 +26,6 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ValidationError
 
 from modelmeter.config.settings import AppSettings
-from modelmeter.data.storage import resolve_storage_paths
-from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.core.analytics import (
     get_daily,
     get_date_insights,
@@ -68,6 +66,8 @@ from modelmeter.core.sources import (
     upsert_source,
 )
 from modelmeter.core.updater import check_for_updates
+from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
+from modelmeter.data.storage import resolve_storage_paths
 
 LOCAL_CORS_ORIGINS = [
     "http://localhost:3000",

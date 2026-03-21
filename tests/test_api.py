@@ -828,10 +828,14 @@ def test_models_endpoint_filters_by_provider(tmp_path: Path) -> None:
     assert payload["models"][0]["model_id"] == "anthropic/claude-sonnet-4-5"
 
 
-def test_list_sessions_returns_recent_sessions(tmp_path: Path) -> None:
+def test_list_sessions_returns_recent_sessions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test that /api/sessions returns recent sessions with metadata."""
     db_path = tmp_path / "opencode.db"
     _create_api_fixture(db_path)
+
+    monkeypatch.setenv("MODELMETER_OPENCODE_DB_PATH", str(db_path))
 
     client = _new_client()
     response = client.get("/api/sessions", params={"limit": 10})
@@ -853,37 +857,45 @@ def test_list_sessions_returns_recent_sessions(tmp_path: Path) -> None:
     assert "is_active" in session
 
 
-def test_list_sessions_respects_limit_parameter(tmp_path: Path) -> None:
+def test_list_sessions_respects_limit_parameter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test that /api/sessions respects the limit parameter."""
     db_path = tmp_path / "opencode.db"
     _create_api_fixture(db_path)
+
+    monkeypatch.setenv("MODELMETER_OPENCODE_DB_PATH", str(db_path))
 
     client = _new_client()
 
     # Request only 2 sessions
     response = client.get("/api/sessions", params={"limit": 2})
     assert response.status_code == 200
-    data = response.json()
+    data = cast(list[dict[str, Any]], response.json())
     assert len(data) <= 2
 
     # Request 20 sessions (more than available)
     response = client.get("/api/sessions", params={"limit": 20})
     assert response.status_code == 200
-    data_larger = response.json()
+    data_larger = cast(list[dict[str, Any]], response.json())
     assert len(data_larger) >= len(data)
 
 
-def test_list_sessions_includes_archived_when_requested(tmp_path: Path) -> None:
+def test_list_sessions_includes_archived_when_requested(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test that /api/sessions can include archived sessions."""
     db_path = tmp_path / "opencode.db"
     _create_api_fixture(db_path)
+
+    monkeypatch.setenv("MODELMETER_OPENCODE_DB_PATH", str(db_path))
 
     client = _new_client()
 
     # Without archived sessions
     response = client.get("/api/sessions", params={"include_archived": False})
     assert response.status_code == 200
-    data_no_archived = response.json()
+    data_no_archived = cast(list[dict[str, Any]], response.json())
     assert not any(s.get("time_archived") for s in data_no_archived)
 
     # With archived sessions
@@ -893,10 +905,14 @@ def test_list_sessions_includes_archived_when_requested(tmp_path: Path) -> None:
     response.json()
 
 
-def test_list_sessions_rejects_non_self_source_scope(tmp_path: Path) -> None:
+def test_list_sessions_rejects_non_self_source_scope(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test that /api/sessions rejects federation scopes (not implemented yet)."""
     db_path = tmp_path / "opencode.db"
     _create_api_fixture(db_path)
+
+    monkeypatch.setenv("MODELMETER_OPENCODE_DB_PATH", str(db_path))
 
     client = _new_client()
 
@@ -910,17 +926,21 @@ def test_list_sessions_rejects_non_self_source_scope(tmp_path: Path) -> None:
     assert response.status_code == 501
 
 
-def test_live_session_snapshot_filters_by_session_id(tmp_path: Path) -> None:
+def test_live_session_snapshot_filters_by_session_id(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Test that /api/live/session/{session_id} filters to that session."""
     db_path = tmp_path / "opencode.db"
     _create_api_fixture(db_path)
+
+    monkeypatch.setenv("MODELMETER_OPENCODE_DB_PATH", str(db_path))
 
     client = _new_client()
 
     # First, get a list of sessions
     response = client.get("/api/sessions", params={"limit": 1})
     assert response.status_code == 200
-    sessions = response.json()
+    sessions = cast(list[dict[str, Any]], response.json())
     assert len(sessions) > 0
     session_id = sessions[0]["session_id"]
 
@@ -938,6 +958,52 @@ def test_live_session_snapshot_filters_by_session_id(tmp_path: Path) -> None:
     assert "active_session" in data
     assert "top_models" in data
     assert "top_tools" in data
+
+
+def test_live_session_events_once_returns_snapshot_event(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that /api/live/session/{session_id}/events emits live.snapshot when once=true."""
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+    monkeypatch.setenv("MODELMETER_OPENCODE_DB_PATH", str(db_path))
+
+    client = _new_client()
+    sessions_response = client.get("/api/sessions", params={"limit": 1})
+    sessions = cast(list[dict[str, Any]], sessions_response.json())
+    session_id = sessions[0]["session_id"]
+
+    response = client.get(
+        f"/api/live/session/{session_id}/events",
+        params={"once": True, "window_minutes": 60},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert "event: live.snapshot" in response.text
+
+
+def test_live_session_events_rejects_non_local_scope(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that /api/live/session/{session_id}/events emits live.error for unsupported scopes."""
+    db_path = tmp_path / "opencode.db"
+    _create_api_fixture(db_path)
+    monkeypatch.setenv("MODELMETER_OPENCODE_DB_PATH", str(db_path))
+
+    client = _new_client()
+    sessions_response = client.get("/api/sessions", params={"limit": 1})
+    sessions = cast(list[dict[str, Any]], sessions_response.json())
+    session_id = sessions[0]["session_id"]
+
+    response = client.get(
+        f"/api/live/session/{session_id}/events",
+        params={"once": True, "source_scope": "all"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert "event: live.error" in response.text
 
 
 def test_list_sessions_filters_by_active_since_hours(
