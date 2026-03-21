@@ -12,35 +12,7 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
 
 ### Phase 5: Analytics UX and Exploration (Completed)
 
-- [x] `phase-5/22-per-page-filters-and-date-insights.md`
-  - Status: Completed
-  - Priority: High
-  - Estimated: 6-8 hours
-  - Description: Move date filters to each page, add date-specific spend breakdown (tabbed card layout: Providers + Projects), and add auth-disabled warning (web + terminal)
-
-- [x] `phase-5/23-card-layout-infinite-scroll-and-charts.md`
-  - Status: Completed
-  - Priority: High
-  - Estimated: 8-12 hours
-  - Description: Replace table-heavy list views with card feeds, lazy loading, and charts
-
-- [x] `phase-5/24-live-multi-session-and-scope-simplification.md`
-  - Status: Completed
-  - Priority: High
-  - Estimated: 6-10 hours
-  - Description: Add multi-session live panels (local or server self) and remove ineffective live-only source selector behavior
-
-- [x] `phase-5/25-sources-page-card-redesign.md`
-  - Status: Completed
-  - Priority: Medium
-  - Estimated: 4-6 hours
-  - Description: Redesign Sources listing into cards while keeping source management flows intact
-
-- [x] `phase-5/26-date-insights-session-cards.md`
-  - Status: Completed
-  - Priority: Medium
-  - Estimated: 4-6 hours
-  - Description: Add Sessions tab to Date Insights page — show per-session card layout for selected date with model breakdown, tokens, and cost
+Archived in `completed/phase-5/` (Plans 22-26). See `completed/phase-5/README.md` for details.
 
 ### Phase Milestones
 
@@ -102,7 +74,7 @@ Historical plans are organized in `completed/` by phase:
 - **Latest Release:** See `git describe --tags --abbrev=0`
 - **Roadmap Index:** See `00-roadmap-index.md`
 - **Phase 4 Tracking:** See `completed/phase-4_part_2/README.md`
-- **Phase 5 Tracking:** See `phase-5/README.md`
+- **Phase 5 Tracking:** See `completed/phase-5/README.md`
 
 ## Historical Dependency Graph (Archived)
 
