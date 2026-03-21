@@ -827,7 +827,8 @@ class SQLiteUsageRepository:
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.read'), 0) > 0
                     THEN json_extract(m.data, '$.tokens.cache.read') ELSE 0 END), 0) AS cache_read,
                 COALESCE(SUM(CASE WHEN COALESCE(json_extract(m.data, '$.tokens.cache.write'), 0) > 0
-                    THEN json_extract(m.data, '$.tokens.cache.write') ELSE 0 END), 0) AS cache_write,
+                    THEN json_extract(m.data, '$.tokens.cache.write') ELSE 0 END), 0)
+                AS cache_write,
                 COUNT(*) AS total_interactions
             FROM message m
             JOIN session s ON s.id = m.session_id
