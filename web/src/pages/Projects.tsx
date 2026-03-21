@@ -86,7 +86,7 @@ export default function Projects() {
               <button
                 type="button"
                 onClick={() => setChartMetric('tokens')}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors focus-ring ${
                   chartMetric === 'tokens'
                     ? 'bg-[var(--accent-primary)] text-white'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -97,7 +97,7 @@ export default function Projects() {
               <button
                 type="button"
                 onClick={() => setChartMetric('cost')}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors focus-ring ${
                   chartMetric === 'cost'
                     ? 'bg-[var(--accent-primary)] text-white'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -188,7 +188,7 @@ function ProjectCard({ project, index }: { project: ProjectUsage; index: number 
   return (
     <Link
       to={`/projects/${encodeURIComponent(project.project_id)}`}
-      className="ds-surface flex flex-col p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md animate-slide-up"
+      className="ds-surface focus-ring flex flex-col p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md animate-slide-up"
       style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
       <div className="mb-3">
