@@ -37,7 +37,7 @@ from modelmeter.core.analytics import (
     get_summary,
 )
 from modelmeter.core.doctor import DoctorReport, generate_doctor_report
-from modelmeter.core.live import get_live_snapshot
+from modelmeter.core.live import ACTIVE_SESSION_THRESHOLD_MS, get_live_snapshot
 from modelmeter.core.models import (
     DailyResponse,
     DateInsightsResponse,
@@ -646,8 +646,6 @@ def create_app(
             repository = SQLiteUsageRepository(sqlite_db_path)
 
             now_ms = int(time.time() * 1000)
-            active_session_threshold_ms = 10 * 60 * 1000  # 10 minutes
-
             # Calculate the cutoff for active_since_hours filter
             active_since_ms: int | None = None
             if active_since_hours is not None:
@@ -673,7 +671,8 @@ def create_app(
                     message_count=int(row["message_count"]),
                     model_count=int(row["model_count"]),
                     token_count=int(row["token_count"]),
-                    is_active=(now_ms - int(row["time_updated"])) <= active_session_threshold_ms,
+                    is_active=(not row["time_archived"])
+                    and (now_ms - int(row["time_updated"])) <= ACTIVE_SESSION_THRESHOLD_MS,
                 )
                 sessions.append(session)
 

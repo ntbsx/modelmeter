@@ -983,20 +983,40 @@ class SQLiteUsageRepository:
         If min_time_updated_ms is provided, only return sessions updated after that timestamp.
         """
         query = """
+            WITH recent_sessions AS (
+                SELECT
+                    s.id,
+                    s.title,
+                    s.directory,
+                    s.time_created,
+                    s.time_updated,
+                    s.time_archived,
+                    s.project_id
+                FROM session s
+                WHERE (COALESCE(s.time_archived, 0) = 0 OR ?)
+        """
+
+        if min_time_updated_ms is not None:
+            query += " AND s.time_updated >= ?"
+
+        query += """
+                ORDER BY s.time_updated DESC
+                LIMIT ?
+            )
             SELECT
-                s.id AS session_id,
-                s.title,
-                s.directory,
-                s.time_created,
-                s.time_updated,
-                s.time_archived,
-                COALESCE(p.name, p.worktree, s.project_id) AS project_name,
-                s.project_id,
+                rs.id AS session_id,
+                rs.title,
+                rs.directory,
+                rs.time_created,
+                rs.time_updated,
+                rs.time_archived,
+                COALESCE(p.name, p.worktree, rs.project_id) AS project_name,
+                rs.project_id,
                 COALESCE(msg_agg.message_count, 0) AS message_count,
                 COALESCE(msg_agg.model_count, 0) AS model_count,
                 COALESCE(msg_agg.token_count, 0) AS token_count
-            FROM session s
-            LEFT JOIN project p ON p.id = s.project_id
+            FROM recent_sessions rs
+            LEFT JOIN project p ON p.id = rs.project_id
             LEFT JOIN (
                 SELECT
                     m.session_id,
@@ -1021,17 +1041,10 @@ class SQLiteUsageRepository:
                         0
                     ) AS token_count
                 FROM message m
+                WHERE m.session_id IN (SELECT id FROM recent_sessions)
                 GROUP BY m.session_id
-            ) AS msg_agg ON msg_agg.session_id = s.id
-            WHERE (COALESCE(s.time_archived, 0) = 0 OR ?)
-        """
-
-        if min_time_updated_ms is not None:
-            query += " AND s.time_updated >= ?"
-
-        query += """
-            ORDER BY s.time_updated DESC
-            LIMIT ?
+            ) AS msg_agg ON msg_agg.session_id = rs.id
+            ORDER BY rs.time_updated DESC
         """
 
         params: list[int | bool] = [include_archived]

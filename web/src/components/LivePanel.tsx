@@ -227,9 +227,10 @@ export default function LivePanel({ panel, sourceScope, globalPaused, onRemove, 
       <div className="mt-auto pt-3 border-t border-[var(--border-subtle)] flex items-center justify-end gap-1 bg-[var(--surface-secondary)]/30 rounded-b-lg">
           <button
             type="button"
-            onClick={isPaused ? resume : pause}
+            onClick={globalPaused ? undefined : isPaused ? resume : pause}
             className="ds-btn-ghost text-xs py-1.5 px-2 focus-ring"
-            aria-label={isPaused ? 'Resume' : 'Pause'}
+            aria-label={globalPaused ? 'Globally paused' : isPaused ? 'Resume' : 'Pause'}
+            disabled={globalPaused}
           >
           {isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
         </button>
