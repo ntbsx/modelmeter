@@ -6,6 +6,26 @@ The format follows Keep a Changelog and versions follow project CalVer (`YYYY.M.
 
 ## [Unreleased]
 
+## [2026.3.24] - 2026-03-21
+
+### Added
+- Sessions tab with per-session card breakdown in date-insights.
+- Card layout, infinite scroll, and charts for models/providers/projects analytics.
+- Sources page cards with visual redesign.
+
+### Changed
+- Delivered multi-session panels with scoped 6h metrics for live view.
+- Per-page filters, tabbed card layout, and auth warnings in date-insights.
+- Aligned `create_release` command with release workflow.
+
+### Fixed
+- Auth warnings on date-insights pages.
+
+### Documentation
+- Defined phase 5 UX roadmap.
+- Aligned phase 4 planning docs with current status.
+- Synced plan 25 status to completed.
+
 ## [2026.3.23] - 2026-03-20
 
 ### Changed
