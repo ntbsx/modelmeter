@@ -90,8 +90,6 @@ export default function SessionCard({ session, isAdded, onSelect, animationDelay
         </div>
       </div>
 
-      </div>
-
       {isAdded && (
         <div className="absolute top-3 right-3">
           <CheckCircle2 className="w-5 h-5 text-[var(--color-success)]" />

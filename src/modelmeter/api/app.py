@@ -671,7 +671,8 @@ def create_app(
                     message_count=int(row["message_count"]),
                     model_count=int(row["model_count"]),
                     token_count=int(row["token_count"]),
-                    is_active=(not row["time_archived"]) and (now_ms - int(row["time_updated"])) <= ACTIVE_SESSION_THRESHOLD_MS,
+                    is_active=(not row["time_archived"])
+                    and (now_ms - int(row["time_updated"])) <= ACTIVE_SESSION_THRESHOLD_MS,
                 )
                 sessions.append(session)
 

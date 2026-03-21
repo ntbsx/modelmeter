@@ -47,7 +47,6 @@ def _default_live_tool_usage_list() -> list[LiveToolUsage]:
     return []
 
 
-
 class SessionSummary(BaseModel):
     """Session summary for selection UI."""
 
