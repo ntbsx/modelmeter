@@ -10,7 +10,7 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
 
 ## Active Work
 
-### Phase 5: Analytics UX and Exploration (In Progress)
+### Phase 5: Analytics UX and Exploration (Completed)
 
 - [x] `phase-5/22-per-page-filters-and-date-insights.md`
   - Status: Completed
@@ -18,14 +18,14 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
   - Estimated: 6-8 hours
   - Description: Move date filters to each page, add date-specific spend breakdown (tabbed card layout: Providers + Projects), and add auth-disabled warning (web + terminal)
 
-- [ ] `phase-5/23-card-layout-infinite-scroll-and-charts.md`
-  - Status: Planned
+- [x] `phase-5/23-card-layout-infinite-scroll-and-charts.md`
+  - Status: Completed
   - Priority: High
   - Estimated: 8-12 hours
   - Description: Replace table-heavy list views with card feeds, lazy loading, and charts
 
-- [ ] `phase-5/24-live-multi-session-and-scope-simplification.md`
-  - Status: Planned
+- [x] `phase-5/24-live-multi-session-and-scope-simplification.md`
+  - Status: Completed
   - Priority: High
   - Estimated: 6-10 hours
   - Description: Add multi-session live panels (local or server self) and remove ineffective live-only source selector behavior
@@ -36,8 +36,8 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
   - Estimated: 4-6 hours
   - Description: Redesign Sources listing into cards while keeping source management flows intact
 
-- [ ] `phase-5/26-date-insights-session-cards.md`
-  - Status: Planned
+- [x] `phase-5/26-date-insights-session-cards.md`
+  - Status: Completed
   - Priority: Medium
   - Estimated: 4-6 hours
   - Description: Add Sessions tab to Date Insights page — show per-session card layout for selected date with model breakdown, tokens, and cost
@@ -47,7 +47,7 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
 - **Phase 1-3:** ✅ Complete (Core Platform, Analytics, CLI, Web)
 - **Phase 4 Part 1:** ✅ Complete (Federation, Provider Analytics, Update Flow, Source Management)
 - **Phase 4 Part 2:** ✅ Complete (Plans 20-21)
-- **Phase 5:** 🔄 In Progress (Plan 22 and 25 done; 23, 24, 26 pending)
+- **Phase 5:** ✅ Complete (Plans 22-26 all done)
 
 ## Completed Work
 
@@ -91,10 +91,10 @@ Historical plans are organized in `completed/` by phase:
 
 - [x] Per-page time filters implemented across target analytics pages
 - [x] Date insights page supports one-day spend and token analysis by model/provider/project
-- [ ] Models/Providers/Projects migrated to cards with lazy loading and charts
-- [ ] Live page supports multi-session panels on local/server (self) with simplified scope UX
+- [x] Models/Providers/Projects migrated to cards with lazy loading and charts
+- [x] Live page supports multi-session panels on local/server (self) with simplified scope UX
 - [x] Sources page migrated to card-based listing
-- [ ] Frontend and backend validation suites pass
+- [x] Frontend and backend validation suites pass
 
 ## Quick Reference
 
