@@ -66,7 +66,7 @@ Key milestones:
 
 ### Phase 5: Analytics UX and Exploration (In Progress)
 
-Plan set: `phase-5/` (22-25)
+Plan set: `phase-5/` (22-26)
 
 Focus areas:
 - Per-page time filters (source scope remains global)

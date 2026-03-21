@@ -30,8 +30,8 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
   - Estimated: 6-10 hours
   - Description: Add multi-session live panels (local or server self) and remove ineffective live-only source selector behavior
 
-- [ ] `phase-5/25-sources-page-card-redesign.md`
-  - Status: Planned
+- [x] `phase-5/25-sources-page-card-redesign.md`
+  - Status: Completed
   - Priority: Medium
   - Estimated: 4-6 hours
   - Description: Redesign Sources listing into cards while keeping source management flows intact
@@ -47,7 +47,7 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
 - **Phase 1-3:** ✅ Complete (Core Platform, Analytics, CLI, Web)
 - **Phase 4 Part 1:** ✅ Complete (Federation, Provider Analytics, Update Flow, Source Management)
 - **Phase 4 Part 2:** ✅ Complete (Plans 20-21)
-- **Phase 5:** 🔄 In Progress (Plan 22 done; 23, 24, 25, 26 pending)
+- **Phase 5:** 🔄 In Progress (Plan 22 and 25 done; 23, 24, 26 pending)
 
 ## Completed Work
 
@@ -89,11 +89,11 @@ Historical plans are organized in `completed/` by phase:
 
 ## Definition of Done (Current Phase)
 
-- [ ] Per-page time filters implemented across target analytics pages
-- [ ] Date insights page supports one-day spend and token analysis by model/provider/project
+- [x] Per-page time filters implemented across target analytics pages
+- [x] Date insights page supports one-day spend and token analysis by model/provider/project
 - [ ] Models/Providers/Projects migrated to cards with lazy loading and charts
 - [ ] Live page supports multi-session panels on local/server (self) with simplified scope UX
-- [ ] Sources page migrated to card-based listing
+- [x] Sources page migrated to card-based listing
 - [ ] Frontend and backend validation suites pass
 
 ## Quick Reference
