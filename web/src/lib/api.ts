@@ -9,7 +9,10 @@ function getAuthHeaders(): Record<string, string> {
   return {}
 }
 
-export function buildApiUrl(endpoint: string, params?: Record<string, string | number>): string {
+export function buildApiUrl(
+  endpoint: string,
+  params?: Record<string, string | number | boolean>
+): string {
   const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
   const url = new URL(API_BASE + cleanEndpoint, window.location.origin)
 
@@ -29,7 +32,7 @@ type FetchApiOptions = {
 
 export async function fetchApi<T>(
   endpoint: string,
-  params?: Record<string, string | number>,
+  params?: Record<string, string | number | boolean>,
   options?: FetchApiOptions
 ): Promise<T> {
   const url = buildApiUrl(endpoint, params)

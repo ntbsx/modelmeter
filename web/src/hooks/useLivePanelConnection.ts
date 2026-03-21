@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { buildApiUrl, fetchApi, getAuthToken } from '../lib/api'
+import { LIVE_ACTIVITY_WINDOW_MINUTES } from '../lib/liveWindow'
 import type { LiveSnapshotResponse } from '../types'
 
 export type ConnectionState = 'connecting' | 'streaming' | 'polling' | 'paused' | 'error'
@@ -40,7 +41,7 @@ export function useLivePanelConnection(
   const { data: polledData, isError: pollingError, refetch } = useQuery<LiveSnapshotResponse>({
     queryKey: ['live-panel', sessionId, liveScope],
     queryFn: () => fetchApi(`/live/session/${sessionId}`, {
-      window_minutes: 60,
+      window_minutes: LIVE_ACTIVITY_WINDOW_MINUTES,
       source_scope: liveScope,
     }),
     refetchInterval: 3000,
@@ -64,7 +65,7 @@ export function useLivePanelConnection(
 
     const authToken = getAuthToken()
     const eventsParams: Record<string, string | number> = {
-      window_minutes: 60,
+      window_minutes: LIVE_ACTIVITY_WINDOW_MINUTES,
       interval_seconds: 3,
       source_scope: liveScope,
     }

@@ -5,6 +5,7 @@ import { useSourceScope } from '../hooks/useSourceScope'
 import LivePanel from '../components/LivePanel'
 import SessionPicker from '../components/SessionPicker'
 import { PageHeader } from '../components/DataTable'
+import { LIVE_ACTIVITY_WINDOW_LABEL } from '../lib/liveWindow'
 import type { components } from '../generated/api'
 
 type SessionSummary = components['schemas']['SessionSummary']
@@ -14,6 +15,7 @@ export default function Live() {
   const { sourceScope } = useSourceScope()
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [globalPaused, setGlobalPaused] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
 
   const handleToggleGlobalPause = () => {
     setGlobalPaused((prev) => !prev)
@@ -27,8 +29,14 @@ export default function Live() {
       directory: session.directory ?? null,
     })
     if (!result.success) {
-      console.error(result.reason)
+      setAddError(
+        result.reason === 'max-panels'
+          ? `You can monitor up to ${maxPanels} sessions at once.`
+          : 'Unable to add session panel right now.'
+      )
+      return
     }
+    setAddError(null)
   }
 
   const handleRemovePanel = (panelId: string) => {
@@ -76,12 +84,20 @@ export default function Live() {
         }
       />
 
+      {(reachedMax || addError) && (
+        <div className="ds-surface p-3 text-sm flex items-center justify-between gap-3">
+          <span className="ds-text-muted">
+            {addError ?? `Panel limit reached: maximum ${maxPanels} live panels.`}
+          </span>
+        </div>
+      )}
+
       <div className="ds-surface p-4 flex items-center gap-2 text-sm">
         <span className="ds-text-muted">
           Data source: This Server (self)
         </span>
         <span className="ds-text-muted text-xs">
-          Multi-server monitoring coming soon
+          {`Metrics show activity from the last ${LIVE_ACTIVITY_WINDOW_LABEL}`}
         </span>
       </div>
 
@@ -107,7 +123,6 @@ export default function Live() {
               panel={panel}
               sourceScope={sourceScope}
               globalPaused={globalPaused}
-              onToggleGlobalPause={handleToggleGlobalPause}
               onRemove={() => handleRemovePanel(panel.id)}
               animationDelay={Math.min(i, 4) * 50}
             />

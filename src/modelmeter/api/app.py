@@ -60,6 +60,7 @@ from modelmeter.core.sources import (
     SourceRegistryError,
     SourceRegistryPublic,
     SourceScope,
+    SourceScopeKind,
     check_source_health,
     load_source_registry,
     remove_source,
@@ -630,40 +631,59 @@ def create_app(
         limit: int = Query(default=20, ge=1, le=100),
         include_archived: bool = Query(default=False),
         source_scope: str | None = Query(default=None),
+        active_since_hours: int | None = Query(default=None, ge=1, le=168),
     ) -> list[SessionSummary]:
-        """Return list of recent sessions with metadata for live panel selection."""
-        if source_scope is not None and source_scope != "self":
-            raise NotImplementedError("Federated session list not yet implemented")
+        """Return list of recent sessions with metadata for live panel selection.
 
-        sqlite_db_path = _resolve_sqlite_path(settings=settings, db_path_override=None)
-        repository = SQLiteUsageRepository(sqlite_db_path)
+        If `active_since_hours` is provided, only return sessions updated within that time window.
+        """
+        try:
+            scope = SourceScope.parse(source_scope) if source_scope is not None else None
+            if scope is not None and scope.kind != SourceScopeKind.LOCAL:
+                raise NotImplementedError("Federated session list not yet implemented")
 
-        now_ms = int(time.time() * 1000)
-        active_session_threshold_ms = 10 * 60 * 1000  # 10 minutes
+            sqlite_db_path = _resolve_sqlite_path(settings=settings, db_path_override=None)
+            repository = SQLiteUsageRepository(sqlite_db_path)
 
-        session_rows = repository.fetch_sessions_summary(
-            limit=limit, include_archived=include_archived
-        )
+            now_ms = int(time.time() * 1000)
+            active_session_threshold_ms = 10 * 60 * 1000  # 10 minutes
 
-        sessions: list[SessionSummary] = []
-        for row in session_rows:
-            session = SessionSummary(
-                session_id=str(row["session_id"]),
-                title=str(row["title"]) if row["title"] else None,
-                directory=str(row["directory"]) if row["directory"] else None,
-                project_id=str(row["project_id"]) if row["project_id"] else None,
-                project_name=str(row["project_name"]) if row["project_name"] else None,
-                time_created=int(row["time_created"]),
-                time_updated=int(row["time_updated"]),
-                time_archived=int(row["time_archived"]) if row["time_archived"] else None,
-                message_count=int(row["message_count"]),
-                model_count=int(row["model_count"]),
-                token_count=int(row["token_count"]),
-                is_active=(now_ms - int(row["time_updated"])) <= active_session_threshold_ms,
+            # Calculate the cutoff for active_since_hours filter
+            active_since_ms: int | None = None
+            if active_since_hours is not None:
+                active_since_ms = now_ms - (active_since_hours * 60 * 60 * 1000)
+
+            session_rows = repository.fetch_sessions_summary(
+                limit=limit,
+                include_archived=include_archived,
+                min_time_updated_ms=active_since_ms,
             )
-            sessions.append(session)
 
-        return sessions
+            sessions: list[SessionSummary] = []
+            for row in session_rows:
+                session = SessionSummary(
+                    session_id=str(row["session_id"]),
+                    title=str(row["title"]) if row["title"] else None,
+                    directory=str(row["directory"]) if row["directory"] else None,
+                    project_id=str(row["project_id"]) if row["project_id"] else None,
+                    project_name=str(row["project_name"]) if row["project_name"] else None,
+                    time_created=int(row["time_created"]),
+                    time_updated=int(row["time_updated"]),
+                    time_archived=int(row["time_archived"]) if row["time_archived"] else None,
+                    message_count=int(row["message_count"]),
+                    model_count=int(row["model_count"]),
+                    token_count=int(row["token_count"]),
+                    is_active=(now_ms - int(row["time_updated"])) <= active_session_threshold_ms,
+                )
+                sessions.append(session)
+
+            return sessions
+        except NotImplementedError as exc:
+            raise HTTPException(status_code=501, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            _raise_http_error(exc)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     @app.get("/api/live/session/{session_id}", response_model=LiveSnapshotResponse)
     def live_session_snapshot(

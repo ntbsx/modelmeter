@@ -3657,7 +3657,7 @@
     },
     "/api/sessions": {
       "get": {
-        "description": "Return list of recent sessions with metadata for live panel selection.",
+        "description": "Return list of recent sessions with metadata for live panel selection.\n\nIf `active_since_hours` is provided, only return sessions updated within that time window.",
         "operationId": "list_sessions_api_sessions_get",
         "parameters": [
           {
@@ -3696,6 +3696,24 @@
                 }
               ],
               "title": "Source Scope"
+            }
+          },
+          {
+            "in": "query",
+            "name": "active_since_hours",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 168,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Active Since Hours"
             }
           }
         ],

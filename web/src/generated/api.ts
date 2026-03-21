@@ -241,6 +241,8 @@ export interface paths {
         /**
          * List Sessions
          * @description Return list of recent sessions with metadata for live panel selection.
+         *
+         *     If `active_since_hours` is provided, only return sessions updated within that time window.
          */
         get: operations["list_sessions_api_sessions_get"];
         put?: never;
@@ -1735,6 +1737,7 @@ export interface operations {
                 limit?: number;
                 include_archived?: boolean;
                 source_scope?: string | null;
+                active_since_hours?: number | null;
             };
             header?: never;
             path?: never;

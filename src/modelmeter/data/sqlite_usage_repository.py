@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sqlite3
-import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
@@ -973,9 +972,16 @@ class SQLiteUsageRepository:
                 return conn.execute(query).fetchone()
 
     def fetch_sessions_summary(
-        self, *, limit: int = 20, include_archived: bool = False
+        self,
+        *,
+        limit: int = 20,
+        include_archived: bool = False,
+        min_time_updated_ms: int | None = None,
     ) -> list[sqlite3.Row]:
-        """Fetch recent sessions with metadata for UI selection."""
+        """Fetch recent sessions with metadata for UI selection.
+
+        If min_time_updated_ms is provided, only return sessions updated after that timestamp.
+        """
         query = """
             SELECT
                 s.id AS session_id,
@@ -992,10 +998,19 @@ class SQLiteUsageRepository:
                     WHERE m.session_id = s.id
                 ) AS message_count,
                 (
-                    SELECT COUNT(DISTINCT m.model_id)
+                    SELECT COUNT(DISTINCT
+                        COALESCE(
+                            json_extract(m.data, '$.modelID'),
+                            json_extract(m.data, '$.model.modelID'),
+                            'unknown'
+                        )
+                    )
                     FROM message m
                     WHERE m.session_id = s.id
-                      AND m.model_id IS NOT NULL
+                      AND (
+                          json_extract(m.data, '$.modelID') IS NOT NULL OR
+                          json_extract(m.data, '$.model.modelID') IS NOT NULL
+                      )
                 ) AS model_count,
                 (
                     SELECT COALESCE(SUM(
@@ -1004,27 +1019,27 @@ class SQLiteUsageRepository:
                     ), 0)
                     FROM message m
                     WHERE m.session_id = s.id
-                ) AS token_count,
-                (
-                    SELECT COALESCE(
-                        CASE
-                            WHEN s.time_updated > 0 THEN
-                                CAST((? - s.time_updated / 1000 / 60) AS INTEGER)
-                            ELSE
-                                NULL
-                        END,
-                    0
-                ) AS minutes_ago
+                ) AS token_count
             FROM session s
             LEFT JOIN project p ON p.id = s.project_id
-            WHERE COALESCE(s.time_archived, 0) = 0 OR ?
+            WHERE (COALESCE(s.time_archived, 0) = 0 OR ?)
+        """
+
+        if min_time_updated_ms is not None:
+            query += " AND s.time_updated >= ?"
+
+        query += """
             ORDER BY s.time_updated DESC
             LIMIT ?
         """
 
-        now_ms = int(time.time() * 1000)
+        params: list[int | bool] = [include_archived]
+        if min_time_updated_ms is not None:
+            params.append(min_time_updated_ms)
+        params.append(limit)
+
         with self._connect() as conn:
-            return conn.execute(query, [now_ms, include_archived, limit]).fetchall()
+            return conn.execute(query, params).fetchall()
 
     def fetch_live_summary_messages(
         self, *, since_ms: int, session_id: str | None = None

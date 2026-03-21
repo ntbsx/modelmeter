@@ -7,44 +7,38 @@ type Props = {
   panel: LivePanel
   sourceScope: string
   globalPaused: boolean
-  onToggleGlobalPause: () => void
   onRemove: () => void
   animationDelay?: number
 }
 
-export default function LivePanel({ panel, sourceScope, globalPaused, onToggleGlobalPause, onRemove, animationDelay = 0 }: Props) {
+export default function LivePanel({ panel, sourceScope, globalPaused, onRemove, animationDelay = 0 }: Props) {
   const { data, streamMode, reconnectCountdown, isPaused, pause, resume, refresh, isLoading, isError } = useLivePanelConnection(
     panel.sessionId,
     sourceScope,
     globalPaused
   )
 
-  const statusConfig: Record<ConnectionState, { label: string; color: string; icon?: any }> = {
+  const statusConfig: Record<ConnectionState, { label: string; icon?: any }> = {
     connecting: {
       label: 'Connecting...',
-      color: 'var(--accent-primary)',
       icon: Loader2,
     },
     streaming: {
       label: 'Live',
-      color: 'var(--color-success)',
     },
     polling: {
       label: reconnectCountdown !== null ? `Reconnecting in ${reconnectCountdown}s` : 'Polling',
-      color: 'var(--color-info)',
     },
     paused: {
       label: 'Paused',
-      color: 'var(--text-tertiary)',
     },
     error: {
       label: 'Error',
-      color: 'var(--color-error)',
       icon: AlertCircle,
     },
   }
-
-  const status = statusConfig[streamMode]
+  const effectiveMode: ConnectionState = isPaused ? 'paused' : streamMode
+  const status = statusConfig[effectiveMode]
 
   if (isError) {
     return (
@@ -65,7 +59,12 @@ export default function LivePanel({ panel, sourceScope, globalPaused, onToggleGl
               <RotateCcw className="w-4 h-4 mr-2" />
               Retry
             </button>
-            <button type="button" onClick={onRemove} className="ds-btn-ghost text-[var(--color-error)]">
+            <button
+              type="button"
+              onClick={onRemove}
+              className="ds-btn-ghost text-[var(--color-error)]"
+              aria-label="Remove panel"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -118,7 +117,7 @@ export default function LivePanel({ panel, sourceScope, globalPaused, onToggleGl
           )}
         </div>
         <div className="shrink-0 flex items-center gap-1.5">
-          <span className={`ds-badge ${streamMode === 'streaming' ? 'ds-badge-success' : 'ds-badge-default'} text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center`}>
+          <span className={`ds-badge ${effectiveMode === 'streaming' ? 'ds-badge-success' : 'ds-badge-default'} text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center`}>
             {status.icon && <status.icon className="w-3 h-3 mr-1" />}
             {status.label}
           </span>
@@ -214,12 +213,12 @@ export default function LivePanel({ panel, sourceScope, globalPaused, onToggleGl
       )}
 
       <div className="mt-auto pt-3 border-t border-[var(--border-subtle)] flex items-center justify-end gap-1 bg-[var(--surface-secondary)]/30 rounded-b-lg">
-        <button
-          type="button"
-          onClick={isPaused ? resume : () => { pause(); onToggleGlobalPause() }}
-          className="ds-btn-ghost text-xs py-1.5 px-2 focus-ring"
-          aria-label={isPaused ? 'Resume' : 'Pause'}
-        >
+          <button
+            type="button"
+            onClick={isPaused ? resume : pause}
+            className="ds-btn-ghost text-xs py-1.5 px-2 focus-ring"
+            aria-label={isPaused ? 'Resume' : 'Pause'}
+          >
           {isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
         </button>
         <button

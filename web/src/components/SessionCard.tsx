@@ -16,11 +16,14 @@ export default function SessionCard({ session, isAdded, onSelect, animationDelay
   const timeAgo = Math.floor((Date.now() - session.time_updated) / 1000 / 60)
 
   return (
-    <div
+    <button
+      type="button"
       onClick={isAdded ? undefined : onSelect}
+      disabled={isAdded}
       className={`ds-surface flex flex-col p-4 transition-all duration-200 ${
         isAdded ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 hover:shadow-md cursor-pointer'
       } animate-slide-up`}
+      aria-label={session.title ? `Add session ${session.title}` : `Add session ${session.session_id}`}
       style={{
         borderTop: isActive ? `3px solid var(--color-success)` : `3px solid var(--border-default)`,
         animationDelay: `${animationDelay}ms`,
@@ -91,6 +94,6 @@ export default function SessionCard({ session, isAdded, onSelect, animationDelay
           <CheckCircle2 className="w-5 h-5 text-[var(--color-success)]" />
         </div>
       )}
-    </div>
+    </button>
   )
 }

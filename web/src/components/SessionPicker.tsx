@@ -1,7 +1,8 @@
-import { useState, useMemo, useEffect } from 'react'
-import { Search, X } from 'lucide-react'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { Search, X, Clock } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchApi } from '../lib/api'
+import { LIVE_ACTIVITY_WINDOW_HOURS, LIVE_ACTIVITY_WINDOW_LABEL } from '../lib/liveWindow'
 import type { components } from '../generated/api'
 import SessionCard from './SessionCard'
 
@@ -16,9 +17,18 @@ type Props = {
 
 export default function SessionPicker({ isOpen, onClose, onSelectSession, excludeSessionIds }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
-  const { data, isLoading, error } = useQuery<SessionSummary[]>({
-    queryKey: ['sessions-list'],
-    queryFn: () => fetchApi<SessionSummary[]>('/sessions', { limit: 50, include_archived: false ? 1 : 0 }),
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null)
+
+  const { data, isLoading, error, refetch } = useQuery<SessionSummary[]>({
+    queryKey: ['sessions-list', 'active-6h'],
+    queryFn: () => {
+      const params: Record<string, string | number | boolean> = {
+        limit: 50,
+        include_archived: false,
+        active_since_hours: LIVE_ACTIVITY_WINDOW_HOURS,
+      }
+      return fetchApi<SessionSummary[]>('/sessions', params)
+    },
     staleTime: 30_000,
   })
 
@@ -42,8 +52,59 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
   }, [filteredSessions, excludeSessionIds])
 
   useEffect(() => {
-    if (!isOpen) setSearchQuery('')
+    if (!isOpen) {
+      setSearchQuery('')
+    }
   }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) {
+      return
+    }
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+
+      if (event.key !== 'Tab') {
+        return
+      }
+
+      const dialog = document.querySelector<HTMLElement>('[role="dialog"][aria-modal="true"]')
+      if (!dialog) {
+        return
+      }
+
+      const focusable = dialog.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusable.length === 0) {
+        return
+      }
+
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      const active = document.activeElement as HTMLElement | null
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      previouslyFocusedRef.current?.focus()
+    }
+  }, [isOpen, onClose])
 
   const handleSelectSession = (session: SessionSummary) => {
     onSelectSession(session)
@@ -53,11 +114,17 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-[var(--surface-primary)] rounded-xl shadow-xl max-w-4xl w-full mx-4 flex flex-col max-h-[80vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-[var(--surface-primary)] rounded-xl shadow-xl max-w-4xl w-full mx-4 flex flex-col max-h-[80vh]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="live-session-picker-title"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
           <div>
-            <h2 className="ds-text-heading text-[var(--text-primary)]">Add Live Session Panel</h2>
+            <h2 id="live-session-picker-title" className="ds-text-heading text-[var(--text-primary)]">Add Live Session Panel</h2>
             <p className="ds-text-muted text-sm mt-0.5">
               Select a session to monitor in real-time
             </p>
@@ -73,15 +140,25 @@ export default function SessionPicker({ isOpen, onClose, onSelectSession, exclud
         </div>
 
         <div className="p-4 border-b border-[var(--border-subtle)]">
-          <div className="relative">
+          <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-tertiary)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              autoFocus
               placeholder="Search by session name, project, or ID..."
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] text-sm text-[var(--text-primary)]"
             />
+          </div>
+          <div className="flex items-center justify-between gap-2 text-sm text-[var(--text-secondary)]">
+            <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            <span>{`Showing sessions active in the last ${LIVE_ACTIVITY_WINDOW_LABEL}`}</span>
+            </div>
+            <button type="button" onClick={() => refetch()} className="ds-btn-ghost text-xs">
+              Refresh
+            </button>
           </div>
         </div>
 
