@@ -10,6 +10,7 @@ import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import { PageHeader } from '../components/DataTable'
 import DatePicker from '../components/DatePicker'
+import { PROVIDER_COLORS } from '../lib/providerColors'
 
 function getTodayDateValue(): string {
   const d = new Date()
@@ -25,18 +26,6 @@ function parseYMD(dateStr: string): { year: number; month: number; day: number }
   if (isNaN(year) || isNaN(month) || isNaN(day)) return null
   return { year, month, day }
 }
-
-// Consistent color per provider
-const PROVIDER_COLORS = [
-  { bg: '#dbeafe', text: '#1e40af' },  // blue
-  { bg: '#dcfce7', text: '#166534' },  // green
-  { bg: '#f3e8ff', text: '#6b21a8' },  // purple
-  { bg: '#fef3c7', text: '#92400e' },  // amber
-  { bg: '#ffe4e6', text: '#9f1239' },  // rose
-  { bg: '#e0f2fe', text: '#075985' },  // sky
-  { bg: '#f0fdf4', text: '#14532d' },  // emerald
-  { bg: '#fdf4ff', text: '#7e22ce' },  // violet
-]
 
 function providerColor(index: number) {
   return PROVIDER_COLORS[index % PROVIDER_COLORS.length]
