@@ -657,10 +657,10 @@ export default function DateInsights() {
                   }}
                 >
                   {/* Session header */}
-                  <div className="flex flex-col gap-1 mb-3">
+                  <div className="flex flex-col gap-0.5 mb-3">
                     <div className="flex items-center justify-between">
                       <span
-                        className="ds-text-subheading font-semibold truncate"
+                        className={`font-semibold truncate ${session.title ? 'ds-text-subheading' : 'ds-text-mono text-sm text-[var(--text-secondary)]'}`}
                         title={session.title ?? session.session_id}
                       >
                         {session.title ?? shortId}
@@ -672,23 +672,44 @@ export default function DateInsights() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(session.session_id)
-                          setCopiedSessionId(session.session_id)
-                          setTimeout(() => setCopiedSessionId((v) => v === session.session_id ? null : v), 1500)
-                        }}
-                        className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer"
-                        title="Copy session ID"
-                      >
-                        <span className="ds-text-mono truncate max-w-[10rem]">{shortId}</span>
-                        {copiedSessionId === session.session_id ? (
-                          <Check className="w-3 h-3 text-[var(--color-success)]" />
-                        ) : (
-                          <Copy className="w-3 h-3" />
-                        )}
-                      </button>
+                      {session.title && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(session.session_id)
+                            setCopiedSessionId(session.session_id)
+                            setTimeout(() => setCopiedSessionId((v) => v === session.session_id ? null : v), 1500)
+                          }}
+                          className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer"
+                          title="Copy session ID"
+                        >
+                          <span className="ds-text-mono truncate max-w-[10rem]">{shortId}</span>
+                          {copiedSessionId === session.session_id ? (
+                            <Check className="w-3 h-3 text-[var(--color-success)]" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      )}
+                      {!session.title && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(session.session_id)
+                            setCopiedSessionId(session.session_id)
+                            setTimeout(() => setCopiedSessionId((v) => v === session.session_id ? null : v), 1500)
+                          }}
+                          className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer"
+                          title="Copy session ID"
+                        >
+                          {copiedSessionId === session.session_id ? (
+                            <Check className="w-3 h-3 text-[var(--color-success)]" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                          <span className="text-xs">Copy ID</span>
+                        </button>
+                      )}
                       {session.project_name && (
                         <span
                           className="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-[var(--surface-tertiary)] text-[var(--text-secondary)] truncate max-w-[10rem]"

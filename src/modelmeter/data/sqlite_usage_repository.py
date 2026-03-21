@@ -887,7 +887,7 @@ class SQLiteUsageRepository:
               AND json_extract(m.data, '$.role') = 'assistant'
               AND COALESCE(json_extract(m.data, '$.time.created'), 0) > 0
               {day_filter}
-            GROUP BY m.session_id, model_id, provider_id
+            GROUP BY m.session_id, s.title, s.project_id, project_name, model_id, provider_id
             ORDER BY input_tokens + output_tokens + cache_read + cache_write DESC
         """
 

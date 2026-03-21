@@ -674,6 +674,12 @@ def get_date_insights(
                     existing.cost_usd = model_cost
                 else:
                     existing.cost_usd = round(existing.cost_usd + model_cost, 8)
+            # Update started_at if this model group has an earlier timestamp
+            row_ms = row["started_at_ms"]
+            if row_ms is not None and int(row_ms) > 0 and existing.started_at is not None:
+                candidate = datetime.fromtimestamp(int(row_ms) / 1000, tz=tz.utc).isoformat()
+                if candidate < existing.started_at:
+                    existing.started_at = candidate
 
     sessions = sorted(
         session_map.values(), key=lambda s: s.total_tokens, reverse=True
