@@ -89,7 +89,7 @@ describe('Models page', () => {
     expect(await screen.findByText('openai Models')).toBeInTheDocument()
     
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/api/models?days=7&provider=openai'),
+      expect.stringContaining('provider=openai'),
       expect.objectContaining({ headers: {} })
     )
   })

@@ -1,27 +1,63 @@
+import { useRef, useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { fetchApi } from '../lib/api'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { formatTokens, formatUsd } from '../lib/utils'
-import type { ProvidersResponse } from '../types'
+import { providerColorFor } from '../lib/providerColors'
+import type { ProviderUsage } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import { useSourceScope } from '../hooks/useSourceScope'
 import { useDaysFilter } from '../hooks/useDaysFilter'
 import { PageHeader } from '../components/DataTable'
-import { Badge } from '../components/ui'
 import DaysFilterPicker from '../components/DaysFilterPicker'
+import { useChartColors } from '../components/useChartColors'
+import { useProviderList } from '../hooks/useEntityList'
 
 export default function Providers() {
   const { days } = useDaysFilter('providers')
   const { sourceScope } = useSourceScope()
+  const [chartMetric, setChartMetric] = useState<'tokens' | 'cost'>('tokens')
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const colors = useChartColors()
 
-  const { data, isLoading } = useQuery<ProvidersResponse>({
-    queryKey: ['providers', days, sourceScope],
-    queryFn: () => fetchApi('/providers', { days, source_scope: sourceScope }),
-  })
+  const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useProviderList({ days, sourceScope })
+
+  const allProviders = useMemo(
+    () => data?.pages.flatMap((p) => p.providers ?? []) ?? [],
+    [data]
+  )
+
+  const chartData = useMemo(
+    () => allProviders.slice(0, 10).map((p) => ({
+      name: p.provider.length > 16 ? p.provider.slice(0, 15) + '…' : p.provider,
+      tokens: p.usage.total_tokens,
+      cost: p.cost_usd ?? 0,
+      fullName: p.provider,
+    })),
+    [allProviders]
+  )
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!sentinel || !hasNextPage) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !isFetchingNextPage) fetchNextPage()
+    })
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   if (isLoading) return <PageLoading title="Providers" subtitle="Loading provider usage" cards={3} />
-  if (!data) {
+  if (isError || !data) {
     return (
       <PageErrorState
         title="Unable to load providers"
@@ -30,67 +66,172 @@ export default function Providers() {
     )
   }
 
+  const firstPage = data.pages[0]
+
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto">
       <PageHeader
         title="Providers"
-        description={`Usage breakdown by provider (${days === 1 ? 'last 24 hours' : `last ${days} days`})`}
+        description={`${firstPage.total_providers} provider${firstPage.total_providers !== 1 ? 's' : ''} \u00b7 ${days === 1 ? 'last 24 hours' : `last ${days} days`}`}
         actions={<DaysFilterPicker scope="providers" />}
       />
 
-      <div className="ds-surface overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--border-default)]">
-                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] whitespace-nowrap">Provider</th>
-                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Models</th>
-                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Interactions</th>
-                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Total Tokens</th>
-                <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right whitespace-nowrap">Cost</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-subtle)]">
-              {(data.providers ?? []).map((provider) => (
-                <tr key={provider.provider} className="hover:bg-[var(--surface-accent)]/50 transition-colors">
-                  <td className="px-4 sm:px-6 py-4 font-medium whitespace-nowrap text-[var(--text-primary)]">
-                    <Link
-                      to={`/models/provider/${encodeURIComponent(provider.provider)}`}
-                      className="text-[var(--accent-primary)] hover:text-[var(--accent-primary-hover)] hover:underline transition-colors"
-                    >
-                      {provider.provider}
-                    </Link>
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 text-right text-[var(--text-secondary)]">
-                    <Badge variant="default">{provider.total_models}</Badge>
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 text-right text-[var(--text-secondary)]">
-                    {provider.total_interactions}
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 text-right font-mono text-[var(--text-primary)]">
-                    {formatTokens(provider.usage.total_tokens)}
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 text-right font-mono text-[var(--text-primary)]">
-                    {provider.cost_usd ? formatUsd(provider.cost_usd) : '-'}
-                  </td>
-                </tr>
-              ))}
-              {(data.providers ?? []).length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 sm:px-6 py-12 text-center">
-                    <div className="text-[var(--text-tertiary)]">
-                      No provider usage found in this period.
-                    </div>
-                    <div className="text-sm text-[var(--text-tertiary)] mt-1">
-                      Make API calls to start tracking usage across your providers.
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      {chartData.length > 0 && (
+        <div className="ds-surface p-4 sm:p-5 mb-6 animate-slide-up">
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
+              Provider Distribution
+            </span>
+            <div className="ds-surface px-1 py-1 rounded-lg flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => setChartMetric('tokens')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  chartMetric === 'tokens'
+                    ? 'bg-[var(--accent-primary)] text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                Tokens
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMetric('cost')}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                  chartMetric === 'cost'
+                    ? 'bg-[var(--accent-primary)] text-white'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                Cost
+              </button>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={Math.min(40 + chartData.length * 30, 340)}>
+            <BarChart
+              layout="vertical"
+              data={chartData}
+              margin={{ top: 0, right: 16, bottom: 0, left: 4 }}
+            >
+              <CartesianGrid horizontal={false} stroke={colors.grid} strokeDasharray="3 3" />
+              <XAxis
+                type="number"
+                dataKey={chartMetric}
+                tickFormatter={chartMetric === 'tokens' ? formatTokens : formatUsd}
+                tick={{ fontSize: 11, fill: colors.axis }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={120}
+                tick={{ fontSize: 11, fill: colors.axis }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip
+                formatter={(value: number | string | readonly (number | string)[] | undefined) => {
+                  const v = Number(Array.isArray(value) ? value[0] : (value ?? 0))
+                  return chartMetric === 'tokens' ? formatTokens(v) : formatUsd(v)
+                }}
+                labelFormatter={(_label, payload) =>
+                  payload?.[0]?.payload?.fullName ?? String(_label ?? '')
+                }
+                contentStyle={{
+                  background: colors.tooltip.background,
+                  border: `1px solid ${colors.tooltip.border}`,
+                  borderRadius: 6,
+                  fontSize: 12,
+                }}
+                cursor={{ fill: 'var(--surface-tertiary)' }}
+              />
+              <Bar
+                dataKey={chartMetric}
+                fill={chartMetric === 'tokens' ? colors.tokens.fill : colors.cost.fill}
+                radius={[0, 3, 3, 0]}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {allProviders.length === 0 ? (
+        <div className="ds-surface flex flex-col items-center justify-center py-16 gap-3 text-center">
+          <p className="font-medium text-[var(--text-secondary)]">No provider usage found in this period.</p>
+          <p className="text-sm text-[var(--text-tertiary)]">
+            Make API calls to start tracking usage across your providers.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {allProviders.map((p, i) => (
+            <ProviderCard key={p.provider} provider={p} index={i} />
+          ))}
+        </div>
+      )}
+
+      <div ref={sentinelRef} className="h-4 mt-4" />
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-6">
+          <div className="w-5 h-5 rounded-full border-2 border-[var(--accent-primary)] border-t-transparent animate-spin" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ProviderCard({ provider, index }: { provider: ProviderUsage; index: number }) {
+  const color = providerColorFor(provider.provider)
+
+  return (
+    <Link
+      to={`/models/provider/${encodeURIComponent(provider.provider)}`}
+      className="ds-surface flex flex-col p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md animate-slide-up"
+      style={{
+        borderTop: `3px solid ${color.text}`,
+        animationDelay: `${Math.min(index, 8) * 40}ms`,
+      }}
+    >
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <span
+          className="inline-block px-2.5 py-0.5 text-sm font-semibold rounded-full truncate max-w-[12rem]"
+          style={{ backgroundColor: color.bg, color: color.text }}
+          title={provider.provider}
+        >
+          {provider.provider}
+        </span>
+        <span className="text-xs text-[var(--text-tertiary)]">
+          {provider.total_models} model{provider.total_models !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[var(--border-subtle)]">
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+            Interactions
+          </div>
+          <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
+            {provider.total_interactions.toLocaleString()}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+            Tokens
+          </div>
+          <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
+            {formatTokens(provider.usage.total_tokens)}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+            Cost
+          </div>
+          <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
+            {provider.cost_usd != null ? formatUsd(provider.cost_usd) : '–'}
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   )
 }
