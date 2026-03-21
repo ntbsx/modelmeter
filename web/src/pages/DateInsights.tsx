@@ -1,10 +1,10 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { CalendarDays, LayoutGrid, FolderOpen, ChevronDown } from 'lucide-react'
+import { CalendarDays, LayoutGrid, FolderOpen, Activity, ChevronDown } from 'lucide-react'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
-import type { DateInsightsResponse, ModelUsage, ProjectModelUsage } from '../types'
+import type { DateInsightsResponse, ModelUsage, ProjectModelUsage, SessionUsage } from '../types'
 import { useSourceScope } from '../hooks/useSourceScope'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
@@ -31,7 +31,7 @@ function providerColor(index: number) {
   return PROVIDER_COLORS[index % PROVIDER_COLORS.length]
 }
 
-type Tab = 'providers' | 'projects'
+type Tab = 'providers' | 'projects' | 'sessions'
 
 export default function DateInsights() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -43,6 +43,7 @@ export default function DateInsights() {
   const [activeTab, setActiveTab] = useState<Tab>('providers')
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set())
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
+  const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set())
   const pickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -165,6 +166,27 @@ export default function DateInsights() {
     return map
   }, [projectModels, providerColorMap])
 
+  // Dominant provider color per session (by highest total tokens model)
+  const sessions: SessionUsage[] = useMemo(() => data?.sessions ?? [], [data?.sessions])
+  const sessionDominantColor = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const session of sessions) {
+      const mList = session.models ?? []
+      if (mList.length === 0) continue
+      let dominantProvider = 'unknown'
+      let maxTokens = -1
+      for (const sm of mList) {
+        const t = sm.usage?.total_tokens ?? 0
+        if (t > maxTokens) {
+          maxTokens = t
+          dominantProvider = sm.provider ?? 'unknown'
+        }
+      }
+      map.set(session.session_id, providerColorMap.get(dominantProvider) ?? 0)
+    }
+    return map
+  }, [sessions, providerColorMap])
+
   const handleDayChange = (date: string) => {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev)
@@ -188,6 +210,15 @@ export default function DateInsights() {
       const next = new Set(prev)
       if (next.has(projectId)) next.delete(projectId)
       else next.add(projectId)
+      return next
+    })
+  }
+
+  const toggleSessionExpanded = (sessionId: string) => {
+    setExpandedSessions((prev) => {
+      const next = new Set(prev)
+      if (next.has(sessionId)) next.delete(sessionId)
+      else next.add(sessionId)
       return next
     })
   }
@@ -223,6 +254,7 @@ export default function DateInsights() {
   }
 
   const projectList = data.projects ?? []
+  const sessionList = sessions
 
   return (
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto space-y-6">
@@ -306,6 +338,27 @@ export default function DateInsights() {
               }`}
             >
               {projectList.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('sessions')}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 focus-ring ${
+              activeTab === 'sessions'
+                ? 'bg-[var(--surface-tertiary)] text-[var(--text-primary)] shadow-sm'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" aria-hidden="true" />
+            Sessions
+            <span
+              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                activeTab === 'sessions'
+                  ? 'bg-[var(--accent-primary)] text-white'
+                  : 'bg-[var(--surface-tertiary)] text-[var(--text-tertiary)]'
+              }`}
+            >
+              {sessionList.length}
             </span>
           </button>
         </div>
@@ -558,6 +611,157 @@ export default function DateInsights() {
                         <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Requests</span>
                         <span className="ds-text-tabular font-bold tabular-nums">
                           {project.total_interactions.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      )}
+
+      {/* Session cards */}
+      {activeTab === 'sessions' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {sessionList.length === 0 ? (
+            <div className="ds-surface flex flex-col items-center justify-center py-16 gap-3 text-center lg:col-span-2">
+              <div className="w-10 h-10 rounded-full bg-[var(--surface-tertiary)] flex items-center justify-center">
+                <Activity className="w-5 h-5 text-[var(--text-tertiary)]" />
+              </div>
+              <div>
+                <p className="ds-text-body font-medium text-[var(--text-secondary)]">No sessions recorded on this date</p>
+                <p className="ds-text-muted mt-0.5">Sessions with activity will appear here</p>
+              </div>
+            </div>
+          ) : (
+            sessionList.map((session, i) => {
+              const colorIdx = sessionDominantColor.get(session.session_id) ?? (i % PROVIDER_COLORS.length)
+              const accentColor = PROVIDER_COLORS[colorIdx % PROVIDER_COLORS.length]
+              const shortId = session.session_id.length > 12
+                ? `${session.session_id.slice(0, 6)}...${session.session_id.slice(-4)}`
+                : session.session_id
+              const sModels = session.models ?? []
+              const startedLabel = session.started_at
+                ? new Date(session.started_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                : null
+              return (
+                <div
+                  key={session.session_id}
+                  className="ds-surface flex flex-col p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-default animate-slide-up"
+                  style={{
+                    borderTop: `3px solid ${accentColor.text}`,
+                    animationDelay: `${Math.min(i, 4) * 60}ms`,
+                  }}
+                >
+                  {/* Session header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="ds-text-mono text-sm font-semibold text-[var(--text-primary)] truncate"
+                        title={session.session_id}
+                      >
+                        {shortId}
+                      </span>
+                      {session.project_name && (
+                        <span
+                          className="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-[var(--surface-tertiary)] text-[var(--text-secondary)] truncate max-w-[10rem]"
+                          title={session.project_name}
+                        >
+                          {session.project_name.split('/').pop() || session.project_name}
+                        </span>
+                      )}
+                    </div>
+                    {startedLabel && (
+                      <span className="text-xs text-[var(--text-tertiary)] tabular-nums flex-shrink-0">
+                        {startedLabel}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Model breakdown */}
+                  {sModels.length > 0 ? (
+                    <div className="flex flex-col gap-0.5 flex-1">
+                      {(expandedSessions.has(session.session_id)
+                        ? sModels
+                        : sModels.slice(0, 3)
+                      ).map((sm) => {
+                        const smColor = providerColor(providerColorMap.get(sm.provider ?? 'unknown') ?? 0)
+                        return (
+                          <div
+                            key={`${session.session_id}:${sm.provider ?? 'unknown'}:${sm.model_id}`}
+                            className="flex items-center justify-between gap-3 py-2 px-2.5 rounded-md hover:bg-[var(--surface-tertiary)]/50 transition-colors duration-100 group"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span
+                                className="inline-block px-1.5 py-0.5 text-xs font-semibold rounded flex-shrink-0"
+                                style={{ backgroundColor: smColor.bg, color: smColor.text }}
+                              >
+                                {sm.provider ?? '?'}
+                              </span>
+                              <span
+                                className="ds-text-body text-[var(--text-secondary)] truncate text-sm font-medium"
+                                title={sm.model_id}
+                              >
+                                {sm.model_id.split('/').pop() || sm.model_id}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span className="ds-text-tabular font-semibold text-[var(--text-primary)] tabular-nums text-sm">
+                                {formatTokens(sm.usage.total_tokens)}
+                              </span>
+                              {typeof sm.cost_usd === 'number' ? (
+                                <span className="text-[var(--color-success)] font-semibold tabular-nums text-xs min-w-[3.5rem] text-right">
+                                  {formatUsd(sm.cost_usd)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {sModels.length > 3 && (
+                        <button
+                          type="button"
+                          onClick={() => toggleSessionExpanded(session.session_id)}
+                          className="flex items-center justify-center gap-1 py-1.5 mt-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer rounded-md hover:bg-[var(--surface-tertiary)]/40"
+                        >
+                          <ChevronDown
+                            className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedSessions.has(session.session_id) ? 'rotate-180' : ''}`}
+                          />
+                          {expandedSessions.has(session.session_id)
+                            ? 'Show less'
+                            : `${sModels.length - 3} more`}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center py-4">
+                      <p className="ds-text-muted text-sm">No model data available</p>
+                    </div>
+                  )}
+
+                  {/* Session totals */}
+                  <div className="flex items-center justify-between pt-3 mt-auto border-t border-[var(--border-subtle)]">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Tokens</span>
+                      <span className="ds-text-tabular font-bold tabular-nums">
+                        {formatTokens(session.total_tokens)}
+                      </span>
+                    </div>
+                    {typeof session.cost_usd === 'number' ? (
+                      <div className="flex flex-col gap-0.5 items-end">
+                        <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Cost</span>
+                        <span className="ds-text-tabular font-bold text-[var(--color-success)] tabular-nums">
+                          {formatUsd(session.cost_usd)}
+                        </span>
+                      </div>
+                    ) : null}
+                    {session.total_interactions > 0 && (
+                      <div className="flex flex-col gap-0.5 items-end">
+                        <span className="ds-text-label-uppercase text-[var(--text-tertiary)] text-[11px]">Requests</span>
+                        <span className="ds-text-tabular font-bold tabular-nums">
+                          {session.total_interactions.toLocaleString()}
                         </span>
                       </div>
                     )}
