@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
@@ -934,28 +935,101 @@ class SQLiteUsageRepository:
         with self._connect() as conn:
             return conn.execute(query, [project_id, *params]).fetchall()
 
-    def fetch_active_session(self) -> sqlite3.Row | None:
-        """Fetch most recently updated non-archived session."""
+    def fetch_active_session(self, *, session_id: str | None = None) -> sqlite3.Row | None:
+        """Fetch most recently updated non-archived session, optionally filtered by session_id."""
+        if session_id:
+            query = """
+                SELECT
+                    s.id,
+                    s.title,
+                    s.directory,
+                    s.project_id,
+                    s.time_updated,
+                    COALESCE(p.name, p.worktree, s.project_id) AS project_name
+                FROM session s
+                LEFT JOIN project p ON p.id = s.project_id
+                WHERE s.id = ?
+                  AND COALESCE(s.time_archived, 0) = 0
+            """
+            with self._connect() as conn:
+                return conn.execute(query, [session_id]).fetchone()
+        else:
+            query = """
+                SELECT
+                    s.id,
+                    s.title,
+                    s.directory,
+                    s.project_id,
+                    s.time_updated,
+                    COALESCE(p.name, p.worktree, s.project_id) AS project_name
+                FROM session s
+                LEFT JOIN project p ON p.id = s.project_id
+                WHERE COALESCE(s.time_archived, 0) = 0
+                ORDER BY s.time_updated DESC
+                LIMIT 1
+            """
+
+            with self._connect() as conn:
+                return conn.execute(query).fetchone()
+
+    def fetch_sessions_summary(
+        self, *, limit: int = 20, include_archived: bool = False
+    ) -> list[sqlite3.Row]:
+        """Fetch recent sessions with metadata for UI selection."""
         query = """
             SELECT
-                s.id,
+                s.id AS session_id,
                 s.title,
                 s.directory,
-                s.project_id,
+                s.time_created,
                 s.time_updated,
-                COALESCE(p.name, p.worktree, s.project_id) AS project_name
+                s.time_archived,
+                COALESCE(p.name, p.worktree, s.project_id) AS project_name,
+                s.project_id,
+                (
+                    SELECT COUNT(DISTINCT m.id)
+                    FROM message m
+                    WHERE m.session_id = s.id
+                ) AS message_count,
+                (
+                    SELECT COUNT(DISTINCT m.model_id)
+                    FROM message m
+                    WHERE m.session_id = s.id
+                      AND m.model_id IS NOT NULL
+                ) AS model_count,
+                (
+                    SELECT COALESCE(SUM(
+                        json_extract(m.data, '$.tokens.input') +
+                        json_extract(m.data, '$.tokens.output')
+                    ), 0)
+                    FROM message m
+                    WHERE m.session_id = s.id
+                ) AS token_count,
+                (
+                    SELECT COALESCE(
+                        CASE
+                            WHEN s.time_updated > 0 THEN
+                                CAST((? - s.time_updated / 1000 / 60) AS INTEGER)
+                            ELSE
+                                NULL
+                        END,
+                    0
+                ) AS minutes_ago
             FROM session s
             LEFT JOIN project p ON p.id = s.project_id
-            WHERE COALESCE(s.time_archived, 0) = 0
+            WHERE COALESCE(s.time_archived, 0) = 0 OR ?
             ORDER BY s.time_updated DESC
-            LIMIT 1
+            LIMIT ?
         """
 
+        now_ms = int(time.time() * 1000)
         with self._connect() as conn:
-            return conn.execute(query).fetchone()
+            return conn.execute(query, [now_ms, include_archived, limit]).fetchall()
 
-    def fetch_live_summary_messages(self, *, since_ms: int) -> sqlite3.Row:
-        """Fetch aggregate usage totals from assistant messages since timestamp."""
+    def fetch_live_summary_messages(
+        self, *, since_ms: int, session_id: str | None = None
+    ) -> sqlite3.Row:
+        """Fetch aggregate usage totals from assistant messages since timestamp, optionally filtered by session_id."""
         query = """
             SELECT
                 COUNT(*) AS total_interactions,
@@ -974,14 +1048,22 @@ class SQLiteUsageRepository:
               AND COALESCE(json_extract(data, '$.time.created'), 0) >= ?
         """
 
+        if session_id is not None:
+            query += " AND session_id = ?"
+            params = [since_ms, session_id]
+        else:
+            params = [since_ms]
+
         with self._connect() as conn:
-            row = conn.execute(query, [since_ms]).fetchone()
+            row = conn.execute(query, params).fetchone()
             if row is None:
                 raise RuntimeError("Live message summary query returned no row")
             return row
 
-    def fetch_live_summary_steps(self, *, since_ms: int) -> sqlite3.Row:
-        """Fetch aggregate usage totals from step-finish parts since timestamp."""
+    def fetch_live_summary_steps(
+        self, *, since_ms: int, session_id: str | None = None
+    ) -> sqlite3.Row:
+        """Fetch aggregate usage totals from step-finish parts since timestamp, optionally filtered by session_id."""
         query = """
             SELECT
                 COUNT(*) AS total_interactions,
@@ -1000,14 +1082,22 @@ class SQLiteUsageRepository:
               AND COALESCE(time_created, 0) >= ?
         """
 
+        if session_id is not None:
+            query += " AND session_id = ?"
+            params = [since_ms, session_id]
+        else:
+            params = [since_ms]
+
         with self._connect() as conn:
-            row = conn.execute(query, [since_ms]).fetchone()
+            row = conn.execute(query, params).fetchone()
             if row is None:
                 raise RuntimeError("Live step summary query returned no row")
             return row
 
-    def fetch_live_model_usage(self, *, since_ms: int, limit: int) -> list[sqlite3.Row]:
-        """Fetch model usage since timestamp."""
+    def fetch_live_model_usage(
+        self, *, since_ms: int, limit: int, session_id: str | None = None
+    ) -> list[sqlite3.Row]:
+        """Fetch model usage since timestamp, optionally filtered by session_id."""
         query = """
             SELECT
                 COALESCE(
@@ -1034,16 +1124,27 @@ class SQLiteUsageRepository:
             WHERE json_valid(data) = 1
               AND json_extract(data, '$.role') = 'assistant'
               AND COALESCE(json_extract(data, '$.time.created'), 0) >= ?
+        """
+
+        if session_id is not None:
+            query += " AND session_id = ?"
+            params = [since_ms, session_id, limit]
+        else:
+            params = [since_ms, limit]
+
+        query += """
             GROUP BY model_id, provider_id
             ORDER BY input_tokens + output_tokens + cache_read + cache_write DESC
             LIMIT ?
         """
 
         with self._connect() as conn:
-            return conn.execute(query, [since_ms, limit]).fetchall()
+            return conn.execute(query, params).fetchall()
 
-    def fetch_live_tool_usage(self, *, since_ms: int, limit: int) -> list[sqlite3.Row]:
-        """Fetch tool usage since timestamp from tool parts."""
+    def fetch_live_tool_usage(
+        self, *, since_ms: int, limit: int, session_id: str | None = None
+    ) -> list[sqlite3.Row]:
+        """Fetch tool usage since timestamp from tool parts, optionally filtered by session_id."""
         query = """
             SELECT
                 COALESCE(json_extract(data, '$.tool'), 'unknown') AS tool_name,
@@ -1052,10 +1153,19 @@ class SQLiteUsageRepository:
             WHERE json_valid(data) = 1
               AND json_extract(data, '$.type') = 'tool'
               AND COALESCE(time_created, 0) >= ?
+        """
+
+        if session_id is not None:
+            query += " AND session_id = ?"
+            params = [since_ms, session_id, limit]
+        else:
+            params = [since_ms, limit]
+
+        query += """
             GROUP BY tool_name
             ORDER BY total_calls DESC
             LIMIT ?
         """
 
         with self._connect() as conn:
-            return conn.execute(query, [since_ms, limit]).fetchall()
+            return conn.execute(query, params).fetchall()

@@ -1,5 +1,3 @@
-"""Live monitoring snapshot service."""
-
 from __future__ import annotations
 
 import sqlite3
@@ -14,6 +12,7 @@ from modelmeter.core.models import (
     LiveModelUsage,
     LiveSnapshotResponse,
     LiveToolUsage,
+    SessionSummary,
     TokenUsage,
 )
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
@@ -70,8 +69,13 @@ def get_live_snapshot(
     models_limit: int = 5,
     tools_limit: int = 8,
     source_scope: SourceScope | None = None,
+    session_id: str | None = None,
 ) -> LiveSnapshotResponse:
-    """Return a live activity snapshot for the selected rolling window."""
+    """Return a live activity snapshot for selected rolling window.
+
+    If session_id is provided, filter to that session only.
+    Otherwise, return aggregated data across all sessions.
+    """
     if source_scope is not None and source_scope.kind != SourceScopeKind.LOCAL:
         raise NotImplementedError("Federated live analytics not yet implemented")
 
@@ -89,12 +93,18 @@ def get_live_snapshot(
 
     summary_row: sqlite3.Row
     if resolved_token_source == "steps":
-        summary_row = repository.fetch_live_summary_steps(since_ms=since_ms)
+        summary_row = repository.fetch_live_summary_steps(since_ms=since_ms, session_id=session_id)
     else:
-        summary_row = repository.fetch_live_summary_messages(since_ms=since_ms)
+        summary_row = repository.fetch_live_summary_messages(
+            since_ms=since_ms, session_id=session_id
+        )
 
-    model_rows = repository.fetch_live_model_usage(since_ms=since_ms, limit=models_limit)
-    tool_rows = repository.fetch_live_tool_usage(since_ms=since_ms, limit=tools_limit)
+    model_rows = repository.fetch_live_model_usage(
+        since_ms=since_ms, limit=models_limit, session_id=session_id
+    )
+    tool_rows = repository.fetch_live_tool_usage(
+        since_ms=since_ms, limit=tools_limit, session_id=session_id
+    )
 
     pricing_book, pricing_source = load_pricing_book(
         settings=settings,
@@ -125,7 +135,7 @@ def get_live_snapshot(
             )
         )
 
-    active_session_row = repository.fetch_active_session()
+    active_session_row = repository.fetch_active_session(session_id=session_id)
     active_session: LiveActiveSession | None = None
     if active_session_row is not None:
         last_updated_ms = int(active_session_row["time_updated"])
