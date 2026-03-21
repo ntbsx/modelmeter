@@ -633,14 +633,14 @@ def test_date_insights_sessions_field(tmp_path: Path) -> None:
     payload = _get_json(response)
     sessions = payload["sessions"]
     assert isinstance(sessions, list)
-    assert len(sessions) == 1
-    session = sessions[0]
+    assert len(sessions) == 1  # type: ignore[reportUnknownArgumentType]
+    session = sessions[0]  # type: ignore[reportUnknownVariableType]
     assert session["session_id"] == "s1"
     assert session["project_id"] == "p1"
     assert session["total_tokens"] > 0
     assert session["total_interactions"] == 1
     assert isinstance(session["models"], list)
-    assert len(session["models"]) == 1
+    assert len(session["models"]) == 1  # type: ignore[reportUnknownArgumentType]
     assert session["models"][0]["model_id"] == "anthropic/claude-sonnet-4-5"
     assert session["started_at"] is not None
 
