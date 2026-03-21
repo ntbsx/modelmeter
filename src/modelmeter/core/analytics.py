@@ -654,6 +654,7 @@ def get_date_insights(
                 ).isoformat()
             session_map[sid] = SessionUsage(
                 session_id=sid,
+                title=str(row["session_title"]) if row["session_title"] else None,
                 project_id=str(row["project_id"]) if row["project_id"] else None,
                 project_name=str(row["project_name"]) if row["project_name"] else None,
                 models=[sm],

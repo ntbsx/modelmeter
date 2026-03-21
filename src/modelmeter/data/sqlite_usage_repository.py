@@ -857,6 +857,7 @@ class SQLiteUsageRepository:
         query = f"""
             SELECT
                 m.session_id AS session_id,
+                s.title AS session_title,
                 s.project_id AS project_id,
                 COALESCE(p.name, p.worktree, s.project_id) AS project_name,
                 COALESCE(

@@ -1125,6 +1125,8 @@ export interface components {
             session_id: string;
             /** Started At */
             started_at?: string | null;
+            /** Title */
+            title?: string | null;
             /**
              * Total Interactions
              * @default 0

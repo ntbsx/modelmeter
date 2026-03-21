@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
-import { CalendarDays, LayoutGrid, FolderOpen, Activity, ChevronDown } from 'lucide-react'
+import { CalendarDays, LayoutGrid, FolderOpen, Activity, ChevronDown, Copy, Check } from 'lucide-react'
 import { fetchApi } from '../lib/api'
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { DateInsightsResponse, ModelUsage, ProjectModelUsage, SessionUsage } from '../types'
@@ -44,6 +44,7 @@ export default function DateInsights() {
   const [expandedProviders, setExpandedProviders] = useState<Set<string>>(new Set())
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set())
+  const [copiedSessionId, setCopiedSessionId] = useState<string | null>(null)
   const pickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -301,7 +302,7 @@ export default function DateInsights() {
           <button
             type="button"
             onClick={() => setActiveTab('providers')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 focus-ring ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 cursor-pointer focus-ring ${
               activeTab === 'providers'
                 ? 'bg-[var(--surface-tertiary)] text-[var(--text-primary)] shadow-sm'
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
@@ -322,7 +323,7 @@ export default function DateInsights() {
           <button
             type="button"
             onClick={() => setActiveTab('projects')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 focus-ring ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 cursor-pointer focus-ring ${
               activeTab === 'projects'
                 ? 'bg-[var(--surface-tertiary)] text-[var(--text-primary)] shadow-sm'
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
@@ -343,7 +344,7 @@ export default function DateInsights() {
           <button
             type="button"
             onClick={() => setActiveTab('sessions')}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 focus-ring ${
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-150 cursor-pointer focus-ring ${
               activeTab === 'sessions'
                 ? 'bg-[var(--surface-tertiary)] text-[var(--text-primary)] shadow-sm'
                 : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
@@ -656,14 +657,38 @@ export default function DateInsights() {
                   }}
                 >
                   {/* Session header */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex flex-col gap-1 mb-3">
+                    <div className="flex items-center justify-between">
                       <span
-                        className="ds-text-mono text-sm font-semibold text-[var(--text-primary)] truncate"
-                        title={session.session_id}
+                        className="ds-text-subheading font-semibold truncate"
+                        title={session.title ?? session.session_id}
                       >
-                        {shortId}
+                        {session.title ?? shortId}
                       </span>
+                      {startedLabel && (
+                        <span className="text-xs text-[var(--text-tertiary)] tabular-nums flex-shrink-0 ml-2">
+                          {startedLabel}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(session.session_id)
+                          setCopiedSessionId(session.session_id)
+                          setTimeout(() => setCopiedSessionId((v) => v === session.session_id ? null : v), 1500)
+                        }}
+                        className="flex items-center gap-1 text-xs text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] transition-colors duration-100 cursor-pointer"
+                        title="Copy session ID"
+                      >
+                        <span className="ds-text-mono truncate max-w-[10rem]">{shortId}</span>
+                        {copiedSessionId === session.session_id ? (
+                          <Check className="w-3 h-3 text-[var(--color-success)]" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                      </button>
                       {session.project_name && (
                         <span
                           className="inline-block px-2 py-0.5 text-xs font-semibold rounded-full bg-[var(--surface-tertiary)] text-[var(--text-secondary)] truncate max-w-[10rem]"
@@ -673,11 +698,6 @@ export default function DateInsights() {
                         </span>
                       )}
                     </div>
-                    {startedLabel && (
-                      <span className="text-xs text-[var(--text-tertiary)] tabular-nums flex-shrink-0">
-                        {startedLabel}
-                      </span>
-                    )}
                   </div>
 
                   {/* Model breakdown */}

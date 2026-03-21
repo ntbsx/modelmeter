@@ -1864,6 +1864,17 @@
             ],
             "title": "Started At"
           },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
           "total_interactions": {
             "default": 0,
             "minimum": 0.0,

@@ -364,6 +364,7 @@ class SessionUsage(BaseModel):
     """Per-session usage for a single day."""
 
     session_id: str
+    title: str | None = None
     project_id: str | None = None
     project_name: str | None = None
     models: list[SessionModelUsage] = Field(
