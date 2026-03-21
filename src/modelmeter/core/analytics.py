@@ -649,9 +649,7 @@ def get_date_insights(
             started_ms = row["started_at_ms"]
             started_at: str | None = None
             if started_ms is not None and int(started_ms) > 0:
-                started_at = datetime.fromtimestamp(
-                    int(started_ms) / 1000, tz=tz.utc
-                ).isoformat()
+                started_at = datetime.fromtimestamp(int(started_ms) / 1000, tz=tz.utc).isoformat()
             session_map[sid] = SessionUsage(
                 session_id=sid,
                 title=str(row["session_title"]) if row["session_title"] else None,
@@ -681,9 +679,7 @@ def get_date_insights(
                 if candidate < existing.started_at:
                     existing.started_at = candidate
 
-    sessions = sorted(
-        session_map.values(), key=lambda s: s.total_tokens, reverse=True
-    )
+    sessions = sorted(session_map.values(), key=lambda s: s.total_tokens, reverse=True)
 
     total_interactions: int
     if use_steps:

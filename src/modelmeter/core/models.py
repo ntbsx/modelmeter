@@ -367,9 +367,7 @@ class SessionUsage(BaseModel):
     title: str | None = None
     project_id: str | None = None
     project_name: str | None = None
-    models: list[SessionModelUsage] = Field(
-        default_factory=_default_session_model_usage_list
-    )
+    models: list[SessionModelUsage] = Field(default_factory=_default_session_model_usage_list)
     total_tokens: int = Field(default=0, ge=0)
     total_interactions: int = Field(default=0, ge=0)
     cost_usd: float | None = None
