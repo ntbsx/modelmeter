@@ -98,7 +98,7 @@ export default function Models() {
         <div className="ds-surface p-4 sm:p-5 mb-6 animate-slide-up">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)]">
-              Top Models
+              Model Distribution
             </span>
             <div className="ds-surface px-1 py-1 rounded-lg flex items-center gap-0.5">
               <button
@@ -205,10 +205,7 @@ function ModelCard({ model, index }: { model: ModelUsage; index: number }) {
     <Link
       to={`/models/${encodeURIComponent(model.model_id)}`}
       className="ds-surface flex flex-col p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md animate-slide-up"
-      style={{
-        borderTop: `3px solid ${color.text}`,
-        animationDelay: `${Math.min(index, 8) * 40}ms`,
-      }}
+      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0 flex-1">
@@ -236,7 +233,7 @@ function ModelCard({ model, index }: { model: ModelUsage; index: number }) {
 
       <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[var(--border-subtle)]">
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+          <div className="text-xs uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
             Sessions
           </div>
           <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
@@ -244,7 +241,7 @@ function ModelCard({ model, index }: { model: ModelUsage; index: number }) {
           </div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+          <div className="text-xs uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
             Tokens
           </div>
           <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
@@ -252,7 +249,7 @@ function ModelCard({ model, index }: { model: ModelUsage; index: number }) {
           </div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+          <div className="text-xs uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
             Cost
           </div>
           <div className="text-sm font-mono font-medium text-[var(--text-primary)]">

@@ -189,10 +189,7 @@ function ProjectCard({ project, index }: { project: ProjectUsage; index: number 
     <Link
       to={`/projects/${encodeURIComponent(project.project_id)}`}
       className="ds-surface flex flex-col p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md animate-slide-up"
-      style={{
-        borderTop: '3px solid var(--accent-primary)',
-        animationDelay: `${Math.min(index, 8) * 40}ms`,
-      }}
+      style={{ animationDelay: `${Math.min(index, 8) * 40}ms` }}
     >
       <div className="mb-3">
         <div
@@ -211,7 +208,7 @@ function ProjectCard({ project, index }: { project: ProjectUsage; index: number 
 
       <div className="grid grid-cols-3 gap-2 pt-3 border-t border-[var(--border-subtle)]">
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+          <div className="text-xs uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
             Sessions
           </div>
           <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
@@ -219,7 +216,7 @@ function ProjectCard({ project, index }: { project: ProjectUsage; index: number 
           </div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+          <div className="text-xs uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
             Tokens
           </div>
           <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
@@ -227,7 +224,7 @@ function ProjectCard({ project, index }: { project: ProjectUsage; index: number 
           </div>
         </div>
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
+          <div className="text-xs uppercase tracking-wider text-[var(--text-tertiary)] mb-0.5">
             Cost
           </div>
           <div className="text-sm font-mono font-medium text-[var(--text-primary)]">
