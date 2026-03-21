@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { buildApiUrl, fetchApi, getAuthToken } from '../lib/api'
 import { LIVE_ACTIVITY_WINDOW_MINUTES } from '../lib/liveWindow'
@@ -32,8 +32,6 @@ export function useLivePanelConnection(
   )
   const [reconnectCountdownSeconds, setReconnectCountdownSeconds] = useState<number | null>(null)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
-
-  const eventSourceRef = useRef<EventSource | null>(null)
 
   const liveScope = sourceScope
 
@@ -97,13 +95,11 @@ export function useLivePanelConnection(
     source.addEventListener('live.snapshot', onSnapshot as EventListener)
     source.addEventListener('live.error', onError)
     source.onerror = onError
-    eventSourceRef.current = source
 
     return () => {
       source.removeEventListener('live.snapshot', onSnapshot as EventListener)
       source.removeEventListener('live.error', onError)
       source.close()
-      eventSourceRef.current = null
     }
   }, [localPaused, globalPaused, reconnectAttempt, liveScope, streamMode, sessionId])
 
@@ -138,7 +134,11 @@ export function useLivePanelConnection(
   const resume = useCallback(() => {
     setLocalPaused(false)
     setReconnectAttempt((value) => value + 1)
-    setStreamMode('connecting')
+    setStreamMode(
+      typeof window !== 'undefined' && typeof window.EventSource !== 'undefined'
+        ? 'connecting'
+        : 'polling'
+    )
   }, [])
   const refresh = useCallback(() => refetch(), [refetch])
 

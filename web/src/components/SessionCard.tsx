@@ -29,7 +29,8 @@ export default function SessionCard({ session, isAdded, onSelect, animationDelay
         animationDelay: `${animationDelay}ms`,
       }}
     >
-      <div className="flex items-start justify-between gap-2 mb-3">
+      <div className="relative">
+        <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-0.5">
             {isActive && (
@@ -89,11 +90,14 @@ export default function SessionCard({ session, isAdded, onSelect, animationDelay
         </div>
       </div>
 
+      </div>
+
       {isAdded && (
         <div className="absolute top-3 right-3">
           <CheckCircle2 className="w-5 h-5 text-[var(--color-success)]" />
         </div>
       )}
+      </div>
     </button>
   )
 }

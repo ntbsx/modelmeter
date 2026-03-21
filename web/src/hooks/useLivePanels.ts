@@ -43,21 +43,36 @@ export function useLivePanels() {
   }, [panels])
 
   const addPanel = useCallback((sessionSummary: { session_id: string; title: string | null; project_name: string | null; directory: string | null }): AddPanelResult => {
+    // Fast path checks using current state for immediate user feedback
     if (panels.length >= MAX_PANELS) {
       return { success: false, reason: 'max-panels' }
     }
 
-    const newPanel: LivePanel = {
-      id: crypto.randomUUID(),
-      sessionId: sessionSummary.session_id,
-      sessionTitle: sessionSummary.title,
-      projectName: sessionSummary.project_name,
-      projectPath: sessionSummary.directory,
-      position: panels.length,
-      addedAt: Date.now(),
+    if (panels.some((p) => p.sessionId === sessionSummary.session_id)) {
+      return { success: false, reason: 'duplicate-session' }
     }
 
-    setPanels((prev) => [...prev, newPanel])
+    setPanels((prev) => {
+      // Re-enforce constraints against the latest state to handle concurrent adds
+      if (prev.length >= MAX_PANELS) {
+        return prev
+      }
+      if (prev.some((p) => p.sessionId === sessionSummary.session_id)) {
+        return prev
+      }
+
+      const newPanel: LivePanel = {
+        id: crypto.randomUUID(),
+        sessionId: sessionSummary.session_id,
+        sessionTitle: sessionSummary.title,
+        projectName: sessionSummary.project_name,
+        projectPath: sessionSummary.directory,
+        position: prev.length,
+        addedAt: Date.now(),
+      }
+
+      return [...prev, newPanel]
+    })
     return { success: true }
   }, [panels])
 
