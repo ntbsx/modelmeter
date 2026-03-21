@@ -115,8 +115,19 @@ def _create_api_fixture(db_path: Path) -> None:
         )
 
 
-def _create_daily_boundary_fixture(db_path: Path) -> None:
-    boundary_ms = int(datetime(2026, 3, 13, 18, 30, tzinfo=UTC).timestamp() * 1000)
+def _create_daily_boundary_fixture(db_path: Path) -> tuple[str, str]:
+    """Create fixture with a timestamp at 18:30 UTC two days ago.
+
+    Returns (utc_day, local_day) where local_day is the day when viewed
+    at UTC+7 (timezone_offset_minutes=420): 18:30 UTC + 7h = 01:30 next day.
+    """
+    from datetime import timedelta
+
+    base_date = datetime.now(tz=UTC).date() - timedelta(days=2)
+    boundary_ms = int(
+        datetime(base_date.year, base_date.month, base_date.day, 18, 30, tzinfo=UTC).timestamp()
+        * 1000
+    )
     with sqlite3.connect(db_path) as conn:
         conn.execute(
             "CREATE TABLE session ("
@@ -171,6 +182,10 @@ def _create_daily_boundary_fixture(db_path: Path) -> None:
             "(id, session_id, time_created, time_updated, data) VALUES (?, ?, ?, ?, ?)",
             ("m1", "s1", boundary_ms, boundary_ms, json.dumps(payload)),
         )
+
+    utc_day = base_date.isoformat()
+    local_day = (base_date + timedelta(days=1)).isoformat()
+    return utc_day, local_day
 
 
 def test_health_endpoint() -> None:
@@ -556,7 +571,7 @@ def test_project_detail_not_found_returns_404(tmp_path: Path) -> None:
 
 def test_daily_endpoint_uses_timezone_offset_for_day_buckets(tmp_path: Path) -> None:
     db_path = tmp_path / "opencode.db"
-    _create_daily_boundary_fixture(db_path)
+    utc_day, local_day = _create_daily_boundary_fixture(db_path)
 
     client = _new_client()
     utc_response = client.get(
@@ -565,7 +580,7 @@ def test_daily_endpoint_uses_timezone_offset_for_day_buckets(tmp_path: Path) -> 
     )
     assert utc_response.status_code == 200
     utc_payload = _get_json(utc_response)
-    assert utc_payload["daily"][0]["day"] == "2026-03-13"
+    assert utc_payload["daily"][0]["day"] == utc_day
 
     local_response = client.get(
         "/api/daily",
@@ -578,7 +593,7 @@ def test_daily_endpoint_uses_timezone_offset_for_day_buckets(tmp_path: Path) -> 
     )
     assert local_response.status_code == 200
     local_payload = _get_json(local_response)
-    assert local_payload["daily"][0]["day"] == "2026-03-14"
+    assert local_payload["daily"][0]["day"] == local_day
 
 
 def test_date_insights_endpoint_returns_daily_breakdowns(tmp_path: Path) -> None:
