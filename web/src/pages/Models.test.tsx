@@ -88,9 +88,15 @@ describe('Models page', () => {
     expect(await screen.findByText('openai/gpt-4')).toBeInTheDocument()
     expect(await screen.findByText('openai Models')).toBeInTheDocument()
     
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('provider=openai'),
-      expect.objectContaining({ headers: {} })
+    const modelsCalls = fetchMock.mock.calls.filter(
+      ([url]) => typeof url === 'string' && url.includes('/api/models')
     )
+    expect(modelsCalls.length).toBeGreaterThan(0)
+    const calledUrl = new URL(modelsCalls[0][0] as string)
+    expect(calledUrl.pathname).toBe('/api/models')
+    expect(calledUrl.searchParams.get('provider')).toBe('openai')
+    expect(calledUrl.searchParams.get('days')).toBe('7')
+    expect(calledUrl.searchParams.get('offset')).toBe('0')
+    expect(calledUrl.searchParams.get('limit')).toBe('20')
   })
 })
