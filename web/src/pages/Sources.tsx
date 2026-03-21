@@ -1,9 +1,11 @@
 import { type FormEvent, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Globe, Database, ChevronDown, Server, Lock, Unlock, CheckCircle2, XCircle, AlertCircle, Plus, RefreshCw } from 'lucide-react'
 import { fetchApi } from '../lib/api'
 import type { DataSourcePublic, SourceHealth, SourceRegistryPublic } from '../types'
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
+import { Badge } from '../components/ui'
 
 const HEALTH_STORAGE_KEY = 'modelmeter-source-health'
 
@@ -22,6 +24,188 @@ function saveStoredHealth(health: Record<string, { is_reachable: boolean; error?
   } catch {
     // ignore storage errors
   }
+}
+
+// Source type color configuration
+const SOURCE_TYPE_CONFIG = {
+  http: {
+    icon: Globe,
+    color: 'var(--accent-primary)',
+    bgColor: 'var(--accent-primary-muted)',
+    label: 'HTTP API',
+  },
+  sqlite: {
+    icon: Database,
+    color: 'var(--color-info)',
+    bgColor: 'var(--color-info-muted)',
+    label: 'SQLite',
+  },
+} as const
+
+type SourceCardProps = {
+  source: DataSourcePublic
+  health: { is_reachable: boolean; error?: string; checked_at: string } | undefined
+  onEdit: (source: DataSourcePublic) => void
+  onRemove: (source: DataSourcePublic) => void
+  animationDelay?: number
+}
+
+function SourceCard({ source, health, onEdit, onRemove, animationDelay = 0 }: SourceCardProps) {
+  const [expanded, setExpanded] = useState(false)
+  const typeConfig = SOURCE_TYPE_CONFIG[source.kind]
+  const TypeIcon = typeConfig.icon
+  const connectionTarget = source.kind === 'sqlite' ? String(source.db_path ?? '-') : String(source.base_url ?? '-')
+
+  return (
+    <article
+      className="ds-surface flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md animate-slide-up"
+      style={{
+        borderTop: `3px solid ${typeConfig.color}`,
+        animationDelay: `${animationDelay}ms`,
+      }}
+    >
+      {/* Card header */}
+      <div className="p-5 pb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            {/* Source type icon */}
+            <div
+              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: typeConfig.bgColor }}
+            >
+              <TypeIcon className="w-5 h-5" style={{ color: typeConfig.color }} />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              {/* Source ID as title */}
+              <h3 className="ds-text-subheading font-semibold text-[var(--text-primary)] truncate" title={source.source_id}>
+                {source.source_id}
+              </h3>
+              {/* Label as subtitle */}
+              {source.label ? (
+                <p className="ds-text-muted text-sm truncate mt-0.5" title={source.label}>{source.label}</p>
+              ) : null}
+            </div>
+          </div>
+
+          {/* Status badges */}
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <Badge variant={source.enabled ? 'success' : 'default'} className="text-xs">
+              {source.enabled ? (
+                <>
+                  <Unlock className="w-3 h-3 mr-1" />
+                  Enabled
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3 h-3 mr-1" />
+                  Disabled
+                </>
+              )}
+            </Badge>
+            <span className="ds-badge ds-badge-default text-xs" style={{ backgroundColor: typeConfig.bgColor, color: typeConfig.color }}>
+              {typeConfig.label}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Health + connection info */}
+      <div className="px-5 pb-4">
+        <div className="flex items-center gap-3 mb-3">
+          {/* Health indicator */}
+          <div className="flex items-center gap-2">
+            {health ? (
+              health.is_reachable ? (
+                <CheckCircle2 className="w-4 h-4 text-[var(--color-success)]" />
+              ) : (
+                <XCircle className="w-4 h-4 text-[var(--color-error)]" />
+              )
+            ) : (
+              <AlertCircle className="w-4 h-4 text-[var(--text-tertiary)]" />
+            )}
+            <span className={`text-sm font-medium ${
+              health
+                ? health.is_reachable
+                  ? 'text-[var(--color-success)]'
+                  : 'text-[var(--color-error)]'
+                : 'text-[var(--text-tertiary)]'
+            }`}>
+              {health
+                ? health.is_reachable
+                  ? 'Healthy'
+                  : 'Unreachable'
+                : 'Not checked'}
+            </span>
+          </div>
+
+          {/* Connection target */}
+          <div className="flex-1 min-w-0">
+            <p className="ds-text-mono text-xs text-[var(--text-secondary)] truncate" title={connectionTarget}>
+              {connectionTarget}
+            </p>
+          </div>
+
+          {/* Credentials (HTTP only) */}
+          {source.kind === 'http' && (
+            source.has_auth ? (
+              <Badge variant="success" className="text-xs shrink-0">
+                <Lock className="w-3 h-3 mr-1" />
+                Configured
+              </Badge>
+            ) : (
+              <Badge variant="warning" className="text-xs shrink-0">
+                <Unlock className="w-3 h-3 mr-1" />
+                None
+              </Badge>
+            )
+          )}
+        </div>
+
+        {/* Error details (expandable) */}
+        {(health?.error || expanded) && (
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="w-full flex items-center justify-between py-2 px-3 rounded-lg bg-[var(--color-error-muted)]/20 hover:bg-[var(--color-error-muted)]/30 transition-colors duration-150 focus-ring focus:outline-none"
+          >
+            <span className="text-xs text-[var(--color-error)] flex items-center gap-2">
+              <AlertCircle className="w-3.5 h-3.5" />
+              {expanded ? 'Hide error details' : 'View error details'}
+            </span>
+            <ChevronDown className={`w-3.5 h-3.5 text-[var(--color-error)] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+          </button>
+        )}
+
+        {/* Expanded error */}
+        {expanded && health?.error && (
+          <div className="mt-2 p-2.5 rounded-lg bg-[var(--color-error-muted)]/20 animate-fade-in">
+            <p className="text-xs text-[var(--color-error)] break-all">{health.error}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Card actions */}
+      <div className="mt-auto px-5 py-3 border-t border-[var(--border-subtle)] flex items-center justify-end gap-1 bg-[var(--surface-secondary)]/30 rounded-b-xl">
+        <button
+          type="button"
+          onClick={() => onEdit(source)}
+          className="ds-btn-ghost text-xs py-1.5 px-2 focus-ring"
+          aria-label={`Edit ${source.source_id}`}
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => onRemove(source)}
+          className="ds-btn-ghost text-xs py-1.5 px-2 text-[var(--color-error)] hover:bg-[var(--color-error-muted)] focus-ring"
+          aria-label={`Remove ${source.source_id}`}
+        >
+          Remove
+        </button>
+      </div>
+    </article>
+  )
 }
 
 type SourceFormState = {
@@ -47,10 +231,6 @@ const EMPTY_FORM: SourceFormState = {
 }
 
 type StoredHealth = Record<string, { is_reachable: boolean; error?: string; checked_at: string }>
-
-function sourceTarget(source: DataSourcePublic): string {
-  return source.kind === 'sqlite' ? String(source.db_path ?? '-') : String(source.base_url ?? '-')
-}
 
 export default function Sources() {
   const queryClient = useQueryClient()
@@ -336,103 +516,54 @@ export default function Sources() {
       )}
 
       {!showForm && (
-        <div className="bg-[var(--surface-primary)] rounded-xl border border-[var(--border-default)] shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-[var(--surface-secondary)] border-b border-[var(--border-default)]">
-                <tr>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Source</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Type</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Connection</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Credentials</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Active</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)]">Status</th>
-                  <th className="px-4 sm:px-6 py-4 font-medium text-[var(--text-secondary)] text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)]">
-                {(registry.sources ?? []).map((source) => {
-                  const result = storedHealth[source.source_id]
-                  return (
-                    <tr key={source.source_id} className="hover:bg-[var(--surface-accent)]/50 transition-colors">
-                      <td className="px-4 sm:px-6 py-4 font-medium text-[var(--text-primary)]">{source.source_id}</td>
-                      <td className="px-4 sm:px-6 py-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                          source.kind === 'http' 
-                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400'
-                            : 'bg-[var(--surface-secondary)] text-[var(--text-secondary)]'
-                        }`}>
-                          {source.kind === 'http' ? '🌐 API' : '💾 Local'}
-                        </span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-[var(--text-secondary)] max-w-[200px] truncate" title={sourceTarget(source)}>
-                        {sourceTarget(source)}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-sm">
-                        {source.kind === 'http' ? (
-                          <span className={source.has_auth ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
-                            {source.has_auth ? '✓ Configured' : '✗ None'}
-                          </span>
-                        ) : (
-                          <span className="text-[var(--text-tertiary)]">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-sm">
-                        <span className={source.enabled ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text-secondary)]'}>
-                          {source.enabled ? '✓ Yes' : '✗ No'}
-                        </span>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4">
-                        {result ? (
-                          <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium animate-fade-in ${
-                            result.is_reachable 
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' 
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${result.is_reachable ? 'bg-emerald-500 animate-pulse-subtle' : 'bg-red-500'}`} />
-                            {result.is_reachable ? 'Healthy' : 'Unreachable'}
-                          </span>
-                        ) : (
-                          <span className="text-[var(--text-tertiary)] text-xs">—</span>
-                        )}
-                      </td>
-                      <td className="px-4 sm:px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => onEdit(source)}
-                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] hover:bg-[var(--accent-primary-muted)] transition-colors"
-                            title="Edit"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTarget(source)}
-                            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--color-error)] hover:bg-[var(--color-error-muted)] transition-colors"
-                            title="Remove"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-                {(registry.sources ?? []).length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 sm:px-6 py-12 text-center text-[var(--text-secondary)]">
-                      No sources configured yet.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+        <div>
+          {(registry.sources ?? []).length === 0 ? (
+            <div className="ds-surface flex flex-col items-center justify-center py-16 px-6 text-center animate-fade-in">
+              <div className="w-14 h-14 rounded-2xl bg-[var(--surface-tertiary)] flex items-center justify-center mb-4">
+                <Server className="w-7 h-7 text-[var(--text-tertiary)]" />
+              </div>
+              <h3 className="ds-text-heading text-[var(--text-primary)] mb-1.5">No sources configured yet.</h3>
+              <p className="ds-text-muted max-w-sm mb-6">
+                Connect a local SQLite database or a remote HTTP endpoint to start tracking your AI usage.
+              </p>
+              <button type="button" onClick={onAddNew} className="ds-btn-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Your First Source
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Source count header */}
+              <div className="flex items-center justify-between">
+                <p className="ds-text-label text-[var(--text-tertiary)]">
+                  {(registry.sources ?? []).length} source{(registry.sources ?? []).length !== 1 ? 's' : ''} configured
+                </p>
+                <button
+                  type="button"
+                  onClick={() => checkMutation.mutate()}
+                  disabled={checkMutation.isPending}
+                  className="ds-btn-ghost text-sm"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${checkMutation.isPending ? 'animate-spin' : ''}`} />
+                  {checkMutation.isPending ? 'Checking...' : 'Check All Health'}
+                </button>
+              </div>
+
+              {/* Source cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {(registry.sources ?? []).map((source, index) => (
+                  <SourceCard
+                    key={source.source_id}
+                    source={source}
+                    health={storedHealth[source.source_id]}
+                    onEdit={onEdit}
+                    onRemove={setDeleteTarget}
+                    animationDelay={Math.min(index, 5) * 50}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

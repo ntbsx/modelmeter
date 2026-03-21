@@ -214,10 +214,10 @@ export default function DateInsights() {
       detail != null && typeof detail === 'string' && detail.toLowerCase().includes('federated')
     return (
       <PageErrorState
-        title={isFederationError ? 'Date insights not available for All Sources' : 'Unable to load date insights'}
+        title={isFederationError ? 'Date insights only available for This Server' : 'Unable to load date insights'}
         description={
           isFederationError
-            ? 'Date insights are currently only available for local source. Switch to "This Server" scope to view date insights.'
+            ? 'Date insights are currently only available when viewing "This Server". Switch the scope to "This Server" to view date insights.'
             : 'We could not load one-day analytics right now. Try another date or refresh the page.'
         }
       />

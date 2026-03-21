@@ -612,7 +612,7 @@ def get_date_insights(
                 model_id=model_id,
                 provider=provider,
                 usage=usage,
-                total_interactions=0,  # project_model_rows has no per-model interaction count
+                total_interactions=int(row["total_interactions"]),
                 cost_usd=cost_usd,
                 has_pricing=pricing is not None,
             )
