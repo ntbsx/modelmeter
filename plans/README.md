@@ -5,14 +5,14 @@ This folder contains **active and planned** features for ModelMeter (OpenCode us
 ## Current Structure
 
 - **Active Plans:** Current plans directory contains only active/planned work
-- **Completed Plans:** Historical plans archived in `completed/` folder by phase
+- **Completed Plans:** Historical plans archived in [completed/](completed/) folder by phase
 - **Execution Order:** Follow dependencies and checkpoints outlined below
 
 ## Active Work
 
-### Phase 5: Analytics UX and Exploration (Completed)
+### Phase 6: Multi-Agent Support — Claude Code Integration (Active)
 
-Archived in `completed/phase-5/` (Plans 22-26). See `completed/phase-5/README.md` for details.
+Plans in [phase-6/](phase-6/) (Plans 27-32). See [phase-6/README.md](phase-6/README.md) for details.
 
 ### Phase Milestones
 
@@ -20,28 +20,29 @@ Archived in `completed/phase-5/` (Plans 22-26). See `completed/phase-5/README.md
 - **Phase 4 Part 1:** ✅ Complete (Federation, Provider Analytics, Update Flow, Source Management)
 - **Phase 4 Part 2:** ✅ Complete (Plans 20-21)
 - **Phase 5:** ✅ Complete (Plans 22-26 all done)
+- **Phase 6:** 🔄 Active (Plans 27-32)
 
 ## Completed Work
 
-Historical plans are organized in `completed/` by phase:
+Historical plans are organized in [completed/](completed/) by phase:
 
-- **`completed/phase-1-3/`** - Foundation plans (01-09)
+- **[completed/phase-1-3/](completed/phase-1-3/)** - Foundation plans (01-09)
   - Core Platform, Data Layer, Analytics Engine
   - CLI Product, Live Monitoring
   - API Foundation, Web App
   - Packaging Quality, Future Extensions
-  - See `phase-1-3-README.md` for details
+  - See [phase-1-3-README.md](completed/phase-1-3/phase-1-3-README.md) for details
 
-- **`completed/phase-4_part_1/`** - First half of Phase 4 (16-19)
+- **[completed/phase-4_part_1/](completed/phase-4_part_1/)** - First half of Phase 4 (16-19)
   - Federation Core, Provider Analytics
   - Auto-Update & Release Awareness
   - Dashboard Source Management
-  - See `completed/phase-4_part_1/phase-4-part-1-README.md` for details
+  - See [phase-4-part-1-README.md](completed/phase-4_part_1/phase-4-part-1-README.md) for details
 
-- **`completed/phase-4_part_2/`** - Second half of Phase 4 (20-21)
+- **[completed/phase-4_part_2/](completed/phase-4_part_2/)** - Second half of Phase 4 (20-21)
   - Source status banner and loading states
   - Provider detection from providerID field
-  - See `completed/phase-4_part_2/README.md` for details
+  - See [README.md](completed/phase-4_part_2/README.md) for details
 
 ## Engineering Standards (Applies to all phases)
 
@@ -53,28 +54,33 @@ Historical plans are organized in `completed/` by phase:
 
 ## Dependency Graph (Active Work Only)
 
-- `22-per-page-filters-and-date-insights` → foundation for page-local data flow and date drill-down UX ✅
-- `23-card-layout-infinite-scroll-and-charts` → depends on `22` for page-local filter ownership
-- `24-live-multi-session-and-scope-simplification` → can run in parallel with `23` after `22`
-- `25-sources-page-card-redesign` → independent, can run in parallel with `23`/`24`
-- `26-date-insights-session-cards` → depends on `22` (adds Sessions tab to Date Insights)
+- `27-repository-protocol-and-factory` → foundation for all Phase 6 work
+- `28-claudecode-jsonl-reader` → depends on `27`
+- `29-auto-detection-and-agent-identity` → depends on `28`
+- `30-analytics-multi-repo-integration` → depends on `29`
+- `31-live-monitoring-claudecode` → depends on `30`
+- `32-frontend-agent-identity` → depends on `31`
 
-## Definition of Done (Current Phase)
+## Definition of Done (Current Phase — Phase 6)
 
-- [x] Per-page time filters implemented across target analytics pages
-- [x] Date insights page supports one-day spend and token analysis by model/provider/project
-- [x] Models/Providers/Projects migrated to cards with lazy loading and charts
-- [x] Live page supports multi-session panels on local/server (self) with simplified scope UX
-- [x] Sources page migrated to card-based listing
-- [x] Frontend and backend validation suites pass
+- [ ] UsageRepository Protocol defined; SQLiteUsageRepository satisfies it
+- [ ] JsonlUsageRepository reads Claude Code JSONL data with full method coverage
+- [ ] Auto-detection discovers both OpenCode and Claude Code data on startup
+- [ ] Agent identity field on sources; API responses include agent metadata
+- [ ] All analytics endpoints include Claude Code data when present
+- [ ] Live monitoring shows active Claude Code sessions
+- [ ] Doctor reports multi-agent detection status
+- [ ] Frontend displays agent identity on source/session cards
+- [ ] All existing tests pass; new tests cover JSONL reader and multi-agent
+- [ ] OpenAPI artifacts regenerated for schema changes
 
 ## Quick Reference
 
 - **Current Version:** See `pyproject.toml` `[project].version`
 - **Latest Release:** See `git describe --tags --abbrev=0`
-- **Roadmap Index:** See `00-roadmap-index.md`
-- **Phase 4 Tracking:** See `completed/phase-4_part_2/README.md`
-- **Phase 5 Tracking:** See `completed/phase-5/README.md`
+- **Roadmap Index:** [00-roadmap-index.md](00-roadmap-index.md)
+- **Phase 5 Archive:** [completed/phase-5/README.md](completed/phase-5/README.md)
+- **Phase 6 Plans:** [phase-6/README.md](phase-6/README.md)
 
 ## Historical Dependency Graph (Archived)
 

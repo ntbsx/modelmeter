@@ -165,4 +165,4 @@ Sources are stored in SQLite with:
 Phase 4 is complete.
 
 - Start Phase 5 planning and define the next implementation slice.
-- Use `../../README.md` and `../../00-roadmap-index.md` as the active planning references.
+- Use [README.md](../../README.md) and [00-roadmap-index.md](../../00-roadmap-index.md) as the active planning references.

@@ -16,7 +16,7 @@ Phase 4 Part 1 (Plans 16-19) was completed on 2026-03-18:
 
 These features are already released in v2026.3.16 - v2026.3.21.
 
-See `../phase-4_part_1/phase-4-part-1-README.md` for detailed implementation notes.
+See [phase-4-part-1-README.md](../phase-4_part_1/phase-4-part-1-README.md) for detailed implementation notes.
 
 ## Completed Plans (20-21)
 
@@ -93,14 +93,14 @@ Phase 4 is complete! ✅
 
 ## Related
 
-- **Archive:** `../phase-4_part_1/` for Plans 16-19
-- **Roadmap:** `../00-roadmap-index.md` for overall roadmap
-- **Planning Guide:** `../README.md` for project-wide planning
+- **Archive:** [phase-4_part_1/](../phase-4_part_1/) for Plans 16-19
+- **Roadmap:** [00-roadmap-index.md](../00-roadmap-index.md) for overall roadmap
+- **Planning Guide:** [README.md](../README.md) for project-wide planning
 
 ## Historical Tracking
 
 Previous tracking file (`TRACKING.md`) has been archived with Phase 4 Part 1.
-See `../phase-4_part_1/phase-4-part-1-README.md` for historical PR and milestone tracking.
+See [phase-4-part-1-README.md](../phase-4_part_1/phase-4-part-1-README.md) for historical PR and milestone tracking.
 
 ## Next Steps After Phase 4
 

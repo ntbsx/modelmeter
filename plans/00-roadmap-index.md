@@ -23,7 +23,7 @@ Build a cross-platform (macOS + Linux) OpenCode usage monitor with:
 
 ### Phase 1-3: Core Platform and Initial Product (Completed 2026-03-15)
 
-All foundational plans (01-09) completed. Archive: `completed/phase-1-3/`
+All foundational plans (01-09) completed. Archive: [completed/phase-1-3/](completed/phase-1-3/)
 
 Key milestones:
 - Core platform, data layer, analytics engine
@@ -35,7 +35,7 @@ Key milestones:
 
 ### Phase 4: Distributed Analytics and Lifecycle Automation (Completed 2026-03-19)
 
-All plans (16-21) completed. Archive: `completed/phase-4_part_1/` and `completed/phase-4_part_2/`
+All plans (16-21) completed. Archive: [completed/phase-4_part_1/](completed/phase-4_part_1/) and [completed/phase-4_part_2/](completed/phase-4_part_2/)
 
 Key milestones:
 - Multi-machine source federation
@@ -66,7 +66,7 @@ Key milestones:
 
 ### Phase 5: Analytics UX and Exploration (Completed)
 
-All plans (22-26) completed. See: `phase-5/README.md`
+All plans (22-26) completed. See: [completed/phase-5/README.md](completed/phase-5/README.md)
 
 Key milestones:
 - Per-page time filters (source scope remains global)
@@ -77,19 +77,33 @@ Key milestones:
 - Sources page card redesign
 - Session cards in Date Insights with per-model breakdown
 
+### Phase 6: Multi-Agent Support — Claude Code Integration (Active)
+
+Plans (27-32). See: [phase-6/README.md](phase-6/README.md)
+
+Key milestones:
+- Repository Protocol abstraction and factory pattern
+- JSONL reader for Claude Code session data (~/.claude/projects/)
+- Auto-detection of both OpenCode and Claude Code local data
+- Agent identity field on sources (opencode, claudecode)
+- Full analytics parity across both agents
+- Live monitoring for Claude Code sessions via mtime polling
+- Frontend agent identity display
+
 ## Future Phases
 
-Potential areas after Phase 5:
-- Advanced federation support for deeper detail endpoints
+Potential areas after Phase 6:
+- Agent filter parameter on analytics endpoints
+- Support for other coding agents (Cursor, Windsurf, Copilot)
 - Custom dashboards and saved queries
 - Alerting and notifications
 - Team/workspace management
-- Integration with other AI tools
 
 ## Quick Reference
 
-- **Phase 1-3 Archive:** `completed/phase-1-3/phase-1-3-README.md`
-- **Phase 4 Part 1 Archive:** `completed/phase-4_part_1/phase-4-part-1-README.md`
-- **Phase 4 Part 2 Archive:** `completed/phase-4_part_2/`
-- **Phase 5 Plans:** `completed/phase-5/README.md`
-- **Planning Guide:** `README.md`
+- **Phase 1-3 Archive:** [completed/phase-1-3/phase-1-3-README.md](completed/phase-1-3/phase-1-3-README.md)
+- **Phase 4 Part 1 Archive:** [completed/phase-4_part_1/phase-4-part-1-README.md](completed/phase-4_part_1/phase-4-part-1-README.md)
+- **Phase 4 Part 2 Archive:** [completed/phase-4_part_2/](completed/phase-4_part_2/)
+- **Phase 5 Archive:** [completed/phase-5/README.md](completed/phase-5/README.md)
+- **Phase 6 Plans:** [phase-6/README.md](phase-6/README.md)
+- **Planning Guide:** [README.md](README.md)
