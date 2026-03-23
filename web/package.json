@@ -17,8 +17,8 @@
     "check:types": "npm run gen:types && git diff --exit-code -- src/generated/api.ts src/generated/openapi.sha256"
   },
   "dependencies": {
-    "@tailwindcss/vite": "^4.2.1",
-    "@tanstack/react-query": "^5.90.21",
+    "@tailwindcss/vite": "^4.2.2",
+    "@tanstack/react-query": "^5.95.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.577.0",
@@ -41,15 +41,15 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
     "@vitest/coverage-v8": "^4.1.0",
-    "eslint": "^10.0.3",
+    "eslint": "^10.1.0",
     "eslint-plugin-react-hooks": "7.1.0-canary-3f0b9e61-20260317",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
-    "jsdom": "^29.0.0",
+    "jsdom": "^29.0.1",
     "openapi-typescript": "^7.13.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.1",
-    "vite": "^8.0.0",
+    "vite": "^8.0.1",
     "vitest": "^4.1.0"
   }
 }
