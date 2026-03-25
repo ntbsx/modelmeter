@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import sqlite3
 import time
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.doctor import generate_doctor_report
@@ -48,8 +47,8 @@ def _resolve_sqlite_path(settings: AppSettings, db_path_override: Path | None = 
     return paths.sqlite_db_path
 
 
-def _token_usage_from_row(row: sqlite3.Row) -> TokenUsage:
-    mapping = dict(row)
+def _token_usage_from_row(row: dict[str, Any]) -> TokenUsage:
+    mapping = row
     return TokenUsage(
         input_tokens=int(mapping.get("input_tokens", 0)),
         output_tokens=int(mapping.get("output_tokens", 0)),
@@ -90,7 +89,7 @@ def get_live_snapshot(
         since_ms=since_ms,
     )
 
-    summary_row: sqlite3.Row
+    summary_row: dict[str, Any]
     if resolved_token_source == "steps":
         summary_row = repository.fetch_live_summary_steps(since_ms=since_ms, session_id=session_id)
     else:

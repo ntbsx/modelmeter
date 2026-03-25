@@ -35,8 +35,8 @@ from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.data.storage import resolve_storage_paths
 
 
-def _token_usage_from_row(row: sqlite3.Row) -> TokenUsage:
-    mapping = dict(row)  # sqlite3.Row behaves like a mapping
+def _token_usage_from_row(row: dict[str, Any]) -> TokenUsage:
+    mapping = row
     return TokenUsage(
         input_tokens=int(mapping.get("input_tokens", 0)),
         output_tokens=int(mapping.get("output_tokens", 0)),
