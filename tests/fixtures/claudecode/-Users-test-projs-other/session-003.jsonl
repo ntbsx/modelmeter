@@ -1,0 +1,1 @@
+{"sessionId": "session-003", "cwd": "/Users/test/projs/other", "type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Hello from other project!"}]}, "model": "claude-sonnet-4-6", "stop_reason": "end_turn", "usage": {"input_tokens": 200, "output_tokens": 100, "cache_read": 40, "cache_write": 20}, "timestamp": "2026-03-20T12:00:00.000Z"}
