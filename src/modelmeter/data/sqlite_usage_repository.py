@@ -57,6 +57,21 @@ class SQLiteUsageRepository:
         self._cache[key] = result
 
     @staticmethod
+    def _to_dict(row: sqlite3.Row) -> dict[str, Any]:
+        """Convert sqlite3.Row to plain dict for Protocol compatibility."""
+        return dict(row)
+
+    @staticmethod
+    def _to_dict_list(rows: list[sqlite3.Row]) -> list[dict[str, Any]]:
+        """Convert list of sqlite3.Row to list of dicts."""
+        return [dict(row) for row in rows]
+
+    @staticmethod
+    def _to_dict_optional(row: sqlite3.Row | None) -> dict[str, Any] | None:
+        """Convert optional sqlite3.Row to optional dict."""
+        return dict(row) if row is not None else None
+
+    @staticmethod
     def _time_filter(days: int | None, *, time_expr: str) -> tuple[str, list[int]]:
         if days is None:
             return "", []
@@ -89,7 +104,7 @@ class SQLiteUsageRepository:
         )
         return f"AND {day_expr} = ?", [day]
 
-    def fetch_summary(self, *, days: int | None = None) -> sqlite3.Row:
+    def fetch_summary(self, *, days: int | None = None) -> dict[str, Any]:
         """Fetch aggregate usage totals and distinct session count."""
         cache_key = self._cache_key("fetch_summary", days=days)
         cached = self._get_cached(cache_key)
@@ -121,8 +136,9 @@ class SQLiteUsageRepository:
             row = conn.execute(query, params).fetchone()
             if row is None:
                 raise RuntimeError("Summary query returned no row")
-            self._set_cached(cache_key, row)
-            return row
+            result = self._to_dict(row)
+            self._set_cached(cache_key, result)
+            return result
 
     def fetch_session_count(self, *, days: int | None = None) -> int:
         """Fetch count of sessions created in the selected window."""
@@ -150,7 +166,7 @@ class SQLiteUsageRepository:
         *,
         day: str,
         timezone_offset_minutes: int = 0,
-    ) -> sqlite3.Row:
+    ) -> dict[str, Any]:
         """Fetch aggregate usage totals for one local day."""
         cache_key = self._cache_key(
             "fetch_summary_for_day",
@@ -189,15 +205,16 @@ class SQLiteUsageRepository:
             row = conn.execute(query, params).fetchone()
             if row is None:
                 raise RuntimeError("Date summary query returned no row")
-            self._set_cached(cache_key, row)
-            return row
+            result = self._to_dict(row)
+            self._set_cached(cache_key, result)
+            return result
 
     def fetch_summary_for_day_steps(
         self,
         *,
         day: str,
         timezone_offset_minutes: int = 0,
-    ) -> sqlite3.Row | None:
+    ) -> dict[str, Any] | None:
         """Fetch aggregate usage totals from step-finish parts for one local day."""
         cache_key = self._cache_key(
             "fetch_summary_for_day_steps",
@@ -235,8 +252,9 @@ class SQLiteUsageRepository:
             if row is None:
                 self._set_cached(cache_key, None)
                 return None
-            self._set_cached(cache_key, row)
-            return row
+            result = self._to_dict(row)
+            self._set_cached(cache_key, result)
+            return result
 
     def fetch_daily_session_counts(
         self,
@@ -265,7 +283,7 @@ class SQLiteUsageRepository:
 
         return {str(row["day"]): int(row["total_sessions"]) for row in rows}
 
-    def fetch_summary_steps(self, *, days: int | None = None) -> sqlite3.Row:
+    def fetch_summary_steps(self, *, days: int | None = None) -> dict[str, Any]:
         """Fetch aggregate usage totals from step-finish parts."""
         cache_key = self._cache_key("fetch_summary_steps", days=days)
         cached = self._get_cached(cache_key)
@@ -294,15 +312,16 @@ class SQLiteUsageRepository:
             row = conn.execute(query, params).fetchone()
             if row is None:
                 raise RuntimeError("Step summary query returned no row")
-            self._set_cached(cache_key, row)
-            return row
+            result = self._to_dict(row)
+            self._set_cached(cache_key, result)
+            return result
 
     def fetch_daily(
         self,
         *,
         days: int | None = None,
         timezone_offset_minutes: int = 0,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch daily usage aggregates ordered by day ascending."""
         cache_key = self._cache_key(
             "fetch_daily", days=days, timezone_offset_minutes=timezone_offset_minutes
@@ -342,15 +361,16 @@ class SQLiteUsageRepository:
 
         with self._connect() as conn:
             result = conn.execute(query, params).fetchall()
-            self._set_cached(cache_key, result)
-            return result
+            converted = self._to_dict_list(result)
+            self._set_cached(cache_key, converted)
+            return converted
 
     def fetch_daily_steps(
         self,
         *,
         days: int | None = None,
         timezone_offset_minutes: int = 0,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch daily usage aggregates from step-finish parts."""
         cache_key = self._cache_key(
             "fetch_daily_steps", days=days, timezone_offset_minutes=timezone_offset_minutes
@@ -386,8 +406,9 @@ class SQLiteUsageRepository:
 
         with self._connect() as conn:
             result = conn.execute(query, params).fetchall()
-            self._set_cached(cache_key, result)
-            return result
+            converted = self._to_dict_list(result)
+            self._set_cached(cache_key, converted)
+            return converted
 
     def resolve_token_source(
         self,
@@ -420,7 +441,7 @@ class SQLiteUsageRepository:
             return "activity"
         return "session"
 
-    def fetch_model_usage(self, *, days: int | None = None) -> list[sqlite3.Row]:
+    def fetch_model_usage(self, *, days: int | None = None) -> list[dict[str, Any]]:
         """Fetch token usage grouped by model."""
         cache_key = self._cache_key("fetch_model_usage", days=days)
         cached = self._get_cached(cache_key)
@@ -455,15 +476,16 @@ class SQLiteUsageRepository:
 
         with self._connect() as conn:
             result = conn.execute(query, params).fetchall()
-            self._set_cached(cache_key, result)
-            return result
+            converted = self._to_dict_list(result)
+            self._set_cached(cache_key, converted)
+            return converted
 
     def fetch_daily_model_usage(
         self,
         *,
         days: int | None = None,
         timezone_offset_minutes: int = 0,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch token usage grouped by day and model."""
         time_filter, params = self._time_filter(
             days,
@@ -504,9 +526,10 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
 
-    def fetch_model_usage_detail(self, *, days: int | None = None) -> list[sqlite3.Row]:
+    def fetch_model_usage_detail(self, *, days: int | None = None) -> list[dict[str, Any]]:
         """Fetch usage grouped by model with interactions and session counts."""
         cache_key = self._cache_key("fetch_model_usage_detail", days=days)
         cached = self._get_cached(cache_key)
@@ -549,15 +572,16 @@ class SQLiteUsageRepository:
 
         with self._connect() as conn:
             result = conn.execute(query, params).fetchall()
-            self._set_cached(cache_key, result)
-            return result
+            converted = self._to_dict_list(result)
+            self._set_cached(cache_key, converted)
+            return converted
 
     def fetch_model_usage_detail_for_day(
         self,
         *,
         day: str,
         timezone_offset_minutes: int = 0,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch usage grouped by model for one local day."""
         day_filter, params = self._target_day_filter(
             day=day,
@@ -596,9 +620,12 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
 
-    def fetch_model_detail(self, *, model_id: str, days: int | None = None) -> sqlite3.Row | None:
+    def fetch_model_detail(
+        self, *, model_id: str, days: int | None = None
+    ) -> dict[str, Any] | None:
         """Fetch aggregate usage detail for one model."""
         time_filter, params = self._time_filter(
             days,
@@ -634,11 +661,12 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchone()
+            row = conn.execute(query, params).fetchone()
+            return self._to_dict_optional(row)
 
     def fetch_daily_model_detail(
         self, *, model_id: str, days: int | None = None
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch daily usage detail for one model."""
         time_filter, params = self._time_filter(
             days,
@@ -673,9 +701,10 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
 
-    def fetch_project_usage_detail(self, *, days: int | None = None) -> list[sqlite3.Row]:
+    def fetch_project_usage_detail(self, *, days: int | None = None) -> list[dict[str, Any]]:
         """Fetch usage grouped by project with interactions and session counts."""
         cache_key = self._cache_key("fetch_project_usage_detail", days=days)
         cached = self._get_cached(cache_key)
@@ -713,15 +742,16 @@ class SQLiteUsageRepository:
 
         with self._connect() as conn:
             result = conn.execute(query, params).fetchall()
-            self._set_cached(cache_key, result)
-            return result
+            converted = self._to_dict_list(result)
+            self._set_cached(cache_key, converted)
+            return converted
 
     def fetch_project_usage_detail_for_day(
         self,
         *,
         day: str,
         timezone_offset_minutes: int = 0,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch usage grouped by project for one local day."""
         day_filter, params = self._target_day_filter(
             day=day,
@@ -755,9 +785,10 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
 
-    def fetch_project_model_usage(self, *, days: int | None = None) -> list[sqlite3.Row]:
+    def fetch_project_model_usage(self, *, days: int | None = None) -> list[dict[str, Any]]:
         """Fetch usage grouped by project and model for cost calculation."""
         time_filter, params = self._time_filter(
             days,
@@ -793,14 +824,15 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
 
     def fetch_project_model_usage_for_day(
         self,
         *,
         day: str,
         timezone_offset_minutes: int = 0,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch usage grouped by project and model for one local day."""
         day_filter, params = self._target_day_filter(
             day=day,
@@ -840,14 +872,15 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
 
     def fetch_session_model_usage_for_day(
         self,
         *,
         day: str,
         timezone_offset_minutes: int = 0,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch usage grouped by session and model for one local day."""
         day_filter, params = self._target_day_filter(
             day=day,
@@ -893,14 +926,15 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
 
     def fetch_project_session_usage(
         self,
         *,
         project_id: str,
         days: int | None = None,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch usage grouped by session for one project."""
         time_filter, params = self._time_filter(
             days,
@@ -941,14 +975,15 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, [project_id, *params]).fetchall()
+            result = conn.execute(query, [project_id, *params]).fetchall()
+            return self._to_dict_list(result)
 
     def fetch_project_session_model_usage(
         self,
         *,
         project_id: str,
         days: int | None = None,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch model usage grouped by session for one project."""
         time_filter, params = self._time_filter(
             days,
@@ -985,9 +1020,10 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, [project_id, *params]).fetchall()
+            result = conn.execute(query, [project_id, *params]).fetchall()
+            return self._to_dict_list(result)
 
-    def fetch_active_session(self, *, session_id: str | None = None) -> sqlite3.Row | None:
+    def fetch_active_session(self, *, session_id: str | None = None) -> dict[str, Any] | None:
         """Fetch most recently updated non-archived session, optionally filtered by session_id."""
         if session_id:
             query = """
@@ -1004,7 +1040,8 @@ class SQLiteUsageRepository:
                   AND COALESCE(s.time_archived, 0) = 0
             """
             with self._connect() as conn:
-                return conn.execute(query, [session_id]).fetchone()
+                row = conn.execute(query, [session_id]).fetchone()
+                return self._to_dict_optional(row)
         else:
             query = """
                 SELECT
@@ -1022,7 +1059,8 @@ class SQLiteUsageRepository:
             """
 
             with self._connect() as conn:
-                return conn.execute(query).fetchone()
+                row = conn.execute(query).fetchone()
+                return self._to_dict_optional(row)
 
     def fetch_sessions_summary(
         self,
@@ -1030,7 +1068,7 @@ class SQLiteUsageRepository:
         limit: int = 20,
         include_archived: bool = False,
         min_time_updated_ms: int | None = None,
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch recent sessions with metadata for UI selection.
 
         If min_time_updated_ms is provided, only return sessions updated after that timestamp.
@@ -1106,11 +1144,12 @@ class SQLiteUsageRepository:
         params.append(limit)
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
 
     def fetch_live_summary_messages(
         self, *, since_ms: int, session_id: str | None = None
-    ) -> sqlite3.Row:
+    ) -> dict[str, Any]:
         """Fetch aggregate usage totals from assistant messages since timestamp.
 
         Optionally filtered by session_id.
@@ -1143,11 +1182,11 @@ class SQLiteUsageRepository:
             row = conn.execute(query, params).fetchone()
             if row is None:
                 raise RuntimeError("Live message summary query returned no row")
-            return row
+            return self._to_dict(row)
 
     def fetch_live_summary_steps(
         self, *, since_ms: int, session_id: str | None = None
-    ) -> sqlite3.Row:
+    ) -> dict[str, Any]:
         """Fetch aggregate usage totals from step-finish parts since timestamp.
 
         Optionally filtered by session_id.
@@ -1180,11 +1219,11 @@ class SQLiteUsageRepository:
             row = conn.execute(query, params).fetchone()
             if row is None:
                 raise RuntimeError("Live step summary query returned no row")
-            return row
+            return self._to_dict(row)
 
     def fetch_live_model_usage(
         self, *, since_ms: int, limit: int, session_id: str | None = None
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch model usage since timestamp, optionally filtered by session_id."""
         query = """
             SELECT
@@ -1227,11 +1266,12 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
 
     def fetch_live_tool_usage(
         self, *, since_ms: int, limit: int, session_id: str | None = None
-    ) -> list[sqlite3.Row]:
+    ) -> list[dict[str, Any]]:
         """Fetch tool usage since timestamp from tool parts, optionally filtered by session_id."""
         query = """
             SELECT
@@ -1256,4 +1296,5 @@ class SQLiteUsageRepository:
         """
 
         with self._connect() as conn:
-            return conn.execute(query, params).fetchall()
+            result = conn.execute(query, params).fetchall()
+            return self._to_dict_list(result)
