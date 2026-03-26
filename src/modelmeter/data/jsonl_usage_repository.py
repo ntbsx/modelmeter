@@ -5,11 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from modelmeter.core.providers import provider_from_model_id
+
+RowDict = dict[str, Any]
 
 
 @dataclass
@@ -109,7 +111,7 @@ class JsonlUsageRepository:
         if not path.exists():
             return records
 
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -283,3 +285,839 @@ class JsonlUsageRepository:
         sessions.sort(key=lambda s: s.time_created_ms)
 
         return SessionIndex(sessions=sessions, project_map=project_map)
+
+    def _filter_interactions(self, days: int | None) -> list[tuple[SessionData, Interaction]]:
+        """Filter interactions by days cutoff, return (session, interaction) pairs."""
+        index = self._ensure_index()
+        if days is None:
+            return [(s, i) for s in index.sessions for i in s.interactions]
+
+        cutoff_ms = int((datetime.now(tz=UTC) - timedelta(days=days)).timestamp() * 1000)
+        return [
+            (s, i) for s in index.sessions for i in s.interactions if i.timestamp_ms >= cutoff_ms
+        ]
+
+    def _filter_interactions_for_day(
+        self,
+        day: str,
+        timezone_offset_minutes: int = 0,
+    ) -> list[tuple[SessionData, Interaction]]:
+        """Filter interactions to a specific local day."""
+        index = self._ensure_index()
+
+        try:
+            day_dt = datetime.fromisoformat(day).date()
+        except ValueError:
+            return []
+
+        tz = timezone(timedelta(minutes=timezone_offset_minutes))
+        day_start = int(
+            datetime(1970, 1, 1, tzinfo=tz)
+            .replace(year=day_dt.year, month=day_dt.month, day=day_dt.day)
+            .timestamp()
+            * 1000
+        )
+        day_end = int(
+            datetime(9999, 12, 31, 23, 59, 59, tzinfo=tz)
+            .replace(year=day_dt.year, month=day_dt.month, day=day_dt.day)
+            .timestamp()
+            * 1000
+        )
+
+        return [
+            (s, i)
+            for s in index.sessions
+            for i in s.interactions
+            if day_start <= i.timestamp_ms <= day_end
+        ]
+
+    def fetch_summary(self, *, days: int | None = None) -> RowDict:
+        """Fetch aggregate usage totals and distinct session count."""
+        pairs = self._filter_interactions(days)
+
+        input_tokens = sum(i.input_tokens for _, i in pairs)
+        output_tokens = sum(i.output_tokens for _, i in pairs)
+        cache_read = sum(i.cache_read for _, i in pairs)
+        cache_write = sum(i.cache_write for _, i in pairs)
+        total_sessions = len(set(s.session_id for s, _ in pairs))
+
+        return {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cache_read": cache_read,
+            "cache_write": cache_write,
+            "total_sessions": total_sessions,
+        }
+
+    def fetch_summary_steps(self, *, days: int | None = None) -> RowDict:
+        """For JSONL, equivalent to fetch_summary (no step-finish concept)."""
+        return self.fetch_summary(days=days)
+
+    def fetch_summary_for_day(self, *, day: str, timezone_offset_minutes: int = 0) -> RowDict:
+        """Fetch aggregate usage totals for one local day."""
+        pairs = self._filter_interactions_for_day(day, timezone_offset_minutes)
+
+        input_tokens = sum(i.input_tokens for _, i in pairs)
+        output_tokens = sum(i.output_tokens for _, i in pairs)
+        cache_read = sum(i.cache_read for _, i in pairs)
+        cache_write = sum(i.cache_write for _, i in pairs)
+        total_sessions = len(set(s.session_id for s, _ in pairs))
+        total_interactions = len(pairs)
+
+        return {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cache_read": cache_read,
+            "cache_write": cache_write,
+            "total_sessions": total_sessions,
+            "total_interactions": total_interactions,
+        }
+
+    def fetch_summary_for_day_steps(
+        self, *, day: str, timezone_offset_minutes: int = 0
+    ) -> RowDict | None:
+        """For JSONL, equivalent to fetch_summary_for_day."""
+        return self.fetch_summary_for_day(day=day, timezone_offset_minutes=timezone_offset_minutes)
+
+    def fetch_session_count(self, *, days: int | None = None) -> int:
+        """Count distinct session IDs within time window."""
+        index = self._ensure_index()
+        if days is None:
+            return len(set(s.session_id for s in index.sessions))
+
+        cutoff_ms = int((datetime.now(tz=UTC) - timedelta(days=days)).timestamp() * 1000)
+        return len(
+            set(
+                s.session_id
+                for s in index.sessions
+                if any(i.timestamp_ms >= cutoff_ms for i in s.interactions)
+            )
+        )
+
+    def fetch_daily(
+        self, *, days: int | None = None, timezone_offset_minutes: int = 0
+    ) -> list[RowDict]:
+        """Group interactions by day, return list of dicts."""
+        self._ensure_index()
+        pairs = self._filter_interactions(days)
+
+        tz = timezone(timedelta(minutes=timezone_offset_minutes))
+        daily_data: dict[str, dict[str, Any]] = {}
+
+        for session, interaction in pairs:
+            day_ts = datetime.fromtimestamp(interaction.timestamp_ms / 1000, tz=tz)
+            day_str = day_ts.strftime("%Y-%m-%d")
+
+            if day_str not in daily_data:
+                daily_data[day_str] = {
+                    "day": day_str,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                    "total_sessions": set(),
+                }
+
+            daily_data[day_str]["input_tokens"] += interaction.input_tokens
+            daily_data[day_str]["output_tokens"] += interaction.output_tokens
+            daily_data[day_str]["cache_read"] += interaction.cache_read
+            daily_data[day_str]["cache_write"] += interaction.cache_write
+            daily_data[day_str]["total_sessions"].add(session.session_id)
+
+        result: list[RowDict] = []
+        for day_str in sorted(daily_data.keys()):
+            data = daily_data[day_str]
+            result.append(
+                {
+                    "day": data["day"],
+                    "input_tokens": data["input_tokens"],
+                    "output_tokens": data["output_tokens"],
+                    "cache_read": data["cache_read"],
+                    "cache_write": data["cache_write"],
+                    "total_sessions": len(data["total_sessions"]),
+                }
+            )
+
+        return result
+
+    def fetch_daily_steps(
+        self, *, days: int | None = None, timezone_offset_minutes: int = 0
+    ) -> list[RowDict]:
+        """For JSONL, equivalent to fetch_daily."""
+        return self.fetch_daily(days=days, timezone_offset_minutes=timezone_offset_minutes)
+
+    def fetch_daily_session_counts(
+        self, *, days: int | None = None, timezone_offset_minutes: int = 0
+    ) -> dict[str, int]:
+        """Sessions per day."""
+        rows = self.fetch_daily(days=days, timezone_offset_minutes=timezone_offset_minutes)
+        return {row["day"]: row["total_sessions"] for row in rows}
+
+    def resolve_token_source(
+        self,
+        *,
+        days: int | None,
+        token_source: Literal["auto", "message", "steps"],
+    ) -> Literal["message", "steps"]:
+        """Always return 'message' for JSONL (no step-finish concept)."""
+        if token_source != "auto":
+            return token_source
+        return "message"
+
+    def resolve_session_count_source(
+        self,
+        *,
+        days: int | None,
+        session_count_source: Literal["auto", "activity", "session"],
+    ) -> Literal["activity", "session"]:
+        """Always return 'activity' for JSONL."""
+        if session_count_source != "auto":
+            return session_count_source
+        return "activity"
+
+    def fetch_model_usage(self, *, days: int | None = None) -> list[RowDict]:
+        """Group by model_id, aggregate tokens."""
+        pairs = self._filter_interactions(days)
+
+        model_data: dict[str, dict[str, Any]] = {}
+        for _, interaction in pairs:
+            model_id = interaction.model_id
+            if model_id not in model_data:
+                model_data[model_id] = {
+                    "model_id": model_id,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            model_data[model_id]["input_tokens"] += interaction.input_tokens
+            model_data[model_id]["output_tokens"] += interaction.output_tokens
+            model_data[model_id]["cache_read"] += interaction.cache_read
+            model_data[model_id]["cache_write"] += interaction.cache_write
+
+        return list(model_data.values())
+
+    def fetch_model_usage_detail(self, *, days: int | None = None) -> list[RowDict]:
+        """Group by (model_id, provider_id), include counts."""
+        pairs = self._filter_interactions(days)
+
+        model_data: dict[tuple[str, str | None], dict[str, Any]] = {}
+        for _, interaction in pairs:
+            key = (interaction.model_id, interaction.provider_id)
+            if key not in model_data:
+                model_data[key] = {
+                    "model_id": interaction.model_id,
+                    "provider_id": interaction.provider_id,
+                    "total_interactions": 0,
+                    "total_sessions": set(),
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            model_data[key]["total_interactions"] += 1
+            model_data[key]["total_sessions"].add(interaction.session_id)
+            model_data[key]["input_tokens"] += interaction.input_tokens
+            model_data[key]["output_tokens"] += interaction.output_tokens
+            model_data[key]["cache_read"] += interaction.cache_read
+            model_data[key]["cache_write"] += interaction.cache_write
+
+        result: list[RowDict] = []
+        for _, data in model_data.items():
+            result.append(
+                {
+                    "model_id": data["model_id"],
+                    "provider_id": data["provider_id"],
+                    "total_interactions": data["total_interactions"],
+                    "total_sessions": len(data["total_sessions"]),
+                    "input_tokens": data["input_tokens"],
+                    "output_tokens": data["output_tokens"],
+                    "cache_read": data["cache_read"],
+                    "cache_write": data["cache_write"],
+                }
+            )
+
+        result.sort(
+            key=lambda r: r["input_tokens"]
+            + r["output_tokens"]
+            + r["cache_read"]
+            + r["cache_write"],
+            reverse=True,
+        )
+        return result
+
+    def fetch_model_usage_detail_for_day(
+        self, *, day: str, timezone_offset_minutes: int = 0
+    ) -> list[RowDict]:
+        """Same as fetch_model_usage_detail for single day."""
+        pairs = self._filter_interactions_for_day(day, timezone_offset_minutes)
+
+        model_data: dict[tuple[str, str | None], dict[str, Any]] = {}
+        for session, interaction in pairs:
+            key = (interaction.model_id, interaction.provider_id)
+            if key not in model_data:
+                model_data[key] = {
+                    "model_id": interaction.model_id,
+                    "provider_id": interaction.provider_id,
+                    "total_interactions": 0,
+                    "total_sessions": set(),
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            model_data[key]["total_interactions"] += 1
+            model_data[key]["total_sessions"].add(session.session_id)
+            model_data[key]["input_tokens"] += interaction.input_tokens
+            model_data[key]["output_tokens"] += interaction.output_tokens
+            model_data[key]["cache_read"] += interaction.cache_read
+            model_data[key]["cache_write"] += interaction.cache_write
+
+        result: list[RowDict] = []
+        for _, data in model_data.items():
+            result.append(
+                {
+                    "model_id": data["model_id"],
+                    "provider_id": data["provider_id"],
+                    "total_interactions": data["total_interactions"],
+                    "total_sessions": len(data["total_sessions"]),
+                    "input_tokens": data["input_tokens"],
+                    "output_tokens": data["output_tokens"],
+                    "cache_read": data["cache_read"],
+                    "cache_write": data["cache_write"],
+                }
+            )
+
+        result.sort(
+            key=lambda r: (
+                r["input_tokens"] + r["output_tokens"] + r["cache_read"] + r["cache_write"]
+            ),
+            reverse=True,
+        )
+        return result
+
+    def fetch_model_detail(self, *, model_id: str, days: int | None = None) -> RowDict | None:
+        """Aggregate for specific model."""
+        pairs = self._filter_interactions(days)
+
+        input_tokens = 0
+        output_tokens = 0
+        cache_read = 0
+        cache_write = 0
+        total_interactions = 0
+        sessions: set[str] = set()
+
+        for _, interaction in pairs:
+            if interaction.model_id == model_id:
+                total_interactions += 1
+                sessions.add(interaction.session_id)
+                input_tokens += interaction.input_tokens
+                output_tokens += interaction.output_tokens
+                cache_read += interaction.cache_read
+                cache_write += interaction.cache_write
+
+        if total_interactions == 0:
+            return None
+
+        return {
+            "provider_id": next(
+                (i.provider_id for _, i in pairs if i.model_id == model_id and i.provider_id), None
+            ),
+            "total_interactions": total_interactions,
+            "total_sessions": len(sessions),
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cache_read": cache_read,
+            "cache_write": cache_write,
+        }
+
+    def fetch_daily_model_detail(self, *, model_id: str, days: int | None = None) -> list[RowDict]:
+        """Daily breakdown for one model."""
+        pairs = self._filter_interactions(days)
+
+        tz = UTC
+        daily_data: dict[str, dict[str, Any]] = {}
+
+        for session, interaction in pairs:
+            if interaction.model_id != model_id:
+                continue
+
+            day_ts = datetime.fromtimestamp(interaction.timestamp_ms / 1000, tz=tz)
+            day_str = day_ts.strftime("%Y-%m-%d")
+
+            if day_str not in daily_data:
+                daily_data[day_str] = {
+                    "day": day_str,
+                    "total_interactions": 0,
+                    "total_sessions": set(),
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            daily_data[day_str]["total_interactions"] += 1
+            daily_data[day_str]["total_sessions"].add(session.session_id)
+            daily_data[day_str]["input_tokens"] += interaction.input_tokens
+            daily_data[day_str]["output_tokens"] += interaction.output_tokens
+            daily_data[day_str]["cache_read"] += interaction.cache_read
+            daily_data[day_str]["cache_write"] += interaction.cache_write
+
+        result: list[RowDict] = []
+        for day_str in sorted(daily_data.keys()):
+            data = daily_data[day_str]
+            result.append(
+                {
+                    "day": data["day"],
+                    "total_interactions": data["total_interactions"],
+                    "total_sessions": len(data["total_sessions"]),
+                    "input_tokens": data["input_tokens"],
+                    "output_tokens": data["output_tokens"],
+                    "cache_read": data["cache_read"],
+                    "cache_write": data["cache_write"],
+                }
+            )
+
+        return result
+
+    def fetch_daily_model_usage(
+        self, *, days: int | None = None, timezone_offset_minutes: int = 0
+    ) -> list[RowDict]:
+        """Group by (day, model_id, provider_id)."""
+        pairs = self._filter_interactions(days)
+
+        tz = timezone(timedelta(minutes=timezone_offset_minutes))
+        daily_data: dict[tuple[str, str, str | None], dict[str, Any]] = {}
+
+        for _, interaction in pairs:
+            day_ts = datetime.fromtimestamp(interaction.timestamp_ms / 1000, tz=tz)
+            day_str = day_ts.strftime("%Y-%m-%d")
+            key = (day_str, interaction.model_id, interaction.provider_id)
+
+            if key not in daily_data:
+                daily_data[key] = {
+                    "day": day_str,
+                    "model_id": interaction.model_id,
+                    "provider_id": interaction.provider_id,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            daily_data[key]["input_tokens"] += interaction.input_tokens
+            daily_data[key]["output_tokens"] += interaction.output_tokens
+            daily_data[key]["cache_read"] += interaction.cache_read
+            daily_data[key]["cache_write"] += interaction.cache_write
+
+        result = [data for data in daily_data.values()]
+        result.sort(key=lambda r: (r["day"], r["model_id"]))
+        return result
+
+    def fetch_project_usage_detail(self, *, days: int | None = None) -> list[RowDict]:
+        """Group by project, aggregate tokens and counts."""
+        pairs = self._filter_interactions(days)
+
+        project_data: dict[str, dict[str, Any]] = {}
+        for session, interaction in pairs:
+            project_id = session.project_id
+            if project_id not in project_data:
+                project_data[project_id] = {
+                    "project_id": project_id,
+                    "project_name": session.project_name,
+                    "project_path": session.project_path,
+                    "total_interactions": 0,
+                    "total_sessions": set(),
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            project_data[project_id]["total_interactions"] += 1
+            project_data[project_id]["total_sessions"].add(session.session_id)
+            project_data[project_id]["input_tokens"] += interaction.input_tokens
+            project_data[project_id]["output_tokens"] += interaction.output_tokens
+            project_data[project_id]["cache_read"] += interaction.cache_read
+            project_data[project_id]["cache_write"] += interaction.cache_write
+
+        result: list[RowDict] = []
+        for _, data in project_data.items():
+            result.append(
+                {
+                    "project_id": data["project_id"],
+                    "project_name": data["project_name"],
+                    "project_path": data["project_path"],
+                    "total_interactions": data["total_interactions"],
+                    "total_sessions": len(data["total_sessions"]),
+                    "input_tokens": data["input_tokens"],
+                    "output_tokens": data["output_tokens"],
+                    "cache_read": data["cache_read"],
+                    "cache_write": data["cache_write"],
+                }
+            )
+
+        result.sort(
+            key=lambda r: (
+                r["input_tokens"] + r["output_tokens"] + r["cache_read"] + r["cache_write"]
+            ),
+            reverse=True,
+        )
+        return result
+
+    def fetch_project_usage_detail_for_day(
+        self, *, day: str, timezone_offset_minutes: int = 0
+    ) -> list[RowDict]:
+        """Same as fetch_project_usage_detail for single day."""
+        pairs = self._filter_interactions_for_day(day, timezone_offset_minutes)
+
+        project_data: dict[str, dict[str, Any]] = {}
+        for session, interaction in pairs:
+            project_id = session.project_id
+            if project_id not in project_data:
+                project_data[project_id] = {
+                    "project_id": project_id,
+                    "project_name": session.project_name,
+                    "project_path": session.project_path,
+                    "total_interactions": 0,
+                    "total_sessions": set(),
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            project_data[project_id]["total_interactions"] += 1
+            project_data[project_id]["total_sessions"].add(session.session_id)
+            project_data[project_id]["input_tokens"] += interaction.input_tokens
+            project_data[project_id]["output_tokens"] += interaction.output_tokens
+            project_data[project_id]["cache_read"] += interaction.cache_read
+            project_data[project_id]["cache_write"] += interaction.cache_write
+
+        result: list[RowDict] = []
+        for _, data in project_data.items():
+            result.append(
+                {
+                    "project_id": data["project_id"],
+                    "project_name": data["project_name"],
+                    "project_path": data["project_path"],
+                    "total_interactions": data["total_interactions"],
+                    "total_sessions": len(data["total_sessions"]),
+                    "input_tokens": data["input_tokens"],
+                    "output_tokens": data["output_tokens"],
+                    "cache_read": data["cache_read"],
+                    "cache_write": data["cache_write"],
+                }
+            )
+
+        result.sort(
+            key=lambda r: (
+                r["input_tokens"] + r["output_tokens"] + r["cache_read"] + r["cache_write"]
+            ),
+            reverse=True,
+        )
+        return result
+
+    def fetch_project_model_usage(self, *, days: int | None = None) -> list[RowDict]:
+        """Group by (project_id, model_id)."""
+        pairs = self._filter_interactions(days)
+
+        project_model_data: dict[tuple[str, str], dict[str, Any]] = {}
+        for session, interaction in pairs:
+            key = (session.project_id, interaction.model_id)
+            if key not in project_model_data:
+                project_model_data[key] = {
+                    "project_id": session.project_id,
+                    "model_id": interaction.model_id,
+                    "provider_id": interaction.provider_id,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            project_model_data[key]["input_tokens"] += interaction.input_tokens
+            project_model_data[key]["output_tokens"] += interaction.output_tokens
+            project_model_data[key]["cache_read"] += interaction.cache_read
+            project_model_data[key]["cache_write"] += interaction.cache_write
+
+        return list(project_model_data.values())
+
+    def fetch_project_model_usage_for_day(
+        self, *, day: str, timezone_offset_minutes: int = 0
+    ) -> list[RowDict]:
+        """Same as fetch_project_model_usage for single day."""
+        pairs = self._filter_interactions_for_day(day, timezone_offset_minutes)
+
+        project_model_data: dict[tuple[str, str, str | None], dict[str, Any]] = {}
+        for session, interaction in pairs:
+            key = (session.project_id, interaction.model_id, interaction.provider_id)
+            if key not in project_model_data:
+                project_model_data[key] = {
+                    "project_id": session.project_id,
+                    "model_id": interaction.model_id,
+                    "provider_id": interaction.provider_id,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                    "total_interactions": 0,
+                }
+
+            project_model_data[key]["input_tokens"] += interaction.input_tokens
+            project_model_data[key]["output_tokens"] += interaction.output_tokens
+            project_model_data[key]["cache_read"] += interaction.cache_read
+            project_model_data[key]["cache_write"] += interaction.cache_write
+            project_model_data[key]["total_interactions"] += 1
+
+        return list(project_model_data.values())
+
+    def fetch_session_model_usage_for_day(
+        self, *, day: str, timezone_offset_minutes: int = 0
+    ) -> list[RowDict]:
+        """Group by (session_id, model_id) for one local day."""
+        pairs = self._filter_interactions_for_day(day, timezone_offset_minutes)
+
+        session_model_data: dict[tuple[str, str], dict[str, Any]] = {}
+        for session, interaction in pairs:
+            key = (session.session_id, interaction.model_id)
+            if key not in session_model_data:
+                session_model_data[key] = {
+                    "session_id": session.session_id,
+                    "session_title": session.title,
+                    "project_id": session.project_id,
+                    "project_name": session.project_name,
+                    "model_id": interaction.model_id,
+                    "provider_id": interaction.provider_id,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                    "total_interactions": 0,
+                    "started_at_ms": interaction.timestamp_ms,
+                }
+
+            session_model_data[key]["input_tokens"] += interaction.input_tokens
+            session_model_data[key]["output_tokens"] += interaction.output_tokens
+            session_model_data[key]["cache_read"] += interaction.cache_read
+            session_model_data[key]["cache_write"] += interaction.cache_write
+            session_model_data[key]["total_interactions"] += 1
+            if interaction.timestamp_ms < session_model_data[key]["started_at_ms"]:
+                session_model_data[key]["started_at_ms"] = interaction.timestamp_ms
+
+        result = list(session_model_data.values())
+        result.sort(
+            key=lambda r: (
+                r["input_tokens"] + r["output_tokens"] + r["cache_read"] + r["cache_write"]
+            ),
+            reverse=True,
+        )
+        return result
+
+    def fetch_project_session_usage(
+        self, *, project_id: str, days: int | None = None
+    ) -> list[RowDict]:
+        """Sessions for one project."""
+        self._ensure_index()
+        pairs = self._filter_interactions(days)
+
+        session_data: dict[str, dict[str, Any]] = {}
+        for session, interaction in pairs:
+            if session.project_id != project_id:
+                continue
+
+            if session.session_id not in session_data:
+                session_data[session.session_id] = {
+                    "session_id": session.session_id,
+                    "title": session.title,
+                    "directory": session.project_path,
+                    "last_updated_ms": session.time_updated_ms,
+                    "project_name": session.project_name,
+                    "project_path": session.project_path,
+                    "total_interactions": 0,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            session_data[session.session_id]["total_interactions"] += 1
+            session_data[session.session_id]["input_tokens"] += interaction.input_tokens
+            session_data[session.session_id]["output_tokens"] += interaction.output_tokens
+            session_data[session.session_id]["cache_read"] += interaction.cache_read
+            session_data[session.session_id]["cache_write"] += interaction.cache_write
+            if interaction.timestamp_ms > session_data[session.session_id]["last_updated_ms"]:
+                session_data[session.session_id]["last_updated_ms"] = interaction.timestamp_ms
+
+        result = list(session_data.values())
+        result.sort(key=lambda r: r["last_updated_ms"], reverse=True)
+        return result
+
+    def fetch_project_session_model_usage(
+        self, *, project_id: str, days: int | None = None
+    ) -> list[RowDict]:
+        """Model usage by session for one project."""
+        pairs = self._filter_interactions(days)
+
+        session_model_data: dict[tuple[str, str], dict[str, Any]] = {}
+        for session, interaction in pairs:
+            if session.project_id != project_id:
+                continue
+
+            key = (session.session_id, interaction.model_id)
+            if key not in session_model_data:
+                session_model_data[key] = {
+                    "session_id": session.session_id,
+                    "model_id": interaction.model_id,
+                    "provider_id": interaction.provider_id,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            session_model_data[key]["input_tokens"] += interaction.input_tokens
+            session_model_data[key]["output_tokens"] += interaction.output_tokens
+            session_model_data[key]["cache_read"] += interaction.cache_read
+            session_model_data[key]["cache_write"] += interaction.cache_write
+
+        return list(session_model_data.values())
+
+    def fetch_active_session(self, *, session_id: str | None = None) -> RowDict | None:
+        """Get most recent active session."""
+        index = self._ensure_index()
+        sessions = sorted(index.sessions, key=lambda s: s.time_updated_ms, reverse=True)
+
+        if session_id:
+            for s in sessions:
+                if s.session_id == session_id:
+                    return {
+                        "id": s.session_id,
+                        "title": s.title,
+                        "directory": s.project_path,
+                        "project_id": s.project_id,
+                        "time_updated": s.time_updated_ms,
+                        "project_name": s.project_name,
+                    }
+            return None
+
+        return (
+            {
+                "id": sessions[0].session_id,
+                "title": sessions[0].title,
+                "directory": sessions[0].project_path,
+                "project_id": sessions[0].project_id,
+                "time_updated": sessions[0].time_updated_ms,
+                "project_name": sessions[0].project_name,
+            }
+            if sessions
+            else None
+        )
+
+    def fetch_sessions_summary(
+        self,
+        *,
+        limit: int = 20,
+        include_archived: bool = False,
+        min_time_updated_ms: int | None = None,
+    ) -> list[RowDict]:
+        """Recent sessions with metadata."""
+        index = self._ensure_index()
+        sessions = sorted(index.sessions, key=lambda s: s.time_updated_ms, reverse=True)
+
+        if min_time_updated_ms is not None:
+            sessions = [s for s in sessions if s.time_updated_ms >= min_time_updated_ms]
+
+        sessions = sessions[:limit]
+
+        result: list[RowDict] = []
+        for s in sessions:
+            result.append(
+                {
+                    "session_id": s.session_id,
+                    "title": s.title,
+                    "directory": s.project_path,
+                    "time_created": s.time_created_ms,
+                    "time_updated": s.time_updated_ms,
+                    "time_archived": None,
+                    "project_name": s.project_name,
+                    "project_id": s.project_id,
+                    "message_count": s.message_count,
+                    "model_count": s.model_count,
+                    "token_count": sum(i.input_tokens + i.output_tokens for i in s.interactions),
+                }
+            )
+
+        return result
+
+    def fetch_live_summary_messages(
+        self, *, since_ms: int, session_id: str | None = None
+    ) -> RowDict:
+        """Aggregate since timestamp."""
+        index = self._ensure_index()
+        pairs = [
+            (s, i) for s in index.sessions for i in s.interactions if i.timestamp_ms >= since_ms
+        ]
+
+        if session_id:
+            pairs = [(s, i) for s, i in pairs if s.session_id == session_id]
+
+        input_tokens = sum(i.input_tokens for _, i in pairs)
+        output_tokens = sum(i.output_tokens for _, i in pairs)
+        cache_read = sum(i.cache_read for _, i in pairs)
+        cache_write = sum(i.cache_write for _, i in pairs)
+        total_sessions = len(set(s.session_id for s, _ in pairs))
+
+        return {
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cache_read": cache_read,
+            "cache_write": cache_write,
+            "total_sessions": total_sessions,
+        }
+
+    def fetch_live_summary_steps(self, *, since_ms: int, session_id: str | None = None) -> RowDict:
+        """Same as fetch_live_summary_messages for JSONL."""
+        return self.fetch_live_summary_messages(since_ms=since_ms, session_id=session_id)
+
+    def fetch_live_model_usage(
+        self, *, since_ms: int, limit: int = 5, session_id: str | None = None
+    ) -> list[RowDict]:
+        """Model usage since timestamp."""
+        index = self._ensure_index()
+        pairs = [
+            (s, i) for s in index.sessions for i in s.interactions if i.timestamp_ms >= since_ms
+        ]
+
+        if session_id:
+            pairs = [(s, i) for s, i in pairs if s.session_id == session_id]
+
+        model_data: dict[str, dict[str, Any]] = {}
+        for _, interaction in pairs:
+            model_id = interaction.model_id
+            if model_id not in model_data:
+                model_data[model_id] = {
+                    "model_id": model_id,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                }
+
+            model_data[model_id]["input_tokens"] += interaction.input_tokens
+            model_data[model_id]["output_tokens"] += interaction.output_tokens
+            model_data[model_id]["cache_read"] += interaction.cache_read
+            model_data[model_id]["cache_write"] += interaction.cache_write
+
+        result = list(model_data.values())
+        result.sort(key=lambda r: r["input_tokens"] + r["output_tokens"], reverse=True)
+        return result[:limit]
+
+    def fetch_live_tool_usage(
+        self, *, since_ms: int, limit: int = 8, session_id: str | None = None
+    ) -> list[RowDict]:
+        """Tool usage since timestamp - stub for JSONL (no tool data)."""
+        return []
