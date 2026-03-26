@@ -135,6 +135,21 @@
       "DataSourcePublic": {
         "description": "Public view of a source config with credentials redacted.",
         "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "enum": [
+                  "opencode",
+                  "claudecode"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
           "base_url": {
             "anyOf": [
               {
@@ -171,7 +186,8 @@
           "kind": {
             "enum": [
               "sqlite",
-              "http"
+              "http",
+              "jsonl"
             ],
             "title": "Kind",
             "type": "string"
@@ -329,6 +345,35 @@
         "title": "DateInsightsResponse",
         "type": "object"
       },
+      "DetectedSource": {
+        "description": "Detected data source with agent information.",
+        "properties": {
+          "agent": {
+            "title": "Agent",
+            "type": "string"
+          },
+          "exists": {
+            "title": "Exists",
+            "type": "boolean"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "agent",
+          "path",
+          "exists"
+        ],
+        "title": "DetectedSource",
+        "type": "object"
+      },
       "DoctorReport": {
         "description": "Top-level health diagnostics payload.",
         "properties": {
@@ -339,6 +384,17 @@
           "app_version": {
             "title": "App Version",
             "type": "string"
+          },
+          "claudecode_data_dir": {
+            "title": "Claudecode Data Dir",
+            "type": "string"
+          },
+          "detected_sources": {
+            "items": {
+              "$ref": "#/components/schemas/DetectedSource"
+            },
+            "title": "Detected Sources",
+            "type": "array"
           },
           "legacy": {
             "$ref": "#/components/schemas/LegacyDiagnostics"
@@ -359,9 +415,11 @@
           "app_name",
           "app_version",
           "opencode_data_dir",
+          "claudecode_data_dir",
           "selected_source",
           "sqlite",
-          "legacy"
+          "legacy",
+          "detected_sources"
         ],
         "title": "DoctorReport",
         "type": "object"
@@ -1957,7 +2015,8 @@
           "kind": {
             "enum": [
               "sqlite",
-              "http"
+              "http",
+              "jsonl"
             ],
             "title": "Kind",
             "type": "string"

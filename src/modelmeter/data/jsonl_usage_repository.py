@@ -540,10 +540,9 @@ class JsonlUsageRepository:
             )
 
         result.sort(
-            key=lambda r: r["input_tokens"]
-            + r["output_tokens"]
-            + r["cache_read"]
-            + r["cache_write"],
+            key=lambda r: (
+                r["input_tokens"] + r["output_tokens"] + r["cache_read"] + r["cache_write"]
+            ),
             reverse=True,
         )
         return result

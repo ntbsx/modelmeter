@@ -19,6 +19,15 @@ REQUIRED_SCHEMA: dict[str, set[str]] = {
 }
 
 
+class DetectedSource(BaseModel):
+    """Detected data source with agent information."""
+
+    source_id: str
+    agent: str
+    path: str
+    exists: bool
+
+
 class SQLiteDiagnostics(BaseModel):
     """SQLite data source diagnostics."""
 
@@ -46,9 +55,11 @@ class DoctorReport(BaseModel):
     app_name: str
     app_version: str
     opencode_data_dir: str
+    claudecode_data_dir: str
     selected_source: str
     sqlite: SQLiteDiagnostics
     legacy: LegacyDiagnostics
+    detected_sources: list[DetectedSource]
 
 
 def _inspect_sqlite(db_path: Path) -> SQLiteDiagnostics:
@@ -103,11 +114,41 @@ def generate_doctor_report(
     elif legacy_diag.existing_dirs:
         selected_source = "legacy"
 
+    detected_sources: list[DetectedSource] = []
+
+    opencode_paths = [
+        paths.sqlite_db_path,
+        *(paths.legacy_message_dirs),
+    ]
+    for opencode_path in opencode_paths:
+        if opencode_path and opencode_path.exists():
+            detected_sources.append(
+                DetectedSource(
+                    source_id="local-opencode",
+                    agent="opencode",
+                    path=str(opencode_path),
+                    exists=True,
+                )
+            )
+
+    claudecode_data_dir = settings.claudecode_data_dir
+    if claudecode_data_dir.exists():
+        detected_sources.append(
+            DetectedSource(
+                source_id="local-claudecode",
+                agent="claudecode",
+                path=str(claudecode_data_dir),
+                exists=True,
+            )
+        )
+
     return DoctorReport(
         app_name=settings.app_name,
         app_version=settings.app_runtime_version,
         opencode_data_dir=str(settings.opencode_data_dir),
+        claudecode_data_dir=str(settings.claudecode_data_dir),
         selected_source=selected_source,
         sqlite=sqlite_diag,
         legacy=legacy_diag,
+        detected_sources=detected_sources,
     )

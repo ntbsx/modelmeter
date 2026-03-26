@@ -61,3 +61,17 @@ def test_doctor_cli_json_output(tmp_path: Path) -> None:
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert payload["selected_source"] == "sqlite"
+
+
+def test_doctor_report_includes_detected_sources(tmp_path: Path) -> None:
+    data_dir = tmp_path / "opencode"
+    data_dir.mkdir()
+    db_path = data_dir / "opencode.db"
+    _create_sqlite_fixture(db_path, full_schema=True)
+
+    settings = AppSettings(opencode_data_dir=data_dir, claudecode_data_dir=tmp_path / ".claude")
+    report = generate_doctor_report(settings=settings)
+
+    assert hasattr(report, "detected_sources")
+    assert isinstance(report.detected_sources, list)
+    assert hasattr(report, "claudecode_data_dir")

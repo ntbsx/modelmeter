@@ -101,3 +101,22 @@ def test_check_source_health_reports_http_auth_failures(
     assert health.is_reachable is False
     assert health.detail == "HTTP 401"
     assert health.error == "Unauthorized"
+
+
+def test_data_source_config_jsonl_kind() -> None:
+    source = DataSourceConfig(
+        source_id="local-claudecode",
+        kind="jsonl",
+        db_path=Path("/tmp/test"),
+    )
+    assert source.kind == "jsonl"
+
+
+def test_data_source_config_agent_field() -> None:
+    source = DataSourceConfig(
+        source_id="local-opencode",
+        kind="sqlite",
+        db_path=Path("/tmp/test.db"),
+        agent="opencode",
+    )
+    assert source.agent == "opencode"
