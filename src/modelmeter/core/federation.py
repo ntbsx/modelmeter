@@ -30,10 +30,12 @@ from modelmeter.core.models import (
     SummaryResponse,
     TokenUsage,
 )
+from modelmeter.core.providers import provider_from_model_id_and_provider_field
 from modelmeter.core.sources import (
     DataSourceConfig,
     SourceFailure,
 )
+from modelmeter.data.repository import create_repository
 
 # Maximum number of items to fetch from a remote source to prevent memory exhaustion
 MAX_FETCH_LIMIT = 5000
@@ -315,6 +317,18 @@ def execute_summary_federated(
                     total_cost += result.cost_usd
                 if result.pricing_source:
                     pricing_source = result.pricing_source
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                row = repo.fetch_summary(days=days)
+                usage = TokenUsage(
+                    input_tokens=int(row.get("input_tokens", 0)),
+                    output_tokens=int(row.get("output_tokens", 0)),
+                    cache_read_tokens=int(row.get("cache_read_tokens", 0)),
+                    cache_write_tokens=int(row.get("cache_write_tokens", 0)),
+                )
+                total_usage = merge_token_usage(total_usage, usage)
+                total_sessions += repo.fetch_session_count(days=days)
             else:
                 data = _fetch_http_summary(
                     source,
@@ -353,7 +367,7 @@ def execute_summary_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 
@@ -434,6 +448,62 @@ def execute_daily_federated(
                         )
                     else:
                         daily_map[daily_usage.day] = daily_usage
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                resolved_source = repo.resolve_token_source(
+                    days=days,
+                    token_source=token_source,  # type: ignore[arg-type]
+                )
+                if resolved_source == "steps":
+                    rows = repo.fetch_daily_steps(
+                        days=days,
+                        timezone_offset_minutes=timezone_offset_minutes,
+                    )
+                    summary_row = repo.fetch_summary_steps(days=days)
+                else:
+                    rows = repo.fetch_daily(
+                        days=days, timezone_offset_minutes=timezone_offset_minutes
+                    )
+                    summary_row = repo.fetch_summary(days=days)
+                for row in rows:
+                    day = date.fromisoformat(str(row["day"]))
+                    usage = TokenUsage(
+                        input_tokens=int(row.get("input_tokens", 0)),
+                        output_tokens=int(row.get("output_tokens", 0)),
+                        cache_read_tokens=int(row.get("cache_read_tokens", 0)),
+                        cache_write_tokens=int(row.get("cache_write_tokens", 0)),
+                    )
+                    sessions = int(row.get("total_sessions", 0))
+                    if day in daily_map:
+                        existing = daily_map[day]
+                        daily_map[day] = DailyUsage(
+                            day=day,
+                            usage=merge_token_usage(existing.usage, usage),
+                            total_sessions=existing.total_sessions + sessions,
+                            cost_usd=None,
+                        )
+                    else:
+                        daily_map[day] = DailyUsage(
+                            day=day, usage=usage, total_sessions=sessions, cost_usd=None
+                        )
+                total_usage = merge_token_usage(
+                    total_usage,
+                    TokenUsage(
+                        input_tokens=int(summary_row.get("input_tokens", 0)),
+                        output_tokens=int(summary_row.get("output_tokens", 0)),
+                        cache_read_tokens=int(summary_row.get("cache_read_tokens", 0)),
+                        cache_write_tokens=int(summary_row.get("cache_write_tokens", 0)),
+                    ),
+                )
+                resolved_session_source = repo.resolve_session_count_source(
+                    days=days,
+                    session_count_source=session_count_source,  # type: ignore[arg-type]
+                )
+                if resolved_session_source == "session":
+                    total_sessions += repo.fetch_session_count(days=days)
+                else:
+                    total_sessions += int(summary_row.get("total_sessions", 0))
             else:
                 data = _fetch_http_daily(
                     source,
@@ -503,7 +573,7 @@ def execute_daily_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 
@@ -589,6 +659,44 @@ def execute_models_federated(
                         )
                     else:
                         model_map[model.model_id] = model
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                rows = repo.fetch_model_usage_detail(days=days)
+                for row in rows:
+                    model_id = str(row["model_id"])
+                    usage = TokenUsage(
+                        input_tokens=int(row.get("input_tokens", 0)),
+                        output_tokens=int(row.get("output_tokens", 0)),
+                        cache_read_tokens=int(row.get("cache_read_tokens", 0)),
+                        cache_write_tokens=int(row.get("cache_write_tokens", 0)),
+                    )
+                    model = ModelUsage(
+                        model_id=model_id,
+                        usage=usage,
+                        total_sessions=int(row.get("total_sessions", 0)),
+                        total_interactions=int(row.get("total_interactions", 0)),
+                        cost_usd=None,
+                        has_pricing=False,
+                    )
+                    if model_id in model_map:
+                        model_map[model_id] = merge_model_usage(model_map[model_id], model)
+                    else:
+                        model_map[model_id] = model
+                total_usage = merge_token_usage(
+                    total_usage,
+                    TokenUsage(
+                        input_tokens=int(sum(int(r.get("input_tokens", 0)) for r in rows)),
+                        output_tokens=int(sum(int(r.get("output_tokens", 0)) for r in rows)),
+                        cache_read_tokens=int(
+                            sum(int(r.get("cache_read_tokens", 0)) for r in rows)
+                        ),
+                        cache_write_tokens=int(
+                            sum(int(r.get("cache_write_tokens", 0)) for r in rows)
+                        ),
+                    ),
+                )
+                total_sessions += sum(int(r.get("total_sessions", 0)) for r in rows)
             else:
                 page_size = 1000
                 data = _fetch_http_models(
@@ -688,7 +796,7 @@ def execute_models_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 
@@ -782,6 +890,42 @@ def execute_providers_federated(
                         )
                     else:
                         provider_map[provider.provider] = provider
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                rows = repo.fetch_model_usage_detail(days=days)
+                for row in rows:
+                    model_id = str(row["model_id"])
+                    provider = provider_from_model_id_and_provider_field(
+                        model_id, row.get("provider_id")
+                    )
+                    usage = TokenUsage(
+                        input_tokens=int(row.get("input_tokens", 0)),
+                        output_tokens=int(row.get("output_tokens", 0)),
+                        cache_read_tokens=int(row.get("cache_read_tokens", 0)),
+                        cache_write_tokens=int(row.get("cache_write_tokens", 0)),
+                    )
+                    if provider in provider_map:
+                        existing = provider_map[provider]
+                        provider_map[provider] = ProviderUsage(
+                            provider=provider,
+                            usage=merge_token_usage(existing.usage, usage),
+                            total_models=existing.total_models + 1,
+                            total_interactions=existing.total_interactions
+                            + int(row.get("total_interactions", 0)),
+                            cost_usd=None,
+                            has_pricing=False,
+                        )
+                    else:
+                        provider_map[provider] = ProviderUsage(
+                            provider=provider,
+                            usage=usage,
+                            total_models=1,
+                            total_interactions=int(row.get("total_interactions", 0)),
+                            cost_usd=None,
+                            has_pricing=False,
+                        )
+                total_sessions += repo.fetch_session_count(days=days)
             else:
                 page_size = 1000
                 data = _fetch_http_providers(
@@ -875,7 +1019,7 @@ def execute_providers_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 
@@ -978,6 +1122,36 @@ def execute_projects_federated(
                         )
                     else:
                         project_map[project.project_id] = project_with_source
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                rows = repo.fetch_project_usage_detail(days=days)
+                for row in rows:
+                    project_id = str(row["project_id"])
+                    usage = TokenUsage(
+                        input_tokens=int(row.get("input_tokens", 0)),
+                        output_tokens=int(row.get("output_tokens", 0)),
+                        cache_read_tokens=int(row.get("cache_read_tokens", 0)),
+                        cache_write_tokens=int(row.get("cache_write_tokens", 0)),
+                    )
+                    project_with_source = ProjectUsage(
+                        project_id=project_id,
+                        project_name=str(row.get("project_name", project_id)),
+                        project_path=str(row.get("project_path")),
+                        usage=usage,
+                        total_sessions=int(row.get("total_sessions", 0)),
+                        total_interactions=int(row.get("total_interactions", 0)),
+                        cost_usd=None,
+                        has_pricing=False,
+                        sources=[source.source_id],
+                    )
+                    if project_id in project_map:
+                        project_map[project_id] = merge_project_usage(
+                            project_map[project_id], project_with_source
+                        )
+                    else:
+                        project_map[project_id] = project_with_source
+                total_sessions += repo.fetch_session_count(days=days)
             else:
                 page_size = 1000
                 data = _fetch_http_projects(
@@ -1072,7 +1246,7 @@ def execute_projects_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 

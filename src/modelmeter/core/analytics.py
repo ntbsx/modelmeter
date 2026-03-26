@@ -31,6 +31,7 @@ from modelmeter.core.models import (
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
 from modelmeter.core.providers import provider_from_model_id_and_provider_field
 from modelmeter.core.sources import SourceScope, SourceScopeKind
+from modelmeter.data.repository import UsageRepository, create_repository
 from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.data.storage import resolve_storage_paths
 
@@ -62,6 +63,29 @@ def _scope_label(source_scope: SourceScope | None) -> str:
     if source_scope.kind == SourceScopeKind.ALL:
         return "all"
     return f"source:{source_scope.source_id}"
+
+
+def _resolve_local_repositories(
+    settings: AppSettings,
+    db_path_override: Path | None = None,
+) -> list[tuple[str, UsageRepository]]:
+    """Resolve all available local data repositories."""
+    repos: list[tuple[str, UsageRepository]] = []
+
+    try:
+        sqlite_path = _resolve_sqlite_path(settings, db_path_override)
+        repos.append(("local-opencode", create_repository("sqlite", sqlite_path)))
+    except RuntimeError:
+        pass
+
+    if settings.claudecode_enabled:
+        projects_dir = settings.claudecode_data_dir / "projects"
+        if projects_dir.exists() and any(projects_dir.rglob("*.jsonl")):
+            repos.append(
+                ("local-claudecode", create_repository("jsonl", settings.claudecode_data_dir))
+            )
+
+    return repos
 
 
 def _merge_daily_rows(
