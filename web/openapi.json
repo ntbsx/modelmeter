@@ -1791,6 +1791,21 @@
       "SessionSummary": {
         "description": "Session summary for selection UI.",
         "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "enum": [
+                  "opencode",
+                  "claudecode"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
           "cost_usd": {
             "anyOf": [
               {
@@ -2152,7 +2167,8 @@
           "kind": {
             "enum": [
               "sqlite",
-              "http"
+              "http",
+              "jsonl"
             ],
             "title": "Kind",
             "type": "string"

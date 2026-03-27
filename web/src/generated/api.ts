@@ -1095,6 +1095,8 @@ export interface components {
          * @description Session summary for selection UI.
          */
         SessionSummary: {
+            /** Agent */
+            agent?: ("opencode" | "claudecode") | null;
             /** Cost Usd */
             cost_usd?: number | null;
             /** Directory */
@@ -1240,7 +1242,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "sqlite" | "http";
+            kind: "sqlite" | "http" | "jsonl";
             /** Label */
             label?: string | null;
             /**
