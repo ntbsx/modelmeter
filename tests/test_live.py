@@ -157,8 +157,16 @@ def test_get_live_sessions_includes_recent_claudecode_jsonl_session(tmp_path: Pa
     stale_session_file = (
         claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-002.jsonl"
     )
+    stale_session_file2 = (
+        claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-004.jsonl"
+    )
+    stale_session_file3 = (
+        claudecode_dir / "projects" / "-Users-test-projs-other" / "session-003.jsonl"
+    )
     now = time.time()
     os.utime(stale_session_file, (now - 3600, now - 3600))
+    os.utime(stale_session_file2, (now - 3600, now - 3600))
+    os.utime(stale_session_file3, (now - 3600, now - 3600))
     os.utime(session_file, (now, now))
 
     settings = AppSettings(

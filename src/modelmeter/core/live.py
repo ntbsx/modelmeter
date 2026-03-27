@@ -200,10 +200,8 @@ def _build_live_snapshot(
                 total_summary.get("total_interactions", 0)
             ) + int(summary.get("total_interactions", 0))
 
-        all_model_rows.extend(
-            repository.fetch_live_model_usage(since_ms=since_ms, limit=models_limit)
-        )
-        all_tool_rows.extend(repository.fetch_live_tool_usage(since_ms=since_ms, limit=tools_limit))
+        all_model_rows.extend(repository.fetch_live_model_usage(since_ms=since_ms, limit=9999))
+        all_tool_rows.extend(repository.fetch_live_tool_usage(since_ms=since_ms, limit=9999))
 
         active_row = repository.fetch_active_session(session_id=None)
         if active_row is not None:

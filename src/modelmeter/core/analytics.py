@@ -1609,6 +1609,7 @@ def get_model_detail(
     sources_succeeded: list[str] = []
     sources_failed: list[dict[str, str]] = []
     effective_model_id = model_id
+    effective_provider_id: str | None = None
 
     for source_id, repository in local_repos:
         sources_considered.append(source_id)
@@ -1619,8 +1620,12 @@ def get_model_detail(
                 continue
 
             repo_model_id = fallback_info["model_id"] if fallback_info is not None else model_id
+            repo_provider_id = (
+                fallback_info.get("provider_id") if fallback_info is not None else None
+            )
             if effective_model_id == model_id and fallback_info is not None:
                 effective_model_id = repo_model_id
+                effective_provider_id = repo_provider_id
 
             usage = _token_usage_from_row(effective_row)
             merged_usage.input_tokens += usage.input_tokens
@@ -1681,7 +1686,9 @@ def get_model_detail(
 
     return ModelDetailResponse(
         model_id=effective_model_id,
-        provider=provider_from_model_id_and_provider_field(effective_model_id, ""),
+        provider=provider_from_model_id_and_provider_field(
+            effective_model_id, effective_provider_id
+        ),
         window_days=days,
         usage=merged_usage,
         total_sessions=merged_sessions,
