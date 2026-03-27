@@ -1,5 +1,6 @@
 import { Clock, Activity, CheckCircle2 } from 'lucide-react'
 import { formatTokens, formatUsd } from '../lib/utils'
+import { AgentBadge } from './AgentBadge'
 import type { components } from '../generated/api'
 
 type SessionSummary = components['schemas']['SessionSummary']
@@ -50,6 +51,7 @@ export default function SessionCard({ session, isAdded, onSelect, animationDelay
           )}
         </div>
         <div className="shrink-0 flex flex-col items-end gap-1">
+          <AgentBadge agent={session.agent} />
           <div className="flex items-center gap-1.5">
             <span className="ds-text-mono text-xs text-[var(--text-tertiary)]">
               {session.message_count} msg

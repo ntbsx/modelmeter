@@ -17,6 +17,7 @@ import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { AgentBadge } from './components/AgentBadge'
 import SourceScopePicker from './components/SourceScopePicker'
 import { useAuth } from './hooks/useAuth'
 import { fetchApi } from './lib/api'
@@ -56,26 +57,40 @@ function VersionBadge({ className }: { className: string }) {
     retry: false,
   })
 
-  if (!data?.app_version && !data?.agents_detected?.length) {
+  if (!data?.app_version) {
     return null
   }
 
   return (
-    <div className={className}>
-      {data?.app_version && <span>v{data.app_version}</span>}
-      {data?.agents_detected && data.agents_detected.length > 0 && (
-        <div className="flex items-center gap-1 mt-1 flex-wrap">
-          {data.agents_detected.map((agent) => (
-            <span
-              key={agent}
-              className="ds-badge ds-badge-default text-[10px] py-0"
-              title={`${agent === 'claudecode' ? 'Claude Code' : agent === 'opencode' ? 'OpenCode' : agent} detected`}
-            >
-              {agent === 'claudecode' ? 'Claude Code' : agent === 'opencode' ? 'OpenCode' : agent}
-            </span>
-          ))}
-        </div>
-      )}
+    <span className={className}>
+      v{data.app_version}
+    </span>
+  )
+}
+
+function DetectedAgentsBadge({ className }: { className: string }) {
+  const { data } = useQuery<HealthResponse>({
+    queryKey: ['health-version'],
+    queryFn: async () => {
+      const response = await fetch('/health')
+      if (!response.ok) {
+        throw new Error(response.statusText)
+      }
+      return response.json() as Promise<HealthResponse>
+    },
+    staleTime: 60_000,
+    retry: false,
+  })
+
+  if (!data?.agents_detected?.length) {
+    return null
+  }
+
+  return (
+    <div className={`flex items-center gap-1.5 ${className}`}>
+      {data.agents_detected.map((agent) => (
+        <AgentBadge key={agent} agent={agent} />
+      ))}
     </div>
   )
 }
@@ -292,6 +307,7 @@ function AuthGate() {
           <div className="hidden lg:flex items-center gap-3">
             <SourceScopePicker />
             <HeaderSourceStatus />
+            <DetectedAgentsBadge />
             <div className="hidden sm:block">
               <LogoutButton compact />
             </div>
@@ -299,6 +315,7 @@ function AuthGate() {
           </div>
           <div className="lg:hidden flex items-center gap-2">
             <HeaderSourceStatus />
+            <DetectedAgentsBadge />
             <ThemeToggle />
           </div>
         </header>

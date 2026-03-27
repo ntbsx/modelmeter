@@ -66,7 +66,6 @@ from modelmeter.core.sources import (
     upsert_source,
 )
 from modelmeter.core.updater import check_for_updates
-from modelmeter.data.repository import RowDict
 from modelmeter.data.storage import resolve_storage_paths
 
 LOCAL_CORS_ORIGINS = [
@@ -82,7 +81,7 @@ SSE_PATH_PREFIXES = ("/api/live/events",)
 
 class SourceUpsertRequest(BaseModel):
     label: str | None = None
-    kind: Literal["sqlite", "http"]
+    kind: Literal["sqlite", "http", "jsonl"]
     enabled: bool = True
     db_path: str | None = None
     base_url: str | None = None
@@ -658,39 +657,41 @@ def create_app(
                     "No local session data source available. Run `modelmeter doctor` for details."
                 )
 
-            session_rows: list[RowDict] = []
-            for _, repository in repositories:
-                session_rows.extend(
-                    repository.fetch_sessions_summary(
-                        limit=limit,
-                        include_archived=include_archived,
-                        min_time_updated_ms=active_since_ms,
-                    )
-                )
-
-            session_rows.sort(key=lambda row: int(row["time_updated"]), reverse=True)
-            session_rows = session_rows[:limit]
-
             sessions: list[SessionSummary] = []
-            for row in session_rows:
-                session = SessionSummary(
-                    session_id=str(row["session_id"]),
-                    title=str(row["title"]) if row["title"] else None,
-                    directory=str(row["directory"]) if row["directory"] else None,
-                    project_id=str(row["project_id"]) if row["project_id"] else None,
-                    project_name=str(row["project_name"]) if row["project_name"] else None,
-                    time_created=int(row["time_created"]),
-                    time_updated=int(row["time_updated"]),
-                    time_archived=int(row["time_archived"]) if row["time_archived"] else None,
-                    message_count=int(row["message_count"]),
-                    model_count=int(row["model_count"]),
-                    token_count=int(row["token_count"]),
-                    is_active=(not row["time_archived"])
-                    and (now_ms - int(row["time_updated"])) <= ACTIVE_SESSION_THRESHOLD_MS,
+            for source_id, repository in repositories:
+                agent: Literal["opencode", "claudecode"] | None = (
+                    "claudecode"
+                    if source_id == "local-claudecode"
+                    else "opencode"
+                    if source_id == "local-opencode"
+                    else None
                 )
-                sessions.append(session)
+                repo_rows = repository.fetch_sessions_summary(
+                    limit=limit,
+                    include_archived=include_archived,
+                    min_time_updated_ms=active_since_ms,
+                )
+                for row in repo_rows:
+                    session = SessionSummary(
+                        session_id=str(row["session_id"]),
+                        title=str(row["title"]) if row["title"] else None,
+                        directory=str(row["directory"]) if row["directory"] else None,
+                        project_id=str(row["project_id"]) if row["project_id"] else None,
+                        project_name=str(row["project_name"]) if row["project_name"] else None,
+                        time_created=int(row["time_created"]),
+                        time_updated=int(row["time_updated"]),
+                        time_archived=int(row["time_archived"]) if row["time_archived"] else None,
+                        message_count=int(row["message_count"]),
+                        model_count=int(row["model_count"]),
+                        token_count=int(row["token_count"]),
+                        is_active=(not row["time_archived"])
+                        and (now_ms - int(row["time_updated"])) <= ACTIVE_SESSION_THRESHOLD_MS,
+                        agent=agent,
+                    )
+                    sessions.append(session)
 
-            return sessions
+            sessions.sort(key=lambda s: s.time_updated, reverse=True)
+            return sessions[:limit]
         except NotImplementedError as exc:
             raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:

@@ -82,14 +82,14 @@ def get_live_snapshot(
     now_ms = int(time.time() * 1000)
     since_ms = now_ms - (window_minutes * 60 * 1000)
 
-    repository = _resolve_live_repository(
+    repositories = _resolve_live_repositories(
         settings=settings,
         db_path_override=db_path_override,
-        session_id=session_id,
     )
 
     return _build_live_snapshot(
-        repository=repository,
+        repositories=repositories,
+        session_id=session_id,
         settings=settings,
         now_ms=now_ms,
         since_ms=since_ms,
@@ -98,34 +98,214 @@ def get_live_snapshot(
         token_source=token_source,
         models_limit=models_limit,
         tools_limit=tools_limit,
-        session_id=session_id,
     )
 
 
-def _resolve_live_repository(
+def _resolve_live_repositories(
     *,
     settings: AppSettings,
     db_path_override: Path | None,
-    session_id: str | None,
-) -> UsageRepository:
+) -> list[tuple[str, UsageRepository]]:
     from modelmeter.core.analytics import _resolve_local_repositories
 
-    repositories = [repo for _, repo in _resolve_local_repositories(settings, db_path_override)]
+    repositories = _resolve_local_repositories(settings, db_path_override)
     if not repositories:
         raise RuntimeError(
             "No local live data source is available. Run `modelmeter doctor` for details."
         )
-
-    if session_id is not None:
-        for repository in repositories:
-            if repository.fetch_active_session(session_id=session_id) is not None:
-                return repository
-        raise RuntimeError(f"Live session `{session_id}` was not found.")
-
-    return repositories[0]
+    return repositories
 
 
 def _build_live_snapshot(
+    *,
+    repositories: list[tuple[str, UsageRepository]],
+    settings: AppSettings,
+    now_ms: int,
+    since_ms: int,
+    window_minutes: int,
+    pricing_file_override: Path | None,
+    token_source: Literal["auto", "message", "steps"],
+    models_limit: int,
+    tools_limit: int,
+    session_id: str | None,
+) -> LiveSnapshotResponse:
+    if session_id is not None:
+        for source_id, repository in repositories:
+            row = repository.fetch_active_session(session_id=session_id)
+            if row is not None:
+                agent = "claudecode" if source_id == "local-claudecode" else "opencode"
+                return _build_snapshot_from_single_source(
+                    repository=repository,
+                    settings=settings,
+                    now_ms=now_ms,
+                    since_ms=since_ms,
+                    window_minutes=window_minutes,
+                    pricing_file_override=pricing_file_override,
+                    token_source=token_source,
+                    models_limit=models_limit,
+                    tools_limit=tools_limit,
+                    session_id=session_id,
+                    agent=agent,
+                )
+        raise RuntimeError(f"Live session `{session_id}` was not found.")
+
+    total_summary: dict[str, Any] | None = None
+    all_model_rows: list[dict[str, Any]] = []
+    all_tool_rows: list[dict[str, Any]] = []
+    active_session: LiveActiveSession | None = None
+    most_recent_session_ms = 0
+
+    if token_source == "auto" and len(repositories) > 1:
+        resolved_token_source: Literal["message", "steps"] = "message"
+        for _, repo in repositories:
+            if _resolve_live_token_source(repo, token_source="auto", since_ms=since_ms) == "steps":
+                resolved_token_source = "steps"
+                break
+    elif token_source == "auto":
+        resolved_token_source = _resolve_live_token_source(
+            repositories[0][1],
+            token_source="auto",
+            since_ms=since_ms,
+        )
+    else:
+        resolved_token_source = token_source
+
+    for source_id, repository in repositories:
+        agent = "claudecode" if source_id == "local-claudecode" else "opencode"
+
+        if resolved_token_source == "steps":
+            summary = repository.fetch_live_summary_steps(since_ms=since_ms)
+        else:
+            summary = repository.fetch_live_summary_messages(since_ms=since_ms)
+
+        if total_summary is None:
+            total_summary = dict(summary)
+        else:
+            total_summary["input_tokens"] = int(total_summary.get("input_tokens", 0)) + int(
+                summary.get("input_tokens", 0)
+            )
+            total_summary["output_tokens"] = int(total_summary.get("output_tokens", 0)) + int(
+                summary.get("output_tokens", 0)
+            )
+            total_summary["cache_read"] = int(total_summary.get("cache_read", 0)) + int(
+                summary.get("cache_read", 0)
+            )
+            total_summary["cache_write"] = int(total_summary.get("cache_write", 0)) + int(
+                summary.get("cache_write", 0)
+            )
+            total_summary["total_sessions"] = int(total_summary.get("total_sessions", 0)) + int(
+                summary.get("total_sessions", 0)
+            )
+            total_summary["total_interactions"] = int(
+                total_summary.get("total_interactions", 0)
+            ) + int(summary.get("total_interactions", 0))
+
+        all_model_rows.extend(
+            repository.fetch_live_model_usage(since_ms=since_ms, limit=models_limit)
+        )
+        all_tool_rows.extend(repository.fetch_live_tool_usage(since_ms=since_ms, limit=tools_limit))
+
+        active_row = repository.fetch_active_session(session_id=None)
+        if active_row is not None:
+            row_ms = int(active_row["time_updated"])
+            if row_ms > most_recent_session_ms:
+                most_recent_session_ms = row_ms
+                active_session = LiveActiveSession(
+                    session_id=str(active_row["id"]),
+                    title=str(active_row["title"]) if active_row["title"] else None,
+                    project_id=str(active_row["project_id"]) if active_row["project_id"] else None,
+                    project_name=str(active_row["project_name"])
+                    if active_row["project_name"]
+                    else None,
+                    directory=str(active_row["directory"]) if active_row["directory"] else None,
+                    last_updated_ms=row_ms,
+                    is_active=(now_ms - row_ms) <= ACTIVE_SESSION_THRESHOLD_MS,
+                    agent=agent,
+                )
+
+    if total_summary is None:
+        total_summary = {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cache_read": 0,
+            "cache_write": 0,
+            "total_sessions": 0,
+            "total_interactions": 0,
+        }
+
+    pricing_book, pricing_source = load_pricing_book(
+        settings=settings,
+        pricing_file_override=pricing_file_override,
+    )
+
+    model_map: dict[str, dict[str, Any]] = {}
+    for row in all_model_rows:
+        mid = str(row["model_id"])
+        if mid not in model_map:
+            model_map[mid] = dict(row)
+        else:
+            for key in (
+                "input_tokens",
+                "output_tokens",
+                "cache_read",
+                "cache_write",
+                "total_sessions",
+                "total_interactions",
+            ):
+                model_map[mid][key] = int(model_map[mid].get(key, 0)) + int(row.get(key, 0))
+
+    top_models: list[LiveModelUsage] = []
+    total_cost = 0.0
+    has_any_priced_model = False
+    for mid, row in sorted(
+        model_map.items(),
+        key=lambda x: x[1].get("input_tokens", 0) + x[1].get("output_tokens", 0),
+        reverse=True,
+    )[:models_limit]:
+        usage = _token_usage_from_row(row)
+        pricing = pricing_book.get(mid)
+        model_cost: float | None = None
+        if pricing is not None:
+            has_any_priced_model = True
+            model_cost = round(calculate_usage_cost(usage, pricing), 8)
+            total_cost += model_cost
+        top_models.append(
+            LiveModelUsage(
+                model_id=mid,
+                usage=usage,
+                total_sessions=int(row.get("total_sessions", 0)),
+                total_interactions=int(row.get("total_interactions", 0)),
+                cost_usd=model_cost,
+            )
+        )
+
+    tool_map: dict[str, int] = {}
+    for row in all_tool_rows:
+        tool_map[str(row["tool_name"])] = tool_map.get(row["tool_name"], 0) + int(
+            row["total_calls"]
+        )
+
+    return LiveSnapshotResponse(
+        generated_at_ms=now_ms,
+        window_minutes=window_minutes,
+        token_source=resolved_token_source,
+        total_interactions=int(total_summary.get("total_interactions", 0)),
+        total_sessions=int(total_summary.get("total_sessions", 0)),
+        usage=_token_usage_from_row(total_summary),
+        cost_usd=round(total_cost, 8) if has_any_priced_model else None,
+        pricing_source=pricing_source,
+        active_session=active_session,
+        top_models=top_models,
+        top_tools=[
+            LiveToolUsage(tool_name=name, total_calls=calls)
+            for name, calls in sorted(tool_map.items(), key=lambda x: x[1], reverse=True)[
+                :tools_limit
+            ]
+        ],
+    )
+
+
+def _build_snapshot_from_single_source(
     *,
     repository: UsageRepository,
     settings: AppSettings,
@@ -137,6 +317,7 @@ def _build_live_snapshot(
     models_limit: int,
     tools_limit: int,
     session_id: str | None,
+    agent: str,
 ) -> LiveSnapshotResponse:
     resolved_token_source = _resolve_live_token_source(
         repository,
@@ -208,7 +389,7 @@ def _build_live_snapshot(
             else None,
             last_updated_ms=last_updated_ms,
             is_active=(now_ms - last_updated_ms) <= ACTIVE_SESSION_THRESHOLD_MS,
-            agent="opencode",
+            agent=agent,
         )
 
     return LiveSnapshotResponse(

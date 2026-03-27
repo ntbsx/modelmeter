@@ -5,9 +5,9 @@ const AGENT_LABELS: Record<string, string> = {
   claudecode: 'Claude Code',
 }
 
-const AGENT_VARIANTS: Record<string, 'default' | 'primary'> = {
+const AGENT_VARIANTS: Record<string, 'default' | 'primary' | 'warm'> = {
   opencode: 'primary',
-  claudecode: 'default',
+  claudecode: 'warm',
 }
 
 type AgentBadgeProps = {

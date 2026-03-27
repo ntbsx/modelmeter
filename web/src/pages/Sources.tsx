@@ -1,6 +1,6 @@
 import { type FormEvent, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Globe, Database, ChevronDown, Server, Lock, Unlock, CheckCircle2, XCircle, AlertCircle, Plus, RefreshCw } from 'lucide-react'
+import { Globe, Database, ChevronDown, Server, Lock, Unlock, CheckCircle2, XCircle, AlertCircle, Plus, RefreshCw, FileText } from 'lucide-react'
 import { fetchApi } from '../lib/api'
 import type { DataSourcePublic, SourceHealth, SourceRegistryPublic } from '../types'
 import PageLoading from '../components/PageLoading'
@@ -41,6 +41,12 @@ const SOURCE_TYPE_CONFIG = {
     bgColor: 'var(--color-info-muted)',
     label: 'SQLite',
   },
+  jsonl: {
+    icon: FileText,
+    color: 'var(--color-warning)',
+    bgColor: 'var(--color-warning-muted)',
+    label: 'JSONL',
+  },
 } as const
 
 type SourceCardProps = {
@@ -55,7 +61,7 @@ function SourceCard({ source, health, onEdit, onRemove, animationDelay = 0 }: So
   const [expanded, setExpanded] = useState(false)
   const typeConfig = SOURCE_TYPE_CONFIG[source.kind]
   const TypeIcon = typeConfig.icon
-  const connectionTarget = source.kind === 'sqlite' ? String(source.db_path ?? '-') : String(source.base_url ?? '-')
+  const connectionTarget = source.kind === 'sqlite' || source.kind === 'jsonl' ? String(source.db_path ?? '-') : String(source.base_url ?? '-')
 
   return (
     <article
@@ -213,7 +219,7 @@ function SourceCard({ source, health, onEdit, onRemove, animationDelay = 0 }: So
 type SourceFormState = {
   sourceId: string
   label: string
-  kind: 'sqlite' | 'http'
+  kind: 'sqlite' | 'http' | 'jsonl'
   enabled: boolean
   dbPath: string
   baseUrl: string
@@ -261,6 +267,9 @@ export default function Sources() {
       if (form.kind === 'sqlite' && !form.dbPath.trim()) {
         throw new Error('SQLite source requires a DB path')
       }
+      if (form.kind === 'jsonl' && !form.dbPath.trim()) {
+        throw new Error('JSONL source requires a data directory')
+      }
       if (form.kind === 'http' && !form.baseUrl.trim()) {
         throw new Error('HTTP source requires a base URL')
       }
@@ -280,7 +289,7 @@ export default function Sources() {
           label: form.label.trim() || null,
           kind: form.kind,
           enabled: form.enabled,
-          db_path: form.kind === 'sqlite' ? form.dbPath.trim() : null,
+          db_path: form.kind === 'sqlite' || form.kind === 'jsonl' ? form.dbPath.trim() : null,
           base_url: form.kind === 'http' ? form.baseUrl.trim() : null,
           auth,
           preserve_existing_auth: true,
@@ -327,7 +336,7 @@ export default function Sources() {
   const canSubmit = useMemo(() => {
     if (saveMutation.isPending) return false
     if (!form.sourceId.trim()) return false
-    if (form.kind === 'sqlite' && !form.dbPath.trim()) return false
+    if ((form.kind === 'sqlite' || form.kind === 'jsonl') && !form.dbPath.trim()) return false
     if (form.kind === 'http' && !form.baseUrl.trim()) return false
     return true
   }, [form, saveMutation.isPending])
@@ -341,7 +350,7 @@ export default function Sources() {
       label: source.label ?? '',
       kind: source.kind,
       enabled: source.enabled,
-      dbPath: source.kind === 'sqlite' ? String(source.db_path ?? '') : '',
+      dbPath: source.kind === 'sqlite' || source.kind === 'jsonl' ? String(source.db_path ?? '') : '',
       baseUrl: source.kind === 'http' ? String(source.base_url ?? '') : '',
       username: '',
       password: '',
@@ -433,11 +442,12 @@ export default function Sources() {
               Kind
               <select
                 value={form.kind}
-                onChange={(event) => setForm((prev) => ({ ...prev, kind: event.target.value as 'sqlite' | 'http' }))}
+                onChange={(event) => setForm((prev) => ({ ...prev, kind: event.target.value as 'sqlite' | 'http' | 'jsonl' }))}
                 className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 <option value="http">http</option>
                 <option value="sqlite">sqlite</option>
+                <option value="jsonl">jsonl</option>
               </select>
             </label>
             <label className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2 mt-7">
@@ -450,9 +460,9 @@ export default function Sources() {
               Enabled
             </label>
 
-            {form.kind === 'sqlite' ? (
+            {form.kind === 'sqlite' || form.kind === 'jsonl' ? (
               <label className="md:col-span-2 text-sm font-medium text-[var(--text-primary)]">
-                SQLite DB Path
+                {form.kind === 'jsonl' ? 'JSONL Data Directory' : 'SQLite DB Path'}
                 <input
                   value={form.dbPath}
                   onChange={(event) => setForm((prev) => ({ ...prev, dbPath: event.target.value }))}
@@ -526,7 +536,7 @@ export default function Sources() {
               </div>
               <h3 className="ds-text-heading text-[var(--text-primary)] mb-1.5">No sources configured yet.</h3>
               <p className="ds-text-muted max-w-sm mb-6">
-                Connect a local SQLite database or a remote HTTP endpoint to start tracking your AI usage.
+                Connect a local SQLite database, JSONL data directory, or a remote HTTP endpoint to start tracking your AI usage.
               </p>
               <button type="button" onClick={onAddNew} className="ds-btn-primary">
                 <Plus className="w-4 h-4 mr-2" />

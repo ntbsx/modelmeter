@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -71,6 +72,7 @@ class SessionSummary(BaseModel):
     token_count: int = Field(default=0, ge=0)
     cost_usd: float | None = None
     is_active: bool = False
+    agent: Literal["opencode", "claudecode"] | None = None
 
 
 class TokenUsage(BaseModel):

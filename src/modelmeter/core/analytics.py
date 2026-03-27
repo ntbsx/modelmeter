@@ -9,6 +9,7 @@ from typing import Any, Literal
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.doctor import generate_doctor_report
+from modelmeter.core.federation import merge_project_usage
 from modelmeter.core.models import (
     DailyResponse,
     DailyUsage,
@@ -149,15 +150,14 @@ def _merge_provider_rows(
 def _merge_project_rows(
     local_rows: list[ProjectUsage], federated_rows: list[ProjectUsage]
 ) -> list[ProjectUsage]:
-    from modelmeter.core.federation import merge_project_usage
-
     merged: dict[str, ProjectUsage] = {}
     for row in local_rows + federated_rows:
-        existing = merged.get(row.project_id)
+        merge_key = row.project_path or row.project_id
+        existing = merged.get(merge_key)
         if existing is None:
-            merged[row.project_id] = row
+            merged[merge_key] = row
         else:
-            merged[row.project_id] = merge_project_usage(existing, row)
+            merged[merge_key] = merge_project_usage(existing, row)
     return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
 
 
@@ -1008,7 +1008,21 @@ def get_date_insights(
     providers = sorted(
         provider_map.values(), key=lambda item: item.usage.total_tokens, reverse=True
     )
-    projects = _build_projects_from_rows(all_project_rows, all_project_model_rows, "local")
+
+    def _deduplicate_projects(rows: list[ProjectUsage]) -> list[ProjectUsage]:
+        merged: dict[str, ProjectUsage] = {}
+        for row in rows:
+            key = row.project_path or row.project_id
+            existing = merged.get(key)
+            if existing is None:
+                merged[key] = row
+            else:
+                merged[key] = merge_project_usage(existing, row)
+        return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
+
+    projects = _deduplicate_projects(
+        _build_projects_from_rows(all_project_rows, all_project_model_rows, "local")
+    )
     projects.sort(key=lambda item: item.cost_usd if item.cost_usd is not None else -1, reverse=True)
     project_models = _build_project_models_from_rows(all_project_model_rows)
     project_models.sort(key=lambda item: item.usage.total_tokens, reverse=True)

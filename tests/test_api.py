@@ -349,6 +349,34 @@ def test_sources_upsert_endpoint_saves_sqlite_source(
     assert payload["sources"][0]["db_path"] == str(tmp_path / "opencode.db")
 
 
+def test_sources_upsert_endpoint_saves_jsonl_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    jsonl_dir = tmp_path / "claudecode-data"
+    jsonl_dir.mkdir()
+    (jsonl_dir / "projects").mkdir()
+
+    client = _new_client()
+    response = client.put(
+        "/api/sources/local-jsonl",
+        json={
+            "kind": "jsonl",
+            "label": "Claude Code data",
+            "db_path": str(jsonl_dir),
+            "enabled": True,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["sources"][0]["source_id"] == "local-jsonl"
+    assert payload["sources"][0]["kind"] == "jsonl"
+    assert payload["sources"][0]["db_path"] == str(jsonl_dir)
+
+
 def test_sources_upsert_endpoint_preserves_existing_http_auth(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -928,6 +956,7 @@ def test_list_sessions_includes_claudecode_sessions(
     session = next(session for session in data if session["session_id"] == "session-001")
     assert session["is_active"] is True
     assert session["time_updated"] >= int(now * 1000) - 1000
+    assert session["agent"] == "claudecode"
 
 
 def test_list_sessions_respects_limit_parameter(
