@@ -496,14 +496,29 @@ export interface components {
          * @description Detected data source with agent information.
          */
         DetectedSource: {
-            /** Agent */
-            agent: string;
+            /**
+             * Agent
+             * @enum {string}
+             */
+            agent: "opencode" | "claudecode";
+            /** Details */
+            details?: string | null;
             /** Exists */
             exists: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sqlite" | "jsonl";
             /** Path */
             path: string;
             /** Source Id */
             source_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "error";
         };
         /**
          * DoctorReport
@@ -2026,7 +2041,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: string | boolean;
+                        [key: string]: string | boolean | string[];
                     };
                 };
             };

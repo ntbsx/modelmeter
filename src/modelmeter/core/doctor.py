@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -23,9 +24,12 @@ class DetectedSource(BaseModel):
     """Detected data source with agent information."""
 
     source_id: str
-    agent: str
+    kind: Literal["sqlite", "jsonl"]
+    agent: Literal["opencode", "claudecode"]
+    status: Literal["ok", "error"]
     path: str
     exists: bool
+    details: str | None = None
 
 
 class SQLiteDiagnostics(BaseModel):
@@ -97,6 +101,27 @@ def _inspect_sqlite(db_path: Path) -> SQLiteDiagnostics:
     return diagnostics
 
 
+def _inspect_claudecode(data_dir: Path) -> DetectedSource | None:
+    projects_dir = data_dir / "projects"
+    if not projects_dir.exists():
+        return None
+
+    project_count = sum(1 for d in projects_dir.iterdir() if d.is_dir())
+    session_count = sum(1 for _ in projects_dir.rglob("*.jsonl"))
+    if session_count == 0:
+        return None
+
+    return DetectedSource(
+        source_id="local-claudecode",
+        kind="jsonl",
+        agent="claudecode",
+        status="ok",
+        path=str(data_dir),
+        exists=True,
+        details=f"{project_count} projects, {session_count} sessions",
+    )
+
+
 def generate_doctor_report(
     settings: AppSettings, db_path_override: Path | None = None
 ) -> DoctorReport:
@@ -125,22 +150,18 @@ def generate_doctor_report(
             detected_sources.append(
                 DetectedSource(
                     source_id="local-opencode",
+                    kind="sqlite",
                     agent="opencode",
+                    status="ok",
                     path=str(opencode_path),
                     exists=True,
+                    details="OpenCode local data detected",
                 )
             )
 
-    claudecode_data_dir = settings.claudecode_data_dir
-    if claudecode_data_dir.exists():
-        detected_sources.append(
-            DetectedSource(
-                source_id="local-claudecode",
-                agent="claudecode",
-                path=str(claudecode_data_dir),
-                exists=True,
-            )
-        )
+    claudecode_source = _inspect_claudecode(settings.claudecode_data_dir)
+    if claudecode_source is not None:
+        detected_sources.append(claudecode_source)
 
     return DoctorReport(
         app_name=settings.app_name,

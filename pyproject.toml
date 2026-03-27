@@ -64,6 +64,7 @@ venvPath = "."
 venv = ".venv"
 reportMissingTypeStubs = false
 reportUnusedFunction = false
+reportPrivateUsage = false
 
 [tool.pytest.ini_options]
 minversion = "8.0"

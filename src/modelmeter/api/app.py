@@ -66,7 +66,7 @@ from modelmeter.core.sources import (
     upsert_source,
 )
 from modelmeter.core.updater import check_for_updates
-from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
+from modelmeter.data.repository import RowDict
 from modelmeter.data.storage import resolve_storage_paths
 
 LOCAL_CORS_ORIGINS = [
@@ -202,11 +202,14 @@ def create_app(
         return await call_next(request)
 
     @app.get("/health")
-    def health() -> dict[str, str | bool]:
+    def health() -> dict[str, str | bool | list[str]]:
+        report = generate_doctor_report(settings=settings)
+        agents_detected = list(dict.fromkeys(source.agent for source in report.detected_sources))
         return {
             "status": "ok",
             "app_version": settings.app_runtime_version,
             "auth_required": auth_enabled,
+            "agents_detected": agents_detected,
         }
 
     @app.get("/doc", include_in_schema=False)
@@ -638,24 +641,35 @@ def create_app(
         If `active_since_hours` is provided, only return sessions updated within that time window.
         """
         try:
+            from modelmeter.core.analytics import _resolve_local_repositories
+
             scope = SourceScope.parse(source_scope) if source_scope is not None else None
             if scope is not None and scope.kind != SourceScopeKind.LOCAL:
                 raise NotImplementedError("Federated session list not yet implemented")
 
-            sqlite_db_path = _resolve_sqlite_path(settings=settings, db_path_override=None)
-            repository = SQLiteUsageRepository(sqlite_db_path)
-
             now_ms = int(time.time() * 1000)
-            # Calculate the cutoff for active_since_hours filter
             active_since_ms: int | None = None
             if active_since_hours is not None:
                 active_since_ms = now_ms - (active_since_hours * 60 * 60 * 1000)
 
-            session_rows = repository.fetch_sessions_summary(
-                limit=limit,
-                include_archived=include_archived,
-                min_time_updated_ms=active_since_ms,
-            )
+            repositories = _resolve_local_repositories(settings=settings, db_path_override=None)
+            if not repositories:
+                raise RuntimeError(
+                    "No local session data source available. Run `modelmeter doctor` for details."
+                )
+
+            session_rows: list[RowDict] = []
+            for _, repository in repositories:
+                session_rows.extend(
+                    repository.fetch_sessions_summary(
+                        limit=limit,
+                        include_archived=include_archived,
+                        min_time_updated_ms=active_since_ms,
+                    )
+                )
+
+            session_rows.sort(key=lambda row: int(row["time_updated"]), reverse=True)
+            session_rows = session_rows[:limit]
 
             sessions: list[SessionSummary] = []
             for row in session_rows:

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import base64
 import json
+import os
+import shutil
 import sqlite3
 import time
 from datetime import UTC, datetime
@@ -15,6 +17,8 @@ import modelmeter.api.app as api_app_module
 from modelmeter.api.app import create_app
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.models import UpdateCheckResponse
+
+CLAUDECODE_FIXTURES_DIR = Path(__file__).parent / "fixtures" / "claudecode"
 
 
 def _new_client(**create_app_kwargs: Any) -> Any:
@@ -115,6 +119,12 @@ def _create_api_fixture(db_path: Path) -> None:
         )
 
 
+def _copy_claudecode_fixtures(destination: Path) -> Path:
+    target = destination / ".claude" / "projects"
+    shutil.copytree(CLAUDECODE_FIXTURES_DIR, target)
+    return destination / ".claude"
+
+
 def _create_daily_boundary_fixture(db_path: Path) -> tuple[str, str]:
     """Create fixture with a timestamp at 18:30 UTC two days ago.
 
@@ -208,6 +218,21 @@ def test_health_reports_auth_required_when_password_set() -> None:
     payload = _get_json(response)
     assert payload["status"] == "ok"
     assert payload["auth_required"] is True
+
+
+def test_health_includes_agents_detected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    claudecode_dir = _copy_claudecode_fixtures(tmp_path)
+    monkeypatch.setenv("MODELMETER_OPENCODE_DATA_DIR", str(tmp_path / "missing-opencode"))
+    monkeypatch.setenv("MODELMETER_CLAUDECODE_DATA_DIR", str(claudecode_dir))
+    monkeypatch.setenv("MODELMETER_CLAUDECODE_ENABLED", "true")
+
+    client = _new_client()
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    data = _get_json(response)
+    assert "agents_detected" in data
+    assert data["agents_detected"] == ["claudecode"]
 
 
 def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
@@ -882,6 +907,27 @@ def test_list_sessions_returns_recent_sessions(
     assert "model_count" in session
     assert "token_count" in session
     assert "is_active" in session
+
+
+def test_list_sessions_includes_claudecode_sessions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    claudecode_dir = _copy_claudecode_fixtures(tmp_path)
+    session_file = claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-001.jsonl"
+    now = time.time()
+    os.utime(session_file, (now, now))
+    monkeypatch.setenv("MODELMETER_OPENCODE_DATA_DIR", str(tmp_path / "missing-opencode"))
+    monkeypatch.setenv("MODELMETER_CLAUDECODE_DATA_DIR", str(claudecode_dir))
+    monkeypatch.setenv("MODELMETER_CLAUDECODE_ENABLED", "true")
+
+    client = _new_client()
+    response = client.get("/api/sessions", params={"limit": 10})
+
+    assert response.status_code == 200
+    data = cast(list[dict[str, Any]], response.json())
+    session = next(session for session in data if session["session_id"] == "session-001")
+    assert session["is_active"] is True
+    assert session["time_updated"] >= int(now * 1000) - 1000
 
 
 def test_list_sessions_respects_limit_parameter(

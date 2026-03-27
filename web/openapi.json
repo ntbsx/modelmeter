@@ -349,12 +349,35 @@
         "description": "Detected data source with agent information.",
         "properties": {
           "agent": {
+            "enum": [
+              "opencode",
+              "claudecode"
+            ],
             "title": "Agent",
             "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
           },
           "exists": {
             "title": "Exists",
             "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "sqlite",
+              "jsonl"
+            ],
+            "title": "Kind",
+            "type": "string"
           },
           "path": {
             "title": "Path",
@@ -363,11 +386,21 @@
           "source_id": {
             "title": "Source Id",
             "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
           }
         },
         "required": [
           "source_id",
+          "kind",
           "agent",
+          "status",
           "path",
           "exists"
         ],
@@ -4255,6 +4288,12 @@
                       },
                       {
                         "type": "boolean"
+                      },
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
                       }
                     ]
                   },

@@ -105,6 +105,20 @@ class JsonlUsageRepository:
 
         return [(p, files) for p, files in projects.items()]
 
+    def _session_file_mtime_ms(self, session_id: str) -> int | None:
+        """Return the JSONL file mtime for a session, if present."""
+        session_file = next(
+            (
+                path
+                for path in self._data_dir.rglob(f"{session_id}.jsonl")
+                if "subagents" not in path.parts
+            ),
+            None,
+        )
+        if session_file is None:
+            return None
+        return int(session_file.stat().st_mtime * 1000)
+
     def _parse_session_file(self, path: Path) -> list[dict[str, Any]]:
         """Parse a single JSONL file into a list of records."""
         records: list[dict[str, Any]] = []
@@ -988,17 +1002,22 @@ class JsonlUsageRepository:
     def fetch_active_session(self, *, session_id: str | None = None) -> RowDict | None:
         """Get most recent active session."""
         index = self._ensure_index()
-        sessions = sorted(index.sessions, key=lambda s: s.time_updated_ms, reverse=True)
+
+        def sort_key(session: SessionData) -> int:
+            return self._session_file_mtime_ms(session.session_id) or session.time_updated_ms
+
+        sessions = sorted(index.sessions, key=sort_key, reverse=True)
 
         if session_id:
             for s in sessions:
+                mtime_ms = self._session_file_mtime_ms(s.session_id) or s.time_updated_ms
                 if s.session_id == session_id:
                     return {
                         "id": s.session_id,
                         "title": s.title,
                         "directory": s.project_path,
                         "project_id": s.project_id,
-                        "time_updated": s.time_updated_ms,
+                        "time_updated": mtime_ms,
                         "project_name": s.project_name,
                     }
             return None
@@ -1009,7 +1028,8 @@ class JsonlUsageRepository:
                 "title": sessions[0].title,
                 "directory": sessions[0].project_path,
                 "project_id": sessions[0].project_id,
-                "time_updated": sessions[0].time_updated_ms,
+                "time_updated": self._session_file_mtime_ms(sessions[0].session_id)
+                or sessions[0].time_updated_ms,
                 "project_name": sessions[0].project_name,
             }
             if sessions
@@ -1034,13 +1054,14 @@ class JsonlUsageRepository:
 
         result: list[RowDict] = []
         for s in sessions:
+            time_updated_ms = self._session_file_mtime_ms(s.session_id) or s.time_updated_ms
             result.append(
                 {
                     "session_id": s.session_id,
                     "title": s.title,
                     "directory": s.project_path,
                     "time_created": s.time_created_ms,
-                    "time_updated": s.time_updated_ms,
+                    "time_updated": time_updated_ms,
                     "time_archived": None,
                     "project_name": s.project_name,
                     "project_id": s.project_id,
@@ -1076,6 +1097,7 @@ class JsonlUsageRepository:
             "cache_read": cache_read,
             "cache_write": cache_write,
             "total_sessions": total_sessions,
+            "total_interactions": len(pairs),
         }
 
     def fetch_live_summary_steps(self, *, since_ms: int, session_id: str | None = None) -> RowDict:
@@ -1104,14 +1126,22 @@ class JsonlUsageRepository:
                     "output_tokens": 0,
                     "cache_read": 0,
                     "cache_write": 0,
+                    "sessions": set(),
+                    "total_interactions": 0,
                 }
 
             model_data[model_id]["input_tokens"] += interaction.input_tokens
             model_data[model_id]["output_tokens"] += interaction.output_tokens
             model_data[model_id]["cache_read"] += interaction.cache_read
             model_data[model_id]["cache_write"] += interaction.cache_write
+            model_data[model_id]["sessions"].add(interaction.session_id)
+            model_data[model_id]["total_interactions"] += 1
 
-        result = list(model_data.values())
+        result: list[RowDict] = []
+        for row in model_data.values():
+            sessions = row.pop("sessions")
+            row["total_sessions"] = len(sessions)
+            result.append(row)
         result.sort(key=lambda r: r["input_tokens"] + r["output_tokens"], reverse=True)
         return result[:limit]
 

@@ -483,7 +483,7 @@ class TestFederatedQueries:
         _create_simple_usage_fixture(db1, model_prefix="claude-1")
 
         registry_path = tmp_path / "sources.json"
-        settings = AppSettings(source_registry_file=registry_path)
+        settings = AppSettings(source_registry_file=registry_path, claudecode_enabled=False)
 
         registry = SourceRegistry(
             sources=[

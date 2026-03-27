@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import shutil
 import sqlite3
 import time
 from pathlib import Path
@@ -9,7 +11,9 @@ from typer.testing import CliRunner
 
 from modelmeter.cli.main import app
 from modelmeter.config.settings import AppSettings
-from modelmeter.core.live import get_live_snapshot
+from modelmeter.core.live import get_live_sessions, get_live_snapshot
+
+CLAUDECODE_FIXTURES_DIR = Path(__file__).parent / "fixtures" / "claudecode"
 
 
 def _create_live_fixture(db_path: Path) -> None:
@@ -101,6 +105,12 @@ def _create_live_fixture(db_path: Path) -> None:
         )
 
 
+def _copy_claudecode_fixtures(destination: Path) -> Path:
+    target = destination / ".claude" / "projects"
+    shutil.copytree(CLAUDECODE_FIXTURES_DIR, target)
+    return destination / ".claude"
+
+
 def test_get_live_snapshot_returns_activity(tmp_path: Path) -> None:
     db_path = tmp_path / "opencode.db"
     _create_live_fixture(db_path)
@@ -139,3 +149,57 @@ def test_live_command_once_json_output(tmp_path: Path) -> None:
     payload = json.loads(result.stdout)
     assert payload["total_interactions"] == 1
     assert payload["token_source"] in {"steps", "message"}
+
+
+def test_get_live_sessions_includes_recent_claudecode_jsonl_session(tmp_path: Path) -> None:
+    claudecode_dir = _copy_claudecode_fixtures(tmp_path)
+    session_file = claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-001.jsonl"
+    stale_session_file = (
+        claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-002.jsonl"
+    )
+    now = time.time()
+    os.utime(stale_session_file, (now - 3600, now - 3600))
+    os.utime(session_file, (now, now))
+
+    settings = AppSettings(
+        opencode_data_dir=tmp_path / "nonexistent",
+        claudecode_data_dir=claudecode_dir,
+        claudecode_enabled=True,
+    )
+
+    sessions = get_live_sessions(settings=settings)
+
+    assert len(sessions) == 1
+    assert sessions[0].session_id == "session-001"
+    assert sessions[0].project_name == "myproject"
+    assert sessions[0].is_active is True
+
+
+def test_live_snapshot_uses_claudecode_repository_for_claudecode_session(tmp_path: Path) -> None:
+    claudecode_dir = _copy_claudecode_fixtures(tmp_path)
+    session_file = claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-001.jsonl"
+    now = time.time()
+    os.utime(session_file, (now, now))
+    settings = AppSettings(
+        opencode_data_dir=tmp_path / "nonexistent",
+        claudecode_data_dir=claudecode_dir,
+        claudecode_enabled=True,
+    )
+
+    snapshot = get_live_snapshot(
+        settings=settings,
+        window_minutes=60 * 24 * 30,
+        token_source="auto",
+        models_limit=5,
+        tools_limit=5,
+        session_id="session-001",
+    )
+
+    assert snapshot.total_sessions == 1
+    assert snapshot.total_interactions > 0
+    assert snapshot.active_session is not None
+    assert snapshot.active_session.session_id == "session-001"
+    assert snapshot.active_session.project_name == "myproject"
+    assert snapshot.active_session.is_active is True
+    assert snapshot.active_session.last_updated_ms >= int(now * 1000) - 1000
+    assert snapshot.top_models[0].model_id == "claude-sonnet-4-6"

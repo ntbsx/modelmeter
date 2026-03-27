@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 from typing import Any, Literal
@@ -15,14 +16,15 @@ from modelmeter.core.models import (
 )
 from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
 from modelmeter.core.sources import SourceScope, SourceScopeKind
-from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
+from modelmeter.data.jsonl_usage_repository import JsonlUsageRepository
+from modelmeter.data.repository import UsageRepository
 from modelmeter.data.storage import resolve_storage_paths
 
 ACTIVE_SESSION_THRESHOLD_MS = 10 * 60 * 1000
 
 
 def _resolve_live_token_source(
-    repository: SQLiteUsageRepository,
+    repository: UsageRepository,
     *,
     token_source: Literal["auto", "message", "steps"],
     since_ms: int,
@@ -80,9 +82,62 @@ def get_live_snapshot(
     now_ms = int(time.time() * 1000)
     since_ms = now_ms - (window_minutes * 60 * 1000)
 
-    sqlite_db_path = _resolve_sqlite_path(settings, db_path_override)
-    repository = SQLiteUsageRepository(sqlite_db_path)
+    repository = _resolve_live_repository(
+        settings=settings,
+        db_path_override=db_path_override,
+        session_id=session_id,
+    )
 
+    return _build_live_snapshot(
+        repository=repository,
+        settings=settings,
+        now_ms=now_ms,
+        since_ms=since_ms,
+        window_minutes=window_minutes,
+        pricing_file_override=pricing_file_override,
+        token_source=token_source,
+        models_limit=models_limit,
+        tools_limit=tools_limit,
+        session_id=session_id,
+    )
+
+
+def _resolve_live_repository(
+    *,
+    settings: AppSettings,
+    db_path_override: Path | None,
+    session_id: str | None,
+) -> UsageRepository:
+    from modelmeter.core.analytics import _resolve_local_repositories
+
+    repositories = [repo for _, repo in _resolve_local_repositories(settings, db_path_override)]
+    if not repositories:
+        raise RuntimeError(
+            "No local live data source is available. Run `modelmeter doctor` for details."
+        )
+
+    if session_id is not None:
+        for repository in repositories:
+            if repository.fetch_active_session(session_id=session_id) is not None:
+                return repository
+        raise RuntimeError(f"Live session `{session_id}` was not found.")
+
+    return repositories[0]
+
+
+def _build_live_snapshot(
+    *,
+    repository: UsageRepository,
+    settings: AppSettings,
+    now_ms: int,
+    since_ms: int,
+    window_minutes: int,
+    pricing_file_override: Path | None,
+    token_source: Literal["auto", "message", "steps"],
+    models_limit: int,
+    tools_limit: int,
+    session_id: str | None,
+) -> LiveSnapshotResponse:
     resolved_token_source = _resolve_live_token_source(
         repository,
         token_source=token_source,
@@ -159,7 +214,7 @@ def get_live_snapshot(
         generated_at_ms=now_ms,
         window_minutes=window_minutes,
         token_source=resolved_token_source,
-        total_interactions=int(summary_row["total_interactions"]),
+        total_interactions=int(summary_row.get("total_interactions", 0)),
         total_sessions=int(summary_row["total_sessions"]),
         usage=_token_usage_from_row(summary_row),
         cost_usd=round(total_cost, 8) if has_any_priced_model else None,
@@ -174,3 +229,103 @@ def get_live_snapshot(
             for row in tool_rows
         ],
     )
+
+
+def _detect_claudecode_active_sessions(
+    settings: AppSettings,
+) -> list[LiveActiveSession]:
+    """Detect active Claude Code sessions based on JSONL file mtime.
+
+    A session is considered active if its JSONL file was modified
+    within the last 10 minutes.
+    """
+    if not settings.claudecode_enabled:
+        return []
+
+    projects_dir = settings.claudecode_data_dir / "projects"
+    if not projects_dir.exists():
+        return []
+
+    now_ms = int(time.time() * 1000)
+    repository = JsonlUsageRepository(settings.claudecode_data_dir)
+    sessions: list[LiveActiveSession] = []
+
+    for jsonl_file in projects_dir.rglob("*.jsonl"):
+        if "subagents" in jsonl_file.parts:
+            continue
+
+        try:
+            mtime_ms = int(os.stat(jsonl_file).st_mtime * 1000)
+        except OSError:
+            continue
+
+        if (now_ms - mtime_ms) > ACTIVE_SESSION_THRESHOLD_MS:
+            continue
+
+        active_session_row = repository.fetch_active_session(session_id=jsonl_file.stem)
+        if active_session_row is None:
+            continue
+
+        sessions.append(
+            LiveActiveSession(
+                session_id=str(active_session_row["id"]),
+                title=str(active_session_row["title"])
+                if active_session_row["title"] is not None
+                else None,
+                project_id=str(active_session_row["project_id"])
+                if active_session_row["project_id"] is not None
+                else None,
+                project_name=str(active_session_row["project_name"])
+                if active_session_row["project_name"] is not None
+                else None,
+                directory=str(active_session_row["directory"])
+                if active_session_row["directory"] is not None
+                else None,
+                last_updated_ms=mtime_ms,
+                is_active=True,
+            )
+        )
+
+    return sessions
+
+
+def get_live_sessions(
+    *,
+    settings: AppSettings,
+    db_path_override: Path | None = None,
+) -> list[LiveActiveSession]:
+    """Return active sessions across all agents (OpenCode and Claude Code).
+
+    For scope=local, resolves all local repositories and queries each for
+    active sessions. Each session gets its own snapshot.
+    """
+    from modelmeter.core.analytics import _resolve_local_repositories
+
+    sessions: list[LiveActiveSession] = []
+    now_ms = int(time.time() * 1000)
+
+    repos = _resolve_local_repositories(settings, db_path_override)
+    for source_id, repo in repos:
+        if source_id == "local-opencode":
+            active_row = repo.fetch_active_session()
+            if active_row is not None:
+                last_updated_ms = int(active_row["time_updated"])
+                sessions.append(
+                    LiveActiveSession(
+                        session_id=str(active_row["id"]),
+                        title=str(active_row["title"]) if active_row["title"] else None,
+                        project_id=str(active_row["project_id"])
+                        if active_row["project_id"]
+                        else None,
+                        project_name=str(active_row["project_name"])
+                        if active_row["project_name"]
+                        else None,
+                        directory=str(active_row["directory"]) if active_row["directory"] else None,
+                        last_updated_ms=last_updated_ms,
+                        is_active=(now_ms - last_updated_ms) <= ACTIVE_SESSION_THRESHOLD_MS,
+                    )
+                )
+        elif source_id == "local-claudecode":
+            sessions.extend(_detect_claudecode_active_sessions(settings))
+
+    return sessions

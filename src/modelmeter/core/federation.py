@@ -64,6 +64,7 @@ def merge_model_usage(a: ModelUsage, b: ModelUsage) -> ModelUsage:
     """Merge two ModelUsage objects by summing fields."""
     return ModelUsage(
         model_id=a.model_id,
+        provider=a.provider or b.provider,
         usage=merge_token_usage(a.usage, b.usage),
         total_sessions=a.total_sessions + b.total_sessions,
         total_interactions=a.total_interactions + b.total_interactions,
