@@ -423,7 +423,7 @@ wheels = [
 
 [[package]]
 name = "modelmeter"
-version = "2026.3.24"
+version = "2026.3.25"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
