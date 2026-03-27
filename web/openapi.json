@@ -494,6 +494,17 @@
       "LiveActiveSession": {
         "description": "Active session metadata in live snapshot.",
         "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
           "directory": {
             "anyOf": [
               {

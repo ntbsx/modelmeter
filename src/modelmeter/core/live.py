@@ -208,6 +208,7 @@ def _build_live_snapshot(
             else None,
             last_updated_ms=last_updated_ms,
             is_active=(now_ms - last_updated_ms) <= ACTIVE_SESSION_THRESHOLD_MS,
+            agent="opencode",
         )
 
     return LiveSnapshotResponse(
@@ -283,6 +284,7 @@ def _detect_claudecode_active_sessions(
                 else None,
                 last_updated_ms=mtime_ms,
                 is_active=True,
+                agent="claudecode",
             )
         )
 
@@ -323,6 +325,7 @@ def get_live_sessions(
                         directory=str(active_row["directory"]) if active_row["directory"] else None,
                         last_updated_ms=last_updated_ms,
                         is_active=(now_ms - last_updated_ms) <= ACTIVE_SESSION_THRESHOLD_MS,
+                        agent="opencode",
                     )
                 )
         elif source_id == "local-claudecode":

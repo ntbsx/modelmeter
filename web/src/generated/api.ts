@@ -560,6 +560,8 @@ export interface components {
          * @description Active session metadata in live snapshot.
          */
         LiveActiveSession: {
+            /** Agent */
+            agent?: string | null;
             /** Directory */
             directory?: string | null;
             /**

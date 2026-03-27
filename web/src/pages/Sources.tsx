@@ -6,6 +6,7 @@ import type { DataSourcePublic, SourceHealth, SourceRegistryPublic } from '../ty
 import PageLoading from '../components/PageLoading'
 import { PageErrorState } from '../components/PageState'
 import { Badge } from '../components/ui'
+import { AgentBadge } from '../components/AgentBadge'
 
 const HEALTH_STORAGE_KEY = 'modelmeter-source-health'
 
@@ -106,6 +107,7 @@ function SourceCard({ source, health, onEdit, onRemove, animationDelay = 0 }: So
             <span className="ds-badge ds-badge-default text-xs" style={{ backgroundColor: typeConfig.bgColor, color: typeConfig.color }}>
               {typeConfig.label}
             </span>
+            <AgentBadge agent={source.agent} />
           </div>
         </div>
       </div>

@@ -39,6 +39,7 @@ type HealthResponse = {
   status: string
   app_version?: string
   auth_required?: boolean
+  agents_detected?: string[]
 }
 
 function VersionBadge({ className }: { className: string }) {
@@ -55,11 +56,28 @@ function VersionBadge({ className }: { className: string }) {
     retry: false,
   })
 
-  if (!data?.app_version) {
+  if (!data?.app_version && !data?.agents_detected?.length) {
     return null
   }
 
-  return <span className={className}>v{data.app_version}</span>
+  return (
+    <div className={className}>
+      {data?.app_version && <span>v{data.app_version}</span>}
+      {data?.agents_detected && data.agents_detected.length > 0 && (
+        <div className="flex items-center gap-1 mt-1 flex-wrap">
+          {data.agents_detected.map((agent) => (
+            <span
+              key={agent}
+              className="ds-badge ds-badge-default text-[10px] py-0"
+              title={`${agent === 'claudecode' ? 'Claude Code' : agent === 'opencode' ? 'OpenCode' : agent} detected`}
+            >
+              {agent === 'claudecode' ? 'Claude Code' : agent === 'opencode' ? 'OpenCode' : agent}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 const links = [

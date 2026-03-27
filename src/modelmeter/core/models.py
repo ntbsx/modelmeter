@@ -319,6 +319,7 @@ class LiveActiveSession(BaseModel):
     directory: str | None = None
     last_updated_ms: int = Field(default=0, ge=0)
     is_active: bool = False
+    agent: str | None = None
 
 
 class LiveSnapshotResponse(BaseModel):
