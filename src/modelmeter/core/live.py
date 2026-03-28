@@ -153,6 +153,7 @@ def _build_live_snapshot(
                     tools_limit=tools_limit,
                     session_id=raw_session_id,
                     agent=agent,
+                    public_session_id=session_id,
                 )
         raise RuntimeError(f"Live session `{session_id}` was not found.")
 
@@ -327,6 +328,7 @@ def _build_snapshot_from_single_source(
     tools_limit: int,
     session_id: str | None,
     agent: str,
+    public_session_id: str | None = None,
 ) -> LiveSnapshotResponse:
     resolved_token_source = _resolve_live_token_source(
         repository,
@@ -384,8 +386,11 @@ def _build_snapshot_from_single_source(
     active_session: LiveActiveSession | None = None
     if active_session_row is not None:
         last_updated_ms = int(active_session_row["time_updated"])
+        resolved_session_id = (
+            public_session_id if public_session_id is not None else str(active_session_row["id"])
+        )
         active_session = LiveActiveSession(
-            session_id=str(active_session_row["id"]),
+            session_id=resolved_session_id,
             title=str(active_session_row["title"])
             if active_session_row["title"] is not None
             else None,

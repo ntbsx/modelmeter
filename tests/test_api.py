@@ -1291,3 +1291,6 @@ def test_list_sessions_namespaces_local_ids_and_live_route_disambiguates() -> No
         data = live_response.json()
         assert data["active_session"]["project_name"] == "Claude Code"
         assert data["top_models"][0]["model_id"] == "anthropic/claude-sonnet-4-6"
+        assert data["active_session"]["session_id"] == "local-claudecode:shared-session", (
+            f"Expected namespaced session ID, got {data['active_session']['session_id']}"
+        )

@@ -2220,7 +2220,19 @@ def get_project_detail(
             repo_sessions, repo_cost, repo_usage, repo_interactions, repo_name, repo_path = (
                 _build_project_detail(repository, source_id, project_path)
             )
-            merged_sessions.extend(repo_sessions)
+            for session in repo_sessions:
+                merged_sessions.append(
+                    ProjectSessionUsage(
+                        session_id=f"{source_id}:{session.session_id}",
+                        title=session.title,
+                        directory=session.directory,
+                        last_updated_ms=session.last_updated_ms,
+                        usage=session.usage,
+                        total_interactions=session.total_interactions,
+                        cost_usd=session.cost_usd,
+                        has_pricing=session.has_pricing,
+                    )
+                )
             merged_usage.input_tokens += repo_usage.input_tokens
             merged_usage.output_tokens += repo_usage.output_tokens
             merged_usage.cache_read_tokens += repo_usage.cache_read_tokens

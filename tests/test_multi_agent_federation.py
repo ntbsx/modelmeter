@@ -1082,7 +1082,10 @@ def test_get_project_detail_merges_local_sources_with_different_project_ids() ->
     assert result.usage.output_tokens == 12
     assert result.total_sessions == 2
     assert result.total_interactions == 7
-    assert {session.session_id for session in result.sessions} == {"s1", "s2"}
+    assert {session.session_id for session in result.sessions} == {
+        "local-opencode:s1",
+        "local-claudecode:s2",
+    }
     assert result.sources_considered == ["local-opencode", "local-claudecode"]
     assert result.sources_succeeded == ["local-opencode", "local-claudecode"]
     assert result.sources_failed == []
@@ -1158,6 +1161,49 @@ def test_get_project_detail_merges_sessions_sorted_by_last_updated() -> None:
         result = get_project_detail(settings=settings, project_id="p1")
 
     assert [session.session_id for session in result.sessions] == [
-        "newer-low-token",
-        "older-high-token",
+        "local-claudecode:newer-low-token",
+        "local-opencode:older-high-token",
     ]
+
+
+def test_get_project_detail_merges_local_sources_with_collision_session_ids() -> None:
+    from modelmeter.core.analytics import get_project_detail
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeProjectDetailRepo(
+                project_id="p1",
+                project_name="demo",
+                project_path="/tmp/demo",
+                session_id="session-001",
+                input_tokens=10,
+                output_tokens=5,
+                total_interactions=3,
+                last_updated_ms=2000,
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeProjectDetailRepo(
+                project_id="p1",
+                project_name="demo",
+                project_path="/tmp/demo",
+                session_id="session-001",
+                input_tokens=20,
+                output_tokens=7,
+                total_interactions=4,
+                last_updated_ms=3000,
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos):
+        result = get_project_detail(settings=settings, project_id="p1")
+
+    assert result.total_sessions == 2
+    session_ids = {session.session_id for session in result.sessions}
+    assert session_ids == {"local-opencode:session-001", "local-claudecode:session-001"}, (
+        f"Expected namespaced session IDs, got {session_ids}"
+    )
