@@ -79,11 +79,17 @@ class DataSourceConfig(BaseModel):
         if self.kind == "sqlite":
             if self.db_path is None:
                 raise ValueError("sqlite source requires db_path")
+            if self.agent not in (None, "opencode"):
+                raise ValueError("sqlite source only supports agent='opencode'")
         elif self.kind == "jsonl":
             if self.db_path is None:
                 raise ValueError("jsonl source requires db_path")
+            if self.agent not in (None, "claudecode"):
+                raise ValueError("jsonl source only supports agent='claudecode'")
         elif self.base_url is None:
             raise ValueError("http source requires base_url")
+        if self.kind == "http" and self.agent is not None:
+            raise ValueError("http source does not support agent field")
         return self
 
 

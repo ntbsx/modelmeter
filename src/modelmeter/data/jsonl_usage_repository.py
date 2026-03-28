@@ -106,7 +106,7 @@ class JsonlUsageRepository:
         return [(p, files) for p, files in projects.items()]
 
     def _session_file_mtime_ms(self, session_id: str) -> int | None:
-        """Return the JSONL file mtime for a session, if present."""
+        """Return effective mtime for a session (max of parent + subagent files)."""
         session_file = next(
             (
                 path
@@ -117,7 +117,17 @@ class JsonlUsageRepository:
         )
         if session_file is None:
             return None
-        return int(session_file.stat().st_mtime * 1000)
+        best = int(session_file.stat().st_mtime * 1000)
+        subagent_dir = session_file.parent / session_id / "subagents"
+        if subagent_dir.exists():
+            for sub in subagent_dir.glob("*.jsonl"):
+                try:
+                    sub_mtime = int(sub.stat().st_mtime * 1000)
+                except OSError:
+                    continue
+                if sub_mtime > best:
+                    best = sub_mtime
+        return best
 
     def _parse_session_file(self, path: Path) -> list[dict[str, Any]]:
         """Parse a single JSONL file into a list of records."""

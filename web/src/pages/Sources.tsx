@@ -447,18 +447,12 @@ export default function Sources() {
               <select
                 value={form.kind}
                 onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    kind: event.target.value as 'sqlite' | 'http' | 'jsonl',
-                    agent:
-                      prev.agent || prev.kind !== (event.target.value as 'sqlite' | 'http' | 'jsonl')
-                        ? event.target.value === 'jsonl'
-                          ? 'claudecode'
-                          : event.target.value === 'sqlite'
-                            ? 'opencode'
-                            : prev.agent
-                        : prev.agent,
-                  }))
+                  setForm((prev) => {
+                    const newKind = event.target.value as 'sqlite' | 'http' | 'jsonl'
+                    const defaultAgent =
+                      newKind === 'jsonl' ? 'claudecode' : newKind === 'sqlite' ? 'opencode' : ''
+                    return { ...prev, kind: newKind, agent: defaultAgent }
+                  })
                 }
                 className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
               >

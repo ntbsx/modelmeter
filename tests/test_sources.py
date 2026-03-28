@@ -135,3 +135,33 @@ def test_check_source_health_accepts_jsonl_directory(tmp_path: Path) -> None:
     assert health.is_reachable is True
     assert health.error is None
     assert health.detail is not None
+
+
+def test_data_source_config_rejects_sqlite_with_claudecode_agent() -> None:
+    with pytest.raises(ValueError, match="sqlite source only supports agent='opencode'"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="sqlite",
+            db_path=Path("/tmp/test.db"),
+            agent="claudecode",
+        )
+
+
+def test_data_source_config_rejects_jsonl_with_opencode_agent() -> None:
+    with pytest.raises(ValueError, match="jsonl source only supports agent='claudecode'"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="jsonl",
+            db_path=Path("/tmp/test"),
+            agent="opencode",
+        )
+
+
+def test_data_source_config_rejects_http_with_agent() -> None:
+    with pytest.raises(ValueError, match="http source does not support agent field"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="http",
+            base_url="https://example.com",
+            agent="opencode",
+        )

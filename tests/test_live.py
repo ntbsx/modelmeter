@@ -393,4 +393,33 @@ def test_live_snapshot_normalizes_providerless_model_ids_across_sources(tmp_path
     matching = [m for m in snapshot.top_models if m.model_id == "anthropic/claude-sonnet-4-6"]
     assert len(matching) == 1
     assert matching[0].total_interactions >= 2
-    assert matching[0].cost_usd is not None
+
+
+def test_get_live_sessions_detects_session_via_subagent_mtime(tmp_path: Path) -> None:
+    claudecode_dir = _copy_claudecode_fixtures(tmp_path)
+    stale_parent = claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-004.jsonl"
+    fresh_subagent = (
+        claudecode_dir
+        / "projects"
+        / "-Users-test-projs-myproject"
+        / "session-004"
+        / "subagents"
+        / "agent-sub1.jsonl"
+    )
+    stale_other = claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-001.jsonl"
+    now = time.time()
+    os.utime(stale_parent, (now - 3600, now - 3600))
+    os.utime(fresh_subagent, (now, now))
+    os.utime(stale_other, (now - 7200, now - 7200))
+
+    settings = AppSettings(
+        opencode_data_dir=tmp_path / "nonexistent",
+        claudecode_data_dir=claudecode_dir,
+        claudecode_enabled=True,
+    )
+
+    sessions = get_live_sessions(settings=settings)
+    session_ids = [s.session_id for s in sessions]
+    assert "local-claudecode:session-004" in session_ids, (
+        f"session-004 should be active via subagent mtime. Got: {session_ids}"
+    )

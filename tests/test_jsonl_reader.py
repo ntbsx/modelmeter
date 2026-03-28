@@ -136,3 +136,46 @@ def test_fetch_daily_includes_interactions_at_end_of_day(tmp_path: Path) -> None
         f"Day-boundary interaction at 23:59:59.500 missing from 2026-03-20. "
         f"Got {row['input_tokens']} input_tokens"
     )
+
+
+def test_sessions_summary_uses_subagent_mtime_for_recency(tmp_path: Path) -> None:
+    copied = tmp_path / "claude"
+    shutil.copytree(FIXTURES_DIR, copied)
+    repo = JsonlUsageRepository(copied)
+
+    stale_parent = copied / "-Users-test-projs-myproject" / "session-004.jsonl"
+    fresh_subagent = (
+        copied / "-Users-test-projs-myproject" / "session-004" / "subagents" / "agent-sub1.jsonl"
+    )
+    stale_other = copied / "-Users-test-projs-myproject" / "session-001.jsonl"
+
+    now = time.time()
+    os.utime(stale_parent, (now - 3600, now - 3600))
+    os.utime(fresh_subagent, (now, now))
+    os.utime(stale_other, (now - 7200, now - 7200))
+
+    rows = repo.fetch_sessions_summary(min_time_updated_ms=int((now - 300) * 1000))
+    session_ids = [row["session_id"] for row in rows]
+    assert "session-004" in session_ids, (
+        f"session-004 should appear when only its subagent file is fresh. "
+        f"Got sessions: {session_ids}"
+    )
+
+
+def test_active_session_uses_subagent_mtime(tmp_path: Path) -> None:
+    copied = tmp_path / "claude"
+    shutil.copytree(FIXTURES_DIR, copied)
+    repo = JsonlUsageRepository(copied)
+
+    stale_parent = copied / "-Users-test-projs-myproject" / "session-004.jsonl"
+    fresh_subagent = (
+        copied / "-Users-test-projs-myproject" / "session-004" / "subagents" / "agent-sub1.jsonl"
+    )
+
+    now = time.time()
+    os.utime(stale_parent, (now - 3600, now - 3600))
+    os.utime(fresh_subagent, (now, now))
+
+    row = repo.fetch_active_session(session_id="session-004")
+    assert row is not None
+    assert row["time_updated"] >= int((now - 1) * 1000)
