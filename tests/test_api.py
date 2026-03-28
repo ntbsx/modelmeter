@@ -1294,3 +1294,13 @@ def test_list_sessions_namespaces_local_ids_and_live_route_disambiguates() -> No
         assert data["active_session"]["session_id"] == "local-claudecode:shared-session", (
             f"Expected namespaced session ID, got {data['active_session']['session_id']}"
         )
+
+        snapshot_response = client.get(
+            "/api/live/snapshot",
+            params={"window_minutes": 60},
+        )
+        assert snapshot_response.status_code == 200
+        snapshot = snapshot_response.json()
+        assert snapshot["active_session"]["session_id"] == "local-opencode:shared-session", (
+            "Expected aggregated live snapshot to namespace the active session ID"
+        )

@@ -217,7 +217,7 @@ def _build_live_snapshot(
             if row_ms > most_recent_session_ms:
                 most_recent_session_ms = row_ms
                 active_session = LiveActiveSession(
-                    session_id=str(active_row["id"]),
+                    session_id=f"{source_id}:{active_row['id']}",
                     title=str(active_row["title"]) if active_row["title"] else None,
                     project_id=str(active_row["project_id"]) if active_row["project_id"] else None,
                     project_name=str(active_row["project_name"])

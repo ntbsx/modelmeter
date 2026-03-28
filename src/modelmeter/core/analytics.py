@@ -1075,7 +1075,15 @@ def get_date_insights(
             all_model_rows.extend(model_rows)
             all_project_rows.extend(project_rows)
             all_project_model_rows.extend(project_model_rows)
-            all_session_model_rows.extend(session_model_rows)
+            all_session_model_rows.extend(
+                [
+                    {
+                        **row,
+                        "session_id": f"{source_id}:{row['session_id']}",
+                    }
+                    for row in session_model_rows
+                ]
+            )
             sources_succeeded.append(source_id)
         except Exception as exc:
             sources_failed.append({"source_id": source_id, "error": str(exc)})

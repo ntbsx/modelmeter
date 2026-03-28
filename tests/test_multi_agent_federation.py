@@ -697,6 +697,10 @@ class _FakeDateInsightsRepo:
         total_sessions: int,
         total_interactions: int,
         model_id: str,
+        session_id: str | None = None,
+        project_id: str = "p1",
+        project_name: str = "demo",
+        started_at_ms: int = 1000,
     ) -> None:
         self._summary_row = {
             "input_tokens": input_tokens,
@@ -721,6 +725,23 @@ class _FakeDateInsightsRepo:
         self._project_rows: list[dict[str, Any]] = []
         self._project_model_rows: list[dict[str, Any]] = []
         self._session_model_rows: list[dict[str, Any]] = []
+        if session_id is not None:
+            self._session_model_rows = [
+                {
+                    "session_id": session_id,
+                    "session_title": f"session-{session_id}",
+                    "project_id": project_id,
+                    "project_name": project_name,
+                    "model_id": model_id,
+                    "provider_id": "anthropic",
+                    "input_tokens": input_tokens,
+                    "output_tokens": output_tokens,
+                    "cache_read": 0,
+                    "cache_write": 0,
+                    "total_interactions": total_interactions,
+                    "started_at_ms": started_at_ms,
+                }
+            ]
 
     def fetch_summary_for_day(
         self, *, day: str, timezone_offset_minutes: int = 0
@@ -831,6 +852,45 @@ def test_get_date_insights_normalizes_and_merges_providerless_model_ids() -> Non
     assert result.models[0].model_id == "anthropic/claude-sonnet-4-6"
     assert result.models[0].usage.input_tokens == 30
     assert result.models[0].cost_usd is not None
+
+
+def test_get_date_insights_namespaces_colliding_session_ids_across_local_sources() -> None:
+    from modelmeter.core.analytics import get_date_insights
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeDateInsightsRepo(
+                input_tokens=10,
+                output_tokens=5,
+                total_sessions=1,
+                total_interactions=3,
+                model_id="anthropic/claude-sonnet-4-5",
+                session_id="session-001",
+                started_at_ms=1000,
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeDateInsightsRepo(
+                input_tokens=20,
+                output_tokens=7,
+                total_sessions=1,
+                total_interactions=4,
+                model_id="claude-sonnet-4-6",
+                session_id="session-001",
+                started_at_ms=2000,
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos):
+        result = get_date_insights(settings=settings, day=date(2026, 3, 27))
+
+    session_ids = {session.session_id for session in result.sessions}
+    assert session_ids == {"local-opencode:session-001", "local-claudecode:session-001"}
+    assert len(result.sessions) == 2
 
 
 class _FakeModelDetailRepo:
