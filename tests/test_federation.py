@@ -687,7 +687,9 @@ class TestFederatedQueries:
 
         _patch_local_sqlite_path(monkeypatch, path=local_db)
 
-        settings = AppSettings(source_registry_file=tmp_path / "sources.json", claudecode_enabled=False)
+        settings = AppSettings(
+            source_registry_file=tmp_path / "sources.json", claudecode_enabled=False
+        )
         result = get_summary(
             settings=settings,
             days=7,
@@ -710,7 +712,9 @@ class TestFederatedQueries:
 
         _patch_local_sqlite_path(monkeypatch, path=local_db)
 
-        settings = AppSettings(source_registry_file=tmp_path / "sources.json", claudecode_enabled=False)
+        settings = AppSettings(
+            source_registry_file=tmp_path / "sources.json", claudecode_enabled=False
+        )
         result = get_daily(
             settings=settings,
             days=7,
@@ -732,7 +736,9 @@ class TestFederatedQueries:
 
         _patch_local_sqlite_path(monkeypatch, path=local_db)
 
-        settings = AppSettings(source_registry_file=tmp_path / "sources.json", claudecode_enabled=False)
+        settings = AppSettings(
+            source_registry_file=tmp_path / "sources.json", claudecode_enabled=False
+        )
         result = get_models(
             settings=settings,
             days=7,
@@ -755,7 +761,9 @@ class TestFederatedQueries:
 
         _patch_local_sqlite_path(monkeypatch, path=local_db)
 
-        settings = AppSettings(source_registry_file=tmp_path / "sources.json", claudecode_enabled=False)
+        settings = AppSettings(
+            source_registry_file=tmp_path / "sources.json", claudecode_enabled=False
+        )
         result = get_providers(
             settings=settings,
             days=7,
@@ -778,7 +786,9 @@ class TestFederatedQueries:
 
         _patch_local_sqlite_path(monkeypatch, path=local_db)
 
-        settings = AppSettings(source_registry_file=tmp_path / "sources.json", claudecode_enabled=False)
+        settings = AppSettings(
+            source_registry_file=tmp_path / "sources.json", claudecode_enabled=False
+        )
         result = get_projects(
             settings=settings,
             days=7,
