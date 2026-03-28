@@ -2047,7 +2047,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: string | boolean | string[];
+                        [key: string]: string | boolean | string[] | ("opencode" | "claudecode")[];
                     };
                 };
             };

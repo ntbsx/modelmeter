@@ -45,7 +45,7 @@ class SQLiteUsageRepository:
             if value is None:
                 parts.append(f"{key}=None")
             elif isinstance(value, (list, tuple)):
-                parts.append(f"{key}={','.join(str(v) for v in value)}")  # type: ignore[arg-type]
+                parts.append(f"{key}={','.join(str(v) for v in value)}")
             else:
                 parts.append(f"{key}={value}")
         return tuple(parts)

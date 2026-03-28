@@ -108,8 +108,8 @@ jobs:
           enable-cache: true
       - name: Install dependencies
         run: uv sync --frozen --all-groups
-      - name: Pyright
-        run: uv run python -m pyright
+      - name: Ty
+        run: uv run ty check
       - name: Version check
         run: make version-check
 
