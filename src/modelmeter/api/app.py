@@ -82,6 +82,7 @@ SSE_PATH_PREFIXES = ("/api/live/events",)
 class SourceUpsertRequest(BaseModel):
     label: str | None = None
     kind: Literal["sqlite", "http", "jsonl"]
+    agent: Literal["opencode", "claudecode"] | None = None
     enabled: bool = True
     db_path: str | None = None
     base_url: str | None = None
@@ -264,6 +265,7 @@ def create_app(
                 source_id=source_id,
                 label=payload.label,
                 kind=payload.kind,
+                agent=payload.agent,
                 enabled=payload.enabled,
                 db_path=_optional_path(payload.db_path),
                 base_url=payload.base_url,

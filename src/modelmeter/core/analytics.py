@@ -220,6 +220,7 @@ def get_summary(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         try:
             local_result = get_summary(
@@ -260,6 +261,7 @@ def get_summary(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         return result
 
@@ -408,6 +410,7 @@ def get_daily(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         try:
             local_result = get_daily(
@@ -453,6 +456,7 @@ def get_daily(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         return result
     local_repos = _resolve_local_repositories(settings, db_path_override)
@@ -1167,6 +1171,7 @@ def get_models(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         try:
             local_result = get_models(
@@ -1223,6 +1228,7 @@ def get_models(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         return result
     local_repos = _resolve_local_repositories(settings, db_path_override)
@@ -1411,6 +1417,7 @@ def get_providers(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         try:
             local_result = get_providers(
@@ -1463,6 +1470,7 @@ def get_providers(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         return result
     local_repos = _resolve_local_repositories(settings, db_path_override)
@@ -1875,6 +1883,7 @@ def get_projects(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         try:
             local_result = get_projects(
@@ -1927,6 +1936,7 @@ def get_projects(
             token_source=token_source,
             session_count_source=session_count_source,
             scope_label=_scope_label(source_scope),
+            pricing_file_override=pricing_file_override,
         )
         return result
     local_repos = _resolve_local_repositories(settings, db_path_override)

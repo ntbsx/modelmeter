@@ -1228,6 +1228,8 @@ export interface components {
         };
         /** SourceUpsertRequest */
         SourceUpsertRequest: {
+            /** Agent */
+            agent?: ("opencode" | "claudecode") | null;
             auth?: components["schemas"]["SourceAuth"] | null;
             /** Base Url */
             base_url?: string | null;

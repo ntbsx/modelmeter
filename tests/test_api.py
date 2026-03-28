@@ -379,6 +379,33 @@ def test_sources_upsert_endpoint_saves_jsonl_source(
     assert payload["sources"][0]["db_path"] == str(jsonl_dir)
 
 
+def test_sources_upsert_endpoint_persists_agent_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    jsonl_dir = tmp_path / "claudecode-data"
+    jsonl_dir.mkdir()
+    (jsonl_dir / "projects").mkdir()
+
+    client = _new_client()
+    response = client.put(
+        "/api/sources/local-jsonl",
+        json={
+            "kind": "jsonl",
+            "label": "Claude Code data",
+            "agent": "claudecode",
+            "db_path": str(jsonl_dir),
+            "enabled": True,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["sources"][0]["agent"] == "claudecode"
+
+
 def test_sources_upsert_endpoint_preserves_existing_http_auth(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

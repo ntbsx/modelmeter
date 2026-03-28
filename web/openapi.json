@@ -2127,6 +2127,21 @@
       },
       "SourceUpsertRequest": {
         "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "enum": [
+                  "opencode",
+                  "claudecode"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
           "auth": {
             "anyOf": [
               {
@@ -2437,7 +2452,7 @@
   },
   "info": {
     "title": "ModelMeter",
-    "version": "2026.3.27"
+    "version": "2026.3.28"
   },
   "openapi": "3.1.0",
   "paths": {

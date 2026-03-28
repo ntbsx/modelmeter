@@ -220,6 +220,7 @@ type SourceFormState = {
   sourceId: string
   label: string
   kind: 'sqlite' | 'http' | 'jsonl'
+  agent: '' | 'opencode' | 'claudecode'
   enabled: boolean
   dbPath: string
   baseUrl: string
@@ -231,6 +232,7 @@ const EMPTY_FORM: SourceFormState = {
   sourceId: '',
   label: '',
   kind: 'http',
+  agent: '',
   enabled: true,
   dbPath: '',
   baseUrl: '',
@@ -288,6 +290,7 @@ export default function Sources() {
         body: {
           label: form.label.trim() || null,
           kind: form.kind,
+          agent: form.agent || null,
           enabled: form.enabled,
           db_path: form.kind === 'sqlite' || form.kind === 'jsonl' ? form.dbPath.trim() : null,
           base_url: form.kind === 'http' ? form.baseUrl.trim() : null,
@@ -345,13 +348,14 @@ export default function Sources() {
     setShowForm(true)
     setEditingSourceId(source.source_id)
     setFormError(null)
-    setForm({
-      sourceId: source.source_id,
-      label: source.label ?? '',
-      kind: source.kind,
-      enabled: source.enabled,
-      dbPath: source.kind === 'sqlite' || source.kind === 'jsonl' ? String(source.db_path ?? '') : '',
-      baseUrl: source.kind === 'http' ? String(source.base_url ?? '') : '',
+      setForm({
+        sourceId: source.source_id,
+        label: source.label ?? '',
+        kind: source.kind,
+        agent: source.agent ?? '',
+        enabled: source.enabled,
+        dbPath: source.kind === 'sqlite' || source.kind === 'jsonl' ? String(source.db_path ?? '') : '',
+        baseUrl: source.kind === 'http' ? String(source.base_url ?? '') : '',
       username: '',
       password: '',
     })
@@ -442,12 +446,42 @@ export default function Sources() {
               Kind
               <select
                 value={form.kind}
-                onChange={(event) => setForm((prev) => ({ ...prev, kind: event.target.value as 'sqlite' | 'http' | 'jsonl' }))}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    kind: event.target.value as 'sqlite' | 'http' | 'jsonl',
+                    agent:
+                      prev.agent || prev.kind !== (event.target.value as 'sqlite' | 'http' | 'jsonl')
+                        ? event.target.value === 'jsonl'
+                          ? 'claudecode'
+                          : event.target.value === 'sqlite'
+                            ? 'opencode'
+                            : prev.agent
+                        : prev.agent,
+                  }))
+                }
                 className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
               >
                 <option value="http">http</option>
                 <option value="sqlite">sqlite</option>
                 <option value="jsonl">jsonl</option>
+              </select>
+            </label>
+            <label className="text-sm font-medium text-[var(--text-primary)]">
+              Agent
+              <select
+                value={form.agent}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    agent: event.target.value as '' | 'opencode' | 'claudecode',
+                  }))
+                }
+                className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
+              >
+                <option value="">Unspecified</option>
+                <option value="opencode">opencode</option>
+                <option value="claudecode">claudecode</option>
               </select>
             </label>
             <label className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2 mt-7">

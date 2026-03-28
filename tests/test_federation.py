@@ -10,6 +10,7 @@ import pytest
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.analytics import (
+    _canonical_project_id,
     get_daily,
     get_models,
     get_projects,
@@ -28,6 +29,7 @@ from modelmeter.core.models import (
     ProviderUsage,
     TokenUsage,
 )
+from modelmeter.core.pricing import ModelPricing
 from modelmeter.core.sources import (
     DataSourceConfig,
     SourceAuth,
@@ -318,6 +320,9 @@ class TestFederatedQueries:
             ) -> list[dict[str, object]]:
                 return self.fetch_daily(days=days, timezone_offset_minutes=timezone_offset_minutes)
 
+            def fetch_model_usage(self, *, days: int | None = None) -> list[dict[str, object]]:
+                return self.fetch_model_usage_detail(days=days)
+
             def fetch_model_usage_detail(
                 self, *, days: int | None = None
             ) -> list[dict[str, object]]:
@@ -353,6 +358,38 @@ class TestFederatedQueries:
                     }
                 ]
 
+            def fetch_daily_model_usage(
+                self, *, days: int | None = None, timezone_offset_minutes: int = 0
+            ) -> list[dict[str, object]]:
+                _ = (days, timezone_offset_minutes)
+                return [
+                    {
+                        "day": "2026-03-27",
+                        "model_id": "claude-sonnet-4-6",
+                        "provider_id": "anthropic",
+                        "input_tokens": 100,
+                        "output_tokens": 50,
+                        "cache_read": 20,
+                        "cache_write": 10,
+                    }
+                ]
+
+            def fetch_project_model_usage(
+                self, *, days: int | None = None
+            ) -> list[dict[str, object]]:
+                _ = days
+                return [
+                    {
+                        "project_id": "p1",
+                        "model_id": "claude-sonnet-4-6",
+                        "provider_id": "anthropic",
+                        "input_tokens": 100,
+                        "output_tokens": 50,
+                        "cache_read": 20,
+                        "cache_write": 10,
+                    }
+                ]
+
         jsonl_dir = tmp_path / "jsonl"
         jsonl_dir.mkdir()
         (jsonl_dir / "session-001.jsonl").write_text("{}\n", encoding="utf-8")
@@ -377,6 +414,20 @@ class TestFederatedQueries:
 
         monkeypatch.setattr("modelmeter.core.federation.create_repository", _fake_create_repository)
 
+        pricing_book = {"anthropic/claude-sonnet-4-6": ModelPricing(3.0, 15.0, 0.3, 3.75)}
+
+        def _fake_load_pricing_book(
+            settings: AppSettings, pricing_file_override: Path | None = None
+        ) -> tuple[dict[str, ModelPricing], str]:
+            _ = (settings, pricing_file_override)
+            return pricing_book, "test-pricing"
+
+        monkeypatch.setattr(
+            "modelmeter.core.federation.load_pricing_book",
+            _fake_load_pricing_book,
+            raising=False,
+        )
+
         scope = SourceScope(kind=SourceScopeKind.SPECIFIC, source_id="jsonl-source")
 
         summary = get_summary(settings=settings, days=7, source_scope=scope)
@@ -385,18 +436,40 @@ class TestFederatedQueries:
         providers = get_providers(settings=settings, days=7, source_scope=scope)
         projects = get_projects(settings=settings, days=7, source_scope=scope)
 
+        expected_cost = 0.0010935
+
         assert summary.usage.cache_read_tokens == 20
         assert summary.usage.cache_write_tokens == 10
+        assert summary.cost_usd == expected_cost
+        assert summary.pricing_source == "test-pricing"
         assert daily.totals.cache_read_tokens == 20
         assert daily.totals.cache_write_tokens == 10
         assert daily.daily[0].usage.cache_read_tokens == 20
         assert daily.daily[0].usage.cache_write_tokens == 10
+        assert daily.total_cost_usd == expected_cost
+        assert daily.daily[0].cost_usd == expected_cost
         assert models.totals.cache_read_tokens == 20
         assert models.totals.cache_write_tokens == 10
+        assert models.total_cost_usd == expected_cost
+        assert models.pricing_source == "test-pricing"
+        assert models.models[0].model_id == "anthropic/claude-sonnet-4-6"
+        assert models.models[0].provider == "anthropic"
+        assert models.models[0].cost_usd == expected_cost
+        assert models.models[0].has_pricing is True
         assert models.models[0].usage.cache_read_tokens == 20
         assert models.models[0].usage.cache_write_tokens == 10
+        assert providers.total_cost_usd == expected_cost
+        assert providers.pricing_source == "test-pricing"
+        assert providers.providers[0].provider == "anthropic"
+        assert providers.providers[0].cost_usd == expected_cost
+        assert providers.providers[0].has_pricing is True
         assert providers.providers[0].usage.cache_read_tokens == 20
         assert providers.providers[0].usage.cache_write_tokens == 10
+        assert projects.total_cost_usd == expected_cost
+        assert projects.pricing_source == "test-pricing"
+        assert projects.projects[0].project_id == _canonical_project_id("p1", "/tmp/demo")
+        assert projects.projects[0].cost_usd == expected_cost
+        assert projects.projects[0].has_pricing is True
         assert projects.projects[0].usage.cache_read_tokens == 20
         assert projects.projects[0].usage.cache_write_tokens == 10
 
