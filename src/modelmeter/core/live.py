@@ -135,26 +135,38 @@ def _build_live_snapshot(
         if ":" in session_id:
             requested_source_id, raw_session_id = session_id.split(":", maxsplit=1)
 
+        matched_repositories: list[tuple[str, UsageRepository]] = []
         for source_id, repository in repositories:
             if requested_source_id is not None and source_id != requested_source_id:
                 continue
             row = repository.fetch_active_session(session_id=raw_session_id)
             if row is not None:
-                agent = "claudecode" if source_id == "local-claudecode" else "opencode"
-                return _build_snapshot_from_single_source(
-                    repository=repository,
-                    settings=settings,
-                    now_ms=now_ms,
-                    since_ms=since_ms,
-                    window_minutes=window_minutes,
-                    pricing_file_override=pricing_file_override,
-                    token_source=token_source,
-                    models_limit=models_limit,
-                    tools_limit=tools_limit,
-                    session_id=raw_session_id,
-                    agent=agent,
-                    public_session_id=session_id,
-                )
+                matched_repositories.append((source_id, repository))
+
+        if requested_source_id is None and len(matched_repositories) > 1:
+            raise RuntimeError(
+                f"Ambiguous live session `{session_id}` matched multiple local sources. "
+                "Use a namespaced session ID like `local-opencode:<id>` or "
+                "`local-claudecode:<id>`."
+            )
+
+        if matched_repositories:
+            source_id, repository = matched_repositories[0]
+            agent = "claudecode" if source_id == "local-claudecode" else "opencode"
+            return _build_snapshot_from_single_source(
+                repository=repository,
+                settings=settings,
+                now_ms=now_ms,
+                since_ms=since_ms,
+                window_minutes=window_minutes,
+                pricing_file_override=pricing_file_override,
+                token_source=token_source,
+                models_limit=models_limit,
+                tools_limit=tools_limit,
+                session_id=raw_session_id,
+                agent=agent,
+                public_session_id=session_id,
+            )
         raise RuntimeError(f"Live session `{session_id}` was not found.")
 
     total_summary: dict[str, Any] | None = None
@@ -431,6 +443,8 @@ def _build_snapshot_from_single_source(
 
 def _detect_claudecode_active_sessions(
     settings: AppSettings,
+    *,
+    source_id: str = "local-claudecode",
 ) -> list[LiveActiveSession]:
     """Detect active Claude Code sessions based on JSONL file mtime.
 
@@ -466,7 +480,7 @@ def _detect_claudecode_active_sessions(
 
         sessions.append(
             LiveActiveSession(
-                session_id=str(active_session_row["id"]),
+                session_id=f"{source_id}:{active_session_row['id']}",
                 title=str(active_session_row["title"])
                 if active_session_row["title"] is not None
                 else None,
@@ -511,7 +525,7 @@ def get_live_sessions(
                 last_updated_ms = int(active_row["time_updated"])
                 sessions.append(
                     LiveActiveSession(
-                        session_id=str(active_row["id"]),
+                        session_id=f"{source_id}:{active_row['id']}",
                         title=str(active_row["title"]) if active_row["title"] else None,
                         project_id=str(active_row["project_id"])
                         if active_row["project_id"]
@@ -526,6 +540,6 @@ def get_live_sessions(
                     )
                 )
         elif source_id == "local-claudecode":
-            sessions.extend(_detect_claudecode_active_sessions(settings))
+            sessions.extend(_detect_claudecode_active_sessions(settings, source_id=source_id))
 
     return sessions

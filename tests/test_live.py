@@ -6,6 +6,8 @@ import shutil
 import sqlite3
 import time
 from pathlib import Path
+from typing import Any
+from unittest.mock import patch
 
 from typer.testing import CliRunner
 
@@ -14,6 +16,81 @@ from modelmeter.config.settings import AppSettings
 from modelmeter.core.live import get_live_sessions, get_live_snapshot
 
 CLAUDECODE_FIXTURES_DIR = Path(__file__).parent / "fixtures" / "claudecode"
+
+
+class _FakeLiveRepo:
+    def __init__(self, *, session_id: str, project_name: str, model_id: str) -> None:
+        self.session_id = session_id
+        self.project_name = project_name
+        self.model_id = model_id
+
+    def fetch_active_session(self, session_id: str | None = None) -> dict[str, Any] | None:
+        if session_id is not None and session_id != self.session_id:
+            return None
+        return {
+            "id": self.session_id,
+            "title": self.project_name,
+            "project_id": "p1",
+            "project_name": self.project_name,
+            "directory": f"/tmp/{self.project_name.lower()}",
+            "time_updated": int(time.time() * 1000),
+        }
+
+    def fetch_live_summary_messages(
+        self, *, since_ms: int, session_id: str | None = None
+    ) -> dict[str, Any]:
+        _ = since_ms
+        if session_id is not None and session_id != self.session_id:
+            return {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cache_read": 0,
+                "cache_write": 0,
+                "total_sessions": 0,
+                "total_interactions": 0,
+            }
+        return {
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "cache_read": 0,
+            "cache_write": 0,
+            "total_sessions": 1,
+            "total_interactions": 1,
+        }
+
+    def fetch_live_summary_steps(
+        self, *, since_ms: int, session_id: str | None = None
+    ) -> dict[str, Any]:
+        return self.fetch_live_summary_messages(since_ms=since_ms, session_id=session_id)
+
+    def fetch_live_model_usage(
+        self, *, since_ms: int, limit: int = 5, session_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        _ = (since_ms, limit)
+        if session_id is not None and session_id != self.session_id:
+            return []
+        return [
+            {
+                "model_id": self.model_id,
+                "provider_id": "anthropic",
+                "input_tokens": 10,
+                "output_tokens": 5,
+                "cache_read": 0,
+                "cache_write": 0,
+                "total_sessions": 1,
+                "total_interactions": 1,
+            }
+        ]
+
+    def fetch_live_tool_usage(
+        self, *, since_ms: int, limit: int = 8, session_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        _ = (since_ms, limit, session_id)
+        return []
+
+    def resolve_token_source(self, *, days: int | None = None, token_source: str = "auto") -> str:
+        _ = days
+        return "message" if token_source == "auto" else token_source
 
 
 def _create_live_fixture(db_path: Path, *, model_id: str = "anthropic/claude-sonnet-4-5") -> None:
@@ -178,9 +255,46 @@ def test_get_live_sessions_includes_recent_claudecode_jsonl_session(tmp_path: Pa
     sessions = get_live_sessions(settings=settings)
 
     assert len(sessions) == 1
-    assert sessions[0].session_id == "session-001"
+    assert sessions[0].session_id == "local-claudecode:session-001"
     assert sessions[0].project_name == "myproject"
     assert sessions[0].is_active is True
+
+
+def test_get_live_snapshot_rejects_ambiguous_unprefixed_local_session_id() -> None:
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeLiveRepo(
+                session_id="shared-session",
+                project_name="OpenCode",
+                model_id="anthropic/open-opus",
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeLiveRepo(
+                session_id="shared-session",
+                project_name="Claude Code",
+                model_id="claude-sonnet-4-6",
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.live._resolve_live_repositories", return_value=local_repos):
+        try:
+            get_live_snapshot(
+                settings=settings,
+                window_minutes=60,
+                token_source="auto",
+                models_limit=5,
+                tools_limit=5,
+                session_id="shared-session",
+            )
+        except RuntimeError as exc:
+            assert "Ambiguous live session `shared-session`" in str(exc)
+        else:
+            raise AssertionError("Expected ambiguous unprefixed live session ID to raise")
 
 
 def test_live_snapshot_uses_claudecode_repository_for_claudecode_session(tmp_path: Path) -> None:
