@@ -315,6 +315,7 @@ function AuthGate() {
             <ThemeToggle />
           </div>
           <div className="lg:hidden flex items-center gap-2">
+            <SourceScopePicker compact />
             <HeaderSourceStatus />
             <ThemeToggle />
           </div>

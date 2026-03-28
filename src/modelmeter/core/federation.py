@@ -998,6 +998,7 @@ def execute_providers_federated(
                     _merge_usage_data(cast(dict[str, int], repo.fetch_summary(days=days))),
                 )
                 rows = repo.fetch_model_usage_detail(days=days)
+                provider_model_ids: dict[str, set[str]] = {}
                 for row in rows:
                     model_id = _canonical_model_id(
                         str(row["model_id"]), cast(str | None, row.get("provider_id"))
@@ -1005,6 +1006,11 @@ def execute_providers_federated(
                     provider = provider_from_model_id_and_provider_field(
                         model_id, cast(str | None, row.get("provider_id"))
                     )
+                    if provider not in provider_model_ids:
+                        provider_model_ids[provider] = set()
+                    if model_id in provider_model_ids[provider]:
+                        continue
+                    provider_model_ids[provider].add(model_id)
                     usage = _merge_usage_data(cast(dict[str, int], row))
                     pricing = pricing_book.get(model_id)
                     cost_usd = (
@@ -1017,7 +1023,7 @@ def execute_providers_federated(
                         provider_map[provider] = ProviderUsage(
                             provider=provider,
                             usage=merge_token_usage(existing.usage, usage),
-                            total_models=existing.total_models + 1,
+                            total_models=len(provider_model_ids[provider]),
                             total_interactions=existing.total_interactions
                             + int(row.get("total_interactions", 0)),
                             cost_usd=((existing.cost_usd or 0.0) + (cost_usd or 0.0))

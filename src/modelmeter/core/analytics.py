@@ -189,19 +189,64 @@ def _merge_model_rows(
     return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
 
 
+def _deduplicated_provider_rows(
+    rows: list[ProviderUsage],
+    *,
+    seen: dict[str, set[str]],
+) -> list[ProviderUsage]:
+    """Merge provider rows, tracking unique model IDs to avoid double-counting."""
+    from modelmeter.core.federation import merge_provider_usage
+
+    result: dict[str, ProviderUsage] = {}
+    for row in rows:
+        if row.provider not in result:
+            result[row.provider] = row
+            seen[row.provider] = _provider_model_ids(row)
+        else:
+            existing = result[row.provider]
+            new_ids = _provider_model_ids(row) - seen[row.provider]
+            seen[row.provider].update(new_ids)
+            result[row.provider] = merge_provider_usage(
+                existing,
+                ProviderUsage(
+                    provider=row.provider,
+                    usage=row.usage,
+                    total_models=len(new_ids),
+                    total_interactions=row.total_interactions,
+                    cost_usd=row.cost_usd,
+                    has_pricing=row.has_pricing,
+                ),
+            )
+    return list(result.values())
+
+
+def _provider_model_ids(provider: ProviderUsage) -> set[str]:
+    """Return canonical model IDs associated with a provider (best-effort).
+
+    Returns an empty set when model IDs cannot be recovered from the
+    ProviderUsage row. Callers that need accurate cross-source deduplication
+    should merge at the model level instead.
+    """
+    return set()
+
+
 def _merge_provider_rows(
     local_rows: list[ProviderUsage], federated_rows: list[ProviderUsage]
 ) -> list[ProviderUsage]:
     from modelmeter.core.federation import merge_provider_usage
 
-    merged: dict[str, ProviderUsage] = {}
-    for row in local_rows + federated_rows:
-        existing = merged.get(row.provider)
-        if existing is None:
-            merged[row.provider] = row
+    result: dict[str, ProviderUsage] = {}
+    for row in local_rows:
+        if row.provider in result:
+            result[row.provider] = merge_provider_usage(result[row.provider], row)
         else:
-            merged[row.provider] = merge_provider_usage(existing, row)
-    return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
+            result[row.provider] = row
+    for row in federated_rows:
+        if row.provider in result:
+            result[row.provider] = merge_provider_usage(result[row.provider], row)
+        else:
+            result[row.provider] = row
+    return list(result.values())
 
 
 def _merge_project_rows(
@@ -1630,7 +1675,6 @@ def get_providers(
             sources_failed=[],
         )
 
-    merged_provider_rows: list[ProviderUsage] = []
     merged_totals = TokenUsage()
     merged_total_sessions = 0
     merged_total_cost = 0.0
@@ -1638,12 +1682,26 @@ def get_providers(
     sources_considered: list[str] = []
     sources_succeeded: list[str] = []
     sources_failed: list[dict[str, str]] = []
+    seen_provider_models: dict[str, set[str]] = {}
+    merged_provider_rows: list[ProviderUsage] = []
 
     for source_id, repository in local_repos:
         sources_considered.append(source_id)
         try:
             model_rows = repository.fetch_model_usage_detail(days=days)
-            repo_provider_rows, repo_total_cost = _build_provider_rows(model_rows)
+            deduped_rows: list[dict[str, Any]] = []
+            for row in model_rows:
+                model_id = _canonical_model_id(str(row["model_id"]), row["provider_id"])
+                provider_name = provider_from_model_id_and_provider_field(
+                    model_id, row["provider_id"]
+                )
+                if provider_name not in seen_provider_models:
+                    seen_provider_models[provider_name] = set()
+                if model_id in seen_provider_models[provider_name]:
+                    continue
+                seen_provider_models[provider_name].add(model_id)
+                deduped_rows.append(row)
+            repo_provider_rows, repo_total_cost = _build_provider_rows(deduped_rows)
             merged_provider_rows = _merge_provider_rows(merged_provider_rows, repo_provider_rows)
             repo_summary_row = _resolved_summary_row(
                 repository,
