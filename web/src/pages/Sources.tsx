@@ -348,14 +348,14 @@ export default function Sources() {
     setShowForm(true)
     setEditingSourceId(source.source_id)
     setFormError(null)
-      setForm({
-        sourceId: source.source_id,
-        label: source.label ?? '',
-        kind: source.kind,
-        agent: source.agent ?? '',
-        enabled: source.enabled,
-        dbPath: source.kind === 'sqlite' || source.kind === 'jsonl' ? String(source.db_path ?? '') : '',
-        baseUrl: source.kind === 'http' ? String(source.base_url ?? '') : '',
+    setForm({
+      sourceId: source.source_id,
+      label: source.label ?? '',
+      kind: source.kind,
+      agent: source.agent ?? '',
+      enabled: source.enabled,
+      dbPath: source.kind === 'sqlite' || source.kind === 'jsonl' ? String(source.db_path ?? '') : '',
+      baseUrl: source.kind === 'http' ? String(source.base_url ?? '') : '',
       username: '',
       password: '',
     })

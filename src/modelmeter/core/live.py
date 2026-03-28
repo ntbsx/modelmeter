@@ -474,7 +474,10 @@ def _detect_claudecode_active_sessions(
         if "subagents" in jsonl_file.parts:
             continue
 
-        effective_mtime_ms = int(os.stat(jsonl_file).st_mtime * 1000)
+        try:
+            effective_mtime_ms = int(os.stat(jsonl_file).st_mtime * 1000)
+        except OSError:
+            continue
         subagent_dir = jsonl_file.parent / jsonl_file.stem / "subagents"
         if subagent_dir.exists():
             for sub in subagent_dir.glob("*.jsonl"):
@@ -488,7 +491,7 @@ def _detect_claudecode_active_sessions(
         if (now_ms - effective_mtime_ms) > ACTIVE_SESSION_THRESHOLD_MS:
             continue
 
-        active_session_row = repository.fetch_active_session(session_id=jsonl_file.stem)
+        active_session_row = repository.get_session_row(jsonl_file.stem)
         if active_session_row is None:
             continue
 

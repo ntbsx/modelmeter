@@ -107,7 +107,12 @@ def _inspect_claudecode(data_dir: Path) -> DetectedSource | None:
         return None
 
     project_count = sum(1 for d in projects_dir.iterdir() if d.is_dir())
-    session_count = sum(1 for _ in projects_dir.rglob("*.jsonl"))
+    session_count = sum(
+        1
+        for project_dir in projects_dir.iterdir()
+        if project_dir.is_dir()
+        for _ in project_dir.glob("*.jsonl")
+    )
     if session_count == 0:
         return None
 

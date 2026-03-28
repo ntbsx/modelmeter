@@ -45,6 +45,8 @@ class SessionData:
 class SessionIndex:
     sessions: list[SessionData]
     project_map: dict[str, dict[str, Any]]
+    session_mtime_map: dict[str, int]
+    sessions_by_id: dict[str, SessionData]
 
 
 class JsonlUsageRepository:
@@ -90,44 +92,26 @@ class JsonlUsageRepository:
 
         projects: dict[Path, list[Path]] = {}
         for jsonl_file in self._data_dir.rglob("*.jsonl"):
-            if jsonl_file.name == "subagents":
+            # Skip any subagent data entirely; only group top-level session files.
+            if "subagents" in jsonl_file.parts:
                 continue
 
             project_dir = jsonl_file.parent
-            if project_dir.name == "subagents":
-                project_dir = project_dir.parent
 
             if project_dir not in projects:
                 projects[project_dir] = []
 
-            if "subagents" not in jsonl_file.parts:
-                projects[project_dir].append(jsonl_file)
+            projects[project_dir].append(jsonl_file)
 
         return [(p, files) for p, files in projects.items()]
 
     def _session_file_mtime_ms(self, session_id: str) -> int | None:
-        """Return effective mtime for a session (max of parent + subagent files)."""
-        session_file = next(
-            (
-                path
-                for path in self._data_dir.rglob(f"{session_id}.jsonl")
-                if "subagents" not in path.parts
-            ),
-            None,
-        )
-        if session_file is None:
-            return None
-        best = int(session_file.stat().st_mtime * 1000)
-        subagent_dir = session_file.parent / session_id / "subagents"
-        if subagent_dir.exists():
-            for sub in subagent_dir.glob("*.jsonl"):
-                try:
-                    sub_mtime = int(sub.stat().st_mtime * 1000)
-                except OSError:
-                    continue
-                if sub_mtime > best:
-                    best = sub_mtime
-        return best
+        """Return effective mtime for a session (max of parent + subagent files).
+
+        Uses the precomputed map from the session index to avoid per-call directory scans.
+        """
+        index = self._ensure_index()
+        return index.session_mtime_map.get(session_id)
 
     def _parse_session_file(self, path: Path) -> list[dict[str, Any]]:
         """Parse a single JSONL file into a list of records."""
@@ -275,19 +259,15 @@ class JsonlUsageRepository:
         """Build the complete session index from all JSONL files."""
         sessions: list[SessionData] = []
         project_map: dict[str, dict[str, Any]] = {}
+        session_mtime_map: dict[str, int] = {}
 
         project_groups = self._scan_jsonl_files()
 
         for project_dir, session_files in project_groups:
-            cwd = project_dir.name.replace("-", "/")
-            if cwd.startswith("/"):
-                parts = cwd.split("/")
-                if len(parts) >= 3:
-                    cwd = "/".join(parts[1:])
-                else:
-                    cwd = "/" + "/".join(parts[1:])
-            else:
-                cwd = "/" + cwd
+            # Normalize dash-encoded directory name to an absolute path.
+            # Claude Code encodes e.g. /Users/alice/src as -Users-alice-src.
+            # Replace dashes with slashes, then ensure exactly one leading slash.
+            cwd = "/" + project_dir.name.replace("-", "/").lstrip("/")
 
             project_id = hashlib.md5(cwd.encode()).hexdigest()[:16]
             project_name = Path(cwd).name if cwd else "unknown"
@@ -310,13 +290,34 @@ class JsonlUsageRepository:
                 subagent_dir = session_dir / session_stem / "subagents"
                 subagent_records = self._load_subagent_records_from_dir(subagent_dir)
 
+                # Precompute effective mtime: max of session file and any subagent files.
+                try:
+                    effective_mtime = int(session_file.stat().st_mtime * 1000)
+                except OSError:
+                    effective_mtime = 0
+                if subagent_dir.exists():
+                    for sub in subagent_dir.glob("*.jsonl"):
+                        try:
+                            sub_mtime = int(sub.stat().st_mtime * 1000)
+                        except OSError:
+                            continue
+                        if sub_mtime > effective_mtime:
+                            effective_mtime = sub_mtime
+                session_mtime_map[session_id] = effective_mtime
+
                 session_data = self._build_session_from_records(records, subagent_records)
                 if session_data:
                     sessions.append(session_data)
 
         sessions.sort(key=lambda s: s.time_created_ms)
+        sessions_by_id = {s.session_id: s for s in sessions}
 
-        return SessionIndex(sessions=sessions, project_map=project_map)
+        return SessionIndex(
+            sessions=sessions,
+            project_map=project_map,
+            session_mtime_map=session_mtime_map,
+            sessions_by_id=sessions_by_id,
+        )
 
     def _filter_interactions(self, days: int | None) -> list[tuple[SessionData, Interaction]]:
         """Filter interactions by days cutoff, return (session, interaction) pairs."""
@@ -1017,6 +1018,22 @@ class JsonlUsageRepository:
             session_model_data[key]["cache_write"] += interaction.cache_write
 
         return list(session_model_data.values())
+
+    def get_session_row(self, session_id: str) -> RowDict | None:
+        """Get a single session by ID as a RowDict, using O(1) index lookup."""
+        index = self._ensure_index()
+        s = index.sessions_by_id.get(session_id)
+        if s is None:
+            return None
+        mtime_ms = index.session_mtime_map.get(session_id) or s.time_updated_ms
+        return {
+            "id": s.session_id,
+            "title": s.title,
+            "directory": s.project_path,
+            "project_id": s.project_id,
+            "time_updated": mtime_ms,
+            "project_name": s.project_name,
+        }
 
     def fetch_active_session(self, *, session_id: str | None = None) -> RowDict | None:
         """Get most recent active session."""
