@@ -1,5 +1,8 @@
 """Tests for Claude Code JSONL data reader."""
 
+import os
+import shutil
+import time
 from pathlib import Path
 
 import pytest
@@ -84,3 +87,25 @@ def test_fetch_project_usage_detail(repo: JsonlUsageRepository) -> None:
 def test_fetch_sessions_summary(repo: JsonlUsageRepository) -> None:
     rows = repo.fetch_sessions_summary()
     assert len(rows) >= 4
+
+
+def test_fetch_sessions_summary_uses_file_mtime_for_filtering_and_sorting(tmp_path: Path) -> None:
+    copied = tmp_path / "claude"
+    shutil.copytree(FIXTURES_DIR, copied)
+    repo = JsonlUsageRepository(copied)
+
+    fresh_session = copied / "-Users-test-projs-myproject" / "session-001.jsonl"
+    older_session = copied / "-Users-test-projs-myproject" / "session-002.jsonl"
+    old_session_3 = copied / "-Users-test-projs-other" / "session-003.jsonl"
+    old_session_4 = copied / "-Users-test-projs-myproject" / "session-004.jsonl"
+
+    now = time.time()
+    os.utime(fresh_session, (now, now))
+    os.utime(older_session, (now - 3600, now - 3600))
+    os.utime(old_session_3, (now - 3600, now - 3600))
+    os.utime(old_session_4, (now - 3600, now - 3600))
+
+    rows = repo.fetch_sessions_summary(min_time_updated_ms=int((now - 300) * 1000))
+
+    assert [row["session_id"] for row in rows] == ["session-001"]
+    assert rows[0]["time_updated"] >= int(now * 1000) - 1000

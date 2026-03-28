@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 import modelmeter.api.app as api_app_module
 from modelmeter.api.app import create_app
 from modelmeter.config.settings import AppSettings
+from modelmeter.core.analytics import _canonical_project_id
 from modelmeter.core.models import UpdateCheckResponse
 
 CLAUDECODE_FIXTURES_DIR = Path(__file__).parent / "fixtures" / "claudecode"
@@ -668,7 +669,7 @@ def test_date_insights_endpoint_returns_daily_breakdowns(tmp_path: Path) -> None
     assert payload["usage"]["total_tokens"] == 18
     assert payload["models"][0]["model_id"] == "anthropic/claude-sonnet-4-5"
     assert payload["providers"][0]["provider"] == "anthropic"
-    assert payload["projects"][0]["project_id"] == "p1"
+    assert payload["projects"][0]["project_id"] == _canonical_project_id("p1", "/tmp/api-proj")
 
 
 def test_date_insights_sessions_field(tmp_path: Path) -> None:

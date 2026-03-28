@@ -10,6 +10,7 @@ from typer.testing import CliRunner
 from modelmeter.cli.main import app
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.analytics import (
+    _canonical_project_id,
     get_daily,
     get_model_detail,
     get_models,
@@ -477,7 +478,7 @@ def test_get_projects_returns_project_rows(tmp_path: Path) -> None:
     )
 
     assert len(result.projects) == 1
-    assert result.projects[0].project_id == "p1"
+    assert result.projects[0].project_id == _canonical_project_id("p1", "/tmp/project-one")
     assert result.projects[0].total_interactions == 2
     assert result.projects[0].cost_usd == 0.0000335
 
@@ -495,7 +496,7 @@ def test_projects_command_json_output(tmp_path: Path) -> None:
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert len(payload["projects"]) == 1
-    assert payload["projects"][0]["project_id"] == "p1"
+    assert payload["projects"][0]["project_id"] == _canonical_project_id("p1", "/tmp/project-one")
 
 
 def test_get_project_detail_returns_sessions_sorted_by_last_updated(tmp_path: Path) -> None:

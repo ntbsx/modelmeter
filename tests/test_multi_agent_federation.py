@@ -6,6 +6,8 @@ from typing import Any
 from unittest.mock import patch
 
 from modelmeter.config.settings import AppSettings
+from modelmeter.core.analytics import _canonical_project_id
+from modelmeter.core.pricing import ModelPricing
 
 
 class _FakeSummaryRepo:
@@ -29,6 +31,7 @@ class _FakeSummaryRepo:
         self._models = [
             {
                 "model_id": model_id,
+                "provider_id": "anthropic",
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "cache_read": cache_read,
@@ -59,6 +62,8 @@ class _FakeDailyRepo:
         cache_read: int,
         cache_write: int,
         total_sessions: int,
+        model_id: str = "anthropic/claude-sonnet-4-5",
+        provider_id: str = "anthropic",
     ) -> None:
         self._day = day
         self._daily_rows = [
@@ -78,6 +83,18 @@ class _FakeDailyRepo:
             "cache_write": cache_write,
             "total_sessions": total_sessions,
         }
+        self._daily_model_rows = [
+            {
+                "day": day,
+                "model_id": model_id,
+                "provider_id": provider_id,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "cache_read": cache_read,
+                "cache_write": cache_write,
+                "total_sessions": total_sessions,
+            }
+        ]
 
     def resolve_token_source(self, *, days: int | None = None, token_source: str = "auto") -> str:
         return "message"
@@ -106,7 +123,7 @@ class _FakeDailyRepo:
     def fetch_daily_model_usage(
         self, *, days: int | None = None, timezone_offset_minutes: int = 0
     ) -> list[dict[str, Any]]:
-        return []
+        return self._daily_model_rows
 
 
 class _FakeModelsRepo:
@@ -191,6 +208,7 @@ class _FakeProjectsRepo:
             {
                 "project_id": project_id,
                 "model_id": model_id,
+                "provider_id": "anthropic",
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "cache_read": cache_read,
@@ -292,6 +310,46 @@ def test_get_summary_merges_local_sources() -> None:
     assert result.sources_failed == []
 
 
+def test_get_summary_prices_providerless_model_ids() -> None:
+    from modelmeter.core.analytics import get_summary
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeSummaryRepo(
+                input_tokens=10,
+                output_tokens=5,
+                cache_read=0,
+                cache_write=0,
+                total_sessions=1,
+                model_id="anthropic/claude-sonnet-4-6",
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeSummaryRepo(
+                input_tokens=20,
+                output_tokens=7,
+                cache_read=0,
+                cache_write=0,
+                total_sessions=2,
+                model_id="claude-sonnet-4-6",
+            ),
+        ),
+    ]
+    pricing_book = {"anthropic/claude-sonnet-4-6": ModelPricing(3.0, 15.0, 0.3, 3.75)}
+
+    with (
+        patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos),
+        patch("modelmeter.core.analytics.load_pricing_book", return_value=(pricing_book, "test")),
+    ):
+        result = get_summary(settings=settings)
+
+    assert result.cost_usd is not None
+    assert result.cost_usd > 0
+
+
 def test_get_daily_merges_local_sources() -> None:
     from modelmeter.core.analytics import get_daily
 
@@ -336,6 +394,48 @@ def test_get_daily_merges_local_sources() -> None:
     assert result.sources_considered == ["local-opencode", "local-claudecode"]
     assert result.sources_succeeded == ["local-opencode", "local-claudecode"]
     assert result.sources_failed == []
+
+
+def test_get_daily_prices_providerless_model_ids() -> None:
+    from modelmeter.core.analytics import get_daily
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeDailyRepo(
+                day="2026-03-27",
+                input_tokens=10,
+                output_tokens=5,
+                cache_read=0,
+                cache_write=0,
+                total_sessions=1,
+                model_id="anthropic/claude-sonnet-4-6",
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeDailyRepo(
+                day="2026-03-27",
+                input_tokens=20,
+                output_tokens=7,
+                cache_read=0,
+                cache_write=0,
+                total_sessions=2,
+                model_id="claude-sonnet-4-6",
+            ),
+        ),
+    ]
+    pricing_book = {"anthropic/claude-sonnet-4-6": ModelPricing(3.0, 15.0, 0.3, 3.75)}
+
+    with (
+        patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos),
+        patch("modelmeter.core.analytics.load_pricing_book", return_value=(pricing_book, "test")),
+    ):
+        result = get_daily(settings=settings)
+
+    assert result.total_cost_usd is not None
+    assert result.daily[0].cost_usd is not None
 
 
 def test_get_models_merges_local_sources() -> None:
@@ -390,6 +490,51 @@ def test_get_models_merges_local_sources() -> None:
     assert result.sources_failed == []
 
 
+def test_get_models_normalizes_providerless_ids_across_local_sources() -> None:
+    from modelmeter.core.analytics import get_models
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeModelsRepo(
+                model_id="anthropic/claude-sonnet-4-6",
+                provider_id="anthropic",
+                input_tokens=10,
+                output_tokens=5,
+                cache_read=0,
+                cache_write=0,
+                total_sessions=1,
+                total_interactions=3,
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeModelsRepo(
+                model_id="claude-sonnet-4-6",
+                provider_id="anthropic",
+                input_tokens=20,
+                output_tokens=7,
+                cache_read=0,
+                cache_write=0,
+                total_sessions=2,
+                total_interactions=4,
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos):
+        result = get_models(settings=settings, limit=0)
+
+    assert result.total_models == 1
+    assert result.models[0].model_id == "anthropic/claude-sonnet-4-6"
+    assert result.models[0].provider == "anthropic"
+    assert result.models[0].usage.input_tokens == 30
+    assert result.models[0].usage.output_tokens == 12
+    assert result.models[0].total_sessions == 3
+    assert result.models[0].total_interactions == 7
+
+
 def test_get_providers_merges_local_sources() -> None:
     from modelmeter.core.analytics import get_providers
 
@@ -442,6 +587,50 @@ def test_get_providers_merges_local_sources() -> None:
     assert result.sources_failed == []
 
 
+def test_get_providers_prices_providerless_model_ids() -> None:
+    from modelmeter.core.analytics import get_providers
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeModelsRepo(
+                model_id="anthropic/claude-sonnet-4-6",
+                provider_id="anthropic",
+                input_tokens=10,
+                output_tokens=5,
+                cache_read=0,
+                cache_write=0,
+                total_sessions=1,
+                total_interactions=3,
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeModelsRepo(
+                model_id="claude-sonnet-4-6",
+                provider_id="anthropic",
+                input_tokens=20,
+                output_tokens=7,
+                cache_read=0,
+                cache_write=0,
+                total_sessions=2,
+                total_interactions=4,
+            ),
+        ),
+    ]
+    pricing_book = {"anthropic/claude-sonnet-4-6": ModelPricing(3.0, 15.0, 0.3, 3.75)}
+
+    with (
+        patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos),
+        patch("modelmeter.core.analytics.load_pricing_book", return_value=(pricing_book, "test")),
+    ):
+        result = get_providers(settings=settings, limit=0)
+
+    assert result.total_cost_usd is not None
+    assert result.providers[0].cost_usd is not None
+
+
 def test_get_projects_merges_local_sources() -> None:
     from modelmeter.core.analytics import get_projects
 
@@ -489,7 +678,7 @@ def test_get_projects_merges_local_sources() -> None:
     assert result.total_sessions == 3
     assert result.total_projects == 1
     assert result.projects_returned == 1
-    assert result.projects[0].project_id == "p1"
+    assert result.projects[0].project_id == _canonical_project_id("p1", "/tmp/demo")
     assert result.projects[0].usage.input_tokens == 30
     assert result.projects[0].total_sessions == 3
     assert result.projects[0].total_interactions == 7
@@ -604,6 +793,46 @@ def test_get_date_insights_merges_local_sources() -> None:
     assert result.sources_failed == []
 
 
+def test_get_date_insights_normalizes_and_merges_providerless_model_ids() -> None:
+    from modelmeter.core.analytics import get_date_insights
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeDateInsightsRepo(
+                input_tokens=10,
+                output_tokens=5,
+                total_sessions=1,
+                total_interactions=3,
+                model_id="anthropic/claude-sonnet-4-6",
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeDateInsightsRepo(
+                input_tokens=20,
+                output_tokens=7,
+                total_sessions=2,
+                total_interactions=4,
+                model_id="claude-sonnet-4-6",
+            ),
+        ),
+    ]
+    pricing_book = {"anthropic/claude-sonnet-4-6": ModelPricing(3.0, 15.0, 0.3, 3.75)}
+
+    with (
+        patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos),
+        patch("modelmeter.core.analytics.load_pricing_book", return_value=(pricing_book, "test")),
+    ):
+        result = get_date_insights(settings=settings, day=date(2026, 3, 27))
+
+    assert len(result.models) == 1
+    assert result.models[0].model_id == "anthropic/claude-sonnet-4-6"
+    assert result.models[0].usage.input_tokens == 30
+    assert result.models[0].cost_usd is not None
+
+
 class _FakeModelDetailRepo:
     def __init__(
         self,
@@ -701,10 +930,15 @@ class _FakeProjectDetailRepo:
         project_name: str,
         project_path: str | None,
         session_id: str,
+        model_id: str = "anthropic/claude-sonnet-4-5",
+        provider_id: str = "anthropic",
         input_tokens: int,
         output_tokens: int,
         total_interactions: int,
     ) -> None:
+        self._project_id = project_id
+        self._project_name = project_name
+        self._project_path = project_path
         self._session_rows = [
             {
                 "session_id": session_id,
@@ -724,8 +958,8 @@ class _FakeProjectDetailRepo:
         self._session_model_rows = [
             {
                 "session_id": session_id,
-                "model_id": "anthropic/claude-sonnet-4-5",
-                "provider_id": "anthropic",
+                "model_id": model_id,
+                "provider_id": provider_id,
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "cache_read": 0,
@@ -737,12 +971,31 @@ class _FakeProjectDetailRepo:
     def fetch_project_session_usage(
         self, *, project_id: str, days: int | None = None
     ) -> list[dict[str, Any]]:
-        return self._session_rows
+        if project_id == self._project_id:
+            return self._session_rows
+        return []
 
     def fetch_project_session_model_usage(
         self, *, project_id: str, days: int | None = None
     ) -> list[dict[str, Any]]:
-        return self._session_model_rows
+        if project_id == self._project_id:
+            return self._session_model_rows
+        return []
+
+    def fetch_project_usage_detail(self, *, days: int | None = None) -> list[dict[str, Any]]:
+        return [
+            {
+                "project_id": self._project_id,
+                "project_name": self._project_name,
+                "project_path": self._project_path,
+                "input_tokens": self._session_rows[0]["input_tokens"],
+                "output_tokens": self._session_rows[0]["output_tokens"],
+                "cache_read": 0,
+                "cache_write": 0,
+                "total_sessions": 1,
+                "total_interactions": self._session_rows[0]["total_interactions"],
+            }
+        ]
 
 
 def test_get_project_detail_merges_local_sources() -> None:
@@ -786,3 +1039,82 @@ def test_get_project_detail_merges_local_sources() -> None:
     assert result.sources_considered == ["local-opencode", "local-claudecode"]
     assert result.sources_succeeded == ["local-opencode", "local-claudecode"]
     assert result.sources_failed == []
+
+
+def test_get_project_detail_merges_local_sources_with_different_project_ids() -> None:
+    from modelmeter.core.analytics import get_project_detail
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeProjectDetailRepo(
+                project_id="opencode-p1",
+                project_name="demo",
+                project_path="/tmp/demo",
+                session_id="s1",
+                input_tokens=10,
+                output_tokens=5,
+                total_interactions=3,
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeProjectDetailRepo(
+                project_id="jsonl-hash-p1",
+                project_name="demo",
+                project_path="/tmp/demo",
+                session_id="s2",
+                input_tokens=20,
+                output_tokens=7,
+                total_interactions=4,
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos):
+        result = get_project_detail(settings=settings, project_id="opencode-p1")
+
+    assert result.project_id == "opencode-p1"
+    assert result.project_path == "/tmp/demo"
+    assert result.usage.input_tokens == 30
+    assert result.usage.output_tokens == 12
+    assert result.total_sessions == 2
+    assert result.total_interactions == 7
+    assert {session.session_id for session in result.sessions} == {"s1", "s2"}
+    assert result.sources_considered == ["local-opencode", "local-claudecode"]
+    assert result.sources_succeeded == ["local-opencode", "local-claudecode"]
+    assert result.sources_failed == []
+
+
+def test_get_project_detail_prices_providerless_model_ids() -> None:
+    from modelmeter.core.analytics import get_project_detail
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-claudecode",
+            _FakeProjectDetailRepo(
+                project_id="jsonl-hash-p1",
+                project_name="demo",
+                project_path="/tmp/demo",
+                session_id="s2",
+                model_id="claude-sonnet-4-6",
+                provider_id="anthropic",
+                input_tokens=20,
+                output_tokens=7,
+                total_interactions=4,
+            ),
+        ),
+    ]
+
+    pricing_book = {"anthropic/claude-sonnet-4-6": ModelPricing(3.0, 15.0, 0.3, 3.75)}
+
+    with (
+        patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos),
+        patch("modelmeter.core.analytics.load_pricing_book", return_value=(pricing_book, "test")),
+    ):
+        result = get_project_detail(settings=settings, project_id="jsonl-hash-p1")
+
+    assert result.total_cost_usd is not None
+    assert result.sessions[0].cost_usd is not None

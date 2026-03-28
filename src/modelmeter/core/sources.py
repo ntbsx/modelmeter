@@ -269,19 +269,28 @@ def _check_jsonl_source(source: DataSourceConfig) -> SourceHealth:
             source_id=source.source_id,
             kind=source.kind,
             is_reachable=False,
-            error=f"File not found at {source.db_path}",
+            error=f"Directory not found at {source.db_path}",
         )
 
-    if not source.db_path.is_file():
+    if not source.db_path.is_dir():
         return SourceHealth(
             source_id=source.source_id,
             kind=source.kind,
             is_reachable=False,
-            error=f"Not a file at {source.db_path}",
+            error=f"Not a directory at {source.db_path}",
+        )
+
+    jsonl_files = [p for p in source.db_path.rglob("*.jsonl") if "subagents" not in p.parts]
+    if not jsonl_files:
+        return SourceHealth(
+            source_id=source.source_id,
+            kind=source.kind,
+            is_reachable=False,
+            error="No JSONL session files found",
         )
 
     try:
-        with open(source.db_path, encoding="utf-8") as f:
+        with open(jsonl_files[0], encoding="utf-8") as f:
             line_count = 0
             for _ in f:
                 line_count += 1
@@ -299,7 +308,7 @@ def _check_jsonl_source(source: DataSourceConfig) -> SourceHealth:
         source_id=source.source_id,
         kind=source.kind,
         is_reachable=True,
-        detail=f"jsonl, {line_count} lines (sample)",
+        detail=f"jsonl directory, {line_count} lines sampled",
     )
 
 

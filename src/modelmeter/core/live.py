@@ -236,11 +236,15 @@ def _build_live_snapshot(
         pricing_file_override=pricing_file_override,
     )
 
+    from modelmeter.core.analytics import _canonical_model_id
+
     model_map: dict[str, dict[str, Any]] = {}
     for row in all_model_rows:
-        mid = str(row["model_id"])
+        mid = _canonical_model_id(str(row["model_id"]), row.get("provider_id"))
         if mid not in model_map:
-            model_map[mid] = dict(row)
+            normalized_row = dict(row)
+            normalized_row["model_id"] = mid
+            model_map[mid] = normalized_row
         else:
             for key in (
                 "input_tokens",
@@ -343,12 +347,14 @@ def _build_snapshot_from_single_source(
         pricing_file_override=pricing_file_override,
     )
 
+    from modelmeter.core.analytics import _canonical_model_id
+
     top_models: list[LiveModelUsage] = []
     total_cost = 0.0
     has_any_priced_model = False
 
     for row in model_rows:
-        model_id = str(row["model_id"])
+        model_id = _canonical_model_id(str(row["model_id"]), row.get("provider_id"))
         usage = _token_usage_from_row(row)
         pricing = pricing_book.get(model_id)
         model_cost: float | None = None

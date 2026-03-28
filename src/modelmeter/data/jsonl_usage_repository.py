@@ -1045,16 +1045,20 @@ class JsonlUsageRepository:
     ) -> list[RowDict]:
         """Recent sessions with metadata."""
         index = self._ensure_index()
-        sessions = sorted(index.sessions, key=lambda s: s.time_updated_ms, reverse=True)
+
+        def effective_time_updated_ms(session: SessionData) -> int:
+            return self._session_file_mtime_ms(session.session_id) or session.time_updated_ms
+
+        sessions = sorted(index.sessions, key=effective_time_updated_ms, reverse=True)
 
         if min_time_updated_ms is not None:
-            sessions = [s for s in sessions if s.time_updated_ms >= min_time_updated_ms]
+            sessions = [s for s in sessions if effective_time_updated_ms(s) >= min_time_updated_ms]
 
         sessions = sessions[:limit]
 
         result: list[RowDict] = []
         for s in sessions:
-            time_updated_ms = self._session_file_mtime_ms(s.session_id) or s.time_updated_ms
+            time_updated_ms = effective_time_updated_ms(s)
             result.append(
                 {
                     "session_id": s.session_id,

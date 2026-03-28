@@ -120,3 +120,18 @@ def test_data_source_config_agent_field() -> None:
         agent="opencode",
     )
     assert source.agent == "opencode"
+
+
+def test_check_source_health_accepts_jsonl_directory(tmp_path: Path) -> None:
+    projects_dir = tmp_path / "projects"
+    projects_dir.mkdir()
+    (projects_dir / "session-001.jsonl").write_text('{"sessionId":"session-001"}\n')
+
+    health = check_source_health(
+        source=DataSourceConfig(source_id="local-jsonl", kind="jsonl", db_path=tmp_path),
+        settings=AppSettings(),
+    )
+
+    assert health.is_reachable is True
+    assert health.error is None
+    assert health.detail is not None

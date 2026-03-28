@@ -16,7 +16,7 @@ from modelmeter.core.live import get_live_sessions, get_live_snapshot
 CLAUDECODE_FIXTURES_DIR = Path(__file__).parent / "fixtures" / "claudecode"
 
 
-def _create_live_fixture(db_path: Path) -> None:
+def _create_live_fixture(db_path: Path, *, model_id: str = "anthropic/claude-sonnet-4-5") -> None:
     now_ms = int(time.time() * 1000)
     with sqlite3.connect(db_path) as conn:
         conn.execute(
@@ -64,7 +64,7 @@ def _create_live_fixture(db_path: Path) -> None:
 
         message_payload = {
             "role": "assistant",
-            "modelID": "anthropic/claude-sonnet-4-5",
+            "modelID": model_id,
             "time": {"created": now_ms},
             "tokens": {
                 "input": 100,
@@ -210,4 +210,47 @@ def test_live_snapshot_uses_claudecode_repository_for_claudecode_session(tmp_pat
     assert snapshot.active_session.project_name == "myproject"
     assert snapshot.active_session.is_active is True
     assert snapshot.active_session.last_updated_ms >= int(now * 1000) - 1000
-    assert snapshot.top_models[0].model_id == "claude-sonnet-4-6"
+    assert snapshot.top_models[0].model_id == "anthropic/claude-sonnet-4-6"
+
+
+def test_live_snapshot_normalizes_providerless_model_ids_across_sources(tmp_path: Path) -> None:
+    db_path = tmp_path / "opencode.db"
+    _create_live_fixture(db_path, model_id="anthropic/claude-sonnet-4-6")
+
+    claudecode_dir = _copy_claudecode_fixtures(tmp_path)
+    session_file = claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-001.jsonl"
+    now = time.time()
+    os.utime(session_file, (now, now))
+
+    pricing_path = tmp_path / "models.json"
+    pricing_path.write_text(
+        json.dumps(
+            {
+                "anthropic/claude-sonnet-4-6": {
+                    "input_cost_per_1m": 3.0,
+                    "output_cost_per_1m": 15.0,
+                    "cache_read_cost_per_1m": 0.3,
+                    "cache_write_cost_per_1m": 3.75,
+                }
+            }
+        )
+    )
+
+    snapshot = get_live_snapshot(
+        settings=AppSettings(
+            opencode_data_dir=tmp_path,
+            opencode_db_path=db_path,
+            claudecode_data_dir=claudecode_dir,
+            claudecode_enabled=True,
+        ),
+        window_minutes=60 * 24 * 30,
+        pricing_file_override=pricing_path,
+        token_source="message",
+        models_limit=5,
+        tools_limit=5,
+    )
+
+    matching = [m for m in snapshot.top_models if m.model_id == "anthropic/claude-sonnet-4-6"]
+    assert len(matching) == 1
+    assert matching[0].total_interactions >= 2
+    assert matching[0].cost_usd is not None

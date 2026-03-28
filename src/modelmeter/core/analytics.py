@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from datetime import UTC, date, datetime
+from hashlib import md5
 from pathlib import Path
 from typing import Any, Literal
 
@@ -65,6 +66,26 @@ def _scope_label(source_scope: SourceScope | None) -> str:
     return f"source:{source_scope.source_id}"
 
 
+def _canonical_model_id(model_id: str, provider_id: str | None = None) -> str:
+    if "/" in model_id:
+        return model_id
+    provider = provider_from_model_id_and_provider_field(model_id, provider_id)
+    if provider and provider != "unknown":
+        return f"{provider}/{model_id}"
+    return model_id
+
+
+def _canonical_project_id(project_id: str, project_path: str | None) -> str:
+    if not project_path:
+        return project_id
+    return f"local:{md5(project_path.encode()).hexdigest()[:16]}"
+
+
+def _pricing_for_row(pricing_book: dict[str, Any], row: dict[str, Any]) -> Any:
+    model_id = _canonical_model_id(str(row["model_id"]), row.get("provider_id"))
+    return pricing_book.get(model_id)
+
+
 def _resolve_local_repositories(
     settings: AppSettings,
     db_path_override: Path | None = None,
@@ -124,11 +145,13 @@ def _merge_model_rows(
 
     merged: dict[str, ModelUsage] = {}
     for row in local_rows + federated_rows:
-        existing = merged.get(row.model_id)
+        canonical_model_id = _canonical_model_id(row.model_id, row.provider)
+        normalized_row = row.model_copy(update={"model_id": canonical_model_id})
+        existing = merged.get(canonical_model_id)
         if existing is None:
-            merged[row.model_id] = row
+            merged[canonical_model_id] = normalized_row
         else:
-            merged[row.model_id] = merge_model_usage(existing, row)
+            merged[canonical_model_id] = merge_model_usage(existing, normalized_row)
     return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
 
 
@@ -152,12 +175,14 @@ def _merge_project_rows(
 ) -> list[ProjectUsage]:
     merged: dict[str, ProjectUsage] = {}
     for row in local_rows + federated_rows:
-        merge_key = row.project_path or row.project_id
+        canonical_project_id = _canonical_project_id(row.project_id, row.project_path)
+        normalized_row = row.model_copy(update={"project_id": canonical_project_id})
+        merge_key = row.project_path or canonical_project_id
         existing = merged.get(merge_key)
         if existing is None:
-            merged[merge_key] = row
+            merged[merge_key] = normalized_row
         else:
-            merged[merge_key] = merge_project_usage(existing, row)
+            merged[merge_key] = merge_project_usage(existing, normalized_row)
     return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
 
 
@@ -276,8 +301,7 @@ def get_summary(
         if pricing_book:
             total_cost = 0.0
             for model_row in model_rows:
-                model_id = str(model_row["model_id"])
-                pricing = pricing_book.get(model_id)
+                pricing = _pricing_for_row(pricing_book, model_row)
                 if pricing is None:
                     continue
                 total_cost += calculate_usage_cost(_token_usage_from_row(model_row), pricing)
@@ -330,8 +354,7 @@ def get_summary(
             if pricing_book:
                 repo_cost = 0.0
                 for model_row in repository.fetch_model_usage(days=days):
-                    model_id = str(model_row["model_id"])
-                    pricing = pricing_book.get(model_id)
+                    pricing = _pricing_for_row(pricing_book, model_row)
                     if pricing is None:
                         continue
                     repo_cost += calculate_usage_cost(_token_usage_from_row(model_row), pricing)
@@ -479,8 +502,7 @@ def get_daily(
         if pricing_book:
             total_cost_usd = 0.0
             for model_row in daily_model_rows:
-                model_id = str(model_row["model_id"])
-                pricing = pricing_book.get(model_id)
+                pricing = _pricing_for_row(pricing_book, model_row)
                 if pricing is None:
                     continue
 
@@ -591,8 +613,7 @@ def get_daily(
                     days=days,
                     timezone_offset_minutes=timezone_offset_minutes,
                 ):
-                    model_id = str(model_row["model_id"])
-                    pricing = pricing_book.get(model_id)
+                    pricing = _pricing_for_row(pricing_book, model_row)
                     if pricing is None:
                         continue
                     day_key = str(model_row["day"])
@@ -742,7 +763,7 @@ def get_date_insights(
         interactions_from_models = 0
 
         for row in model_rows:
-            mid = str(row["model_id"])
+            mid = _canonical_model_id(str(row["model_id"]), row["provider_id"])
             usage = _token_usage_from_row(row)
             pricing = pricing_book.get(mid)
             cost_usd: float | None = None
@@ -761,7 +782,22 @@ def get_date_insights(
                 cost_usd=cost_usd,
                 has_pricing=pricing is not None,
             )
-            models.append(model)
+            existing_model = next((m for m in models if m.model_id == mid), None)
+            if existing_model is None:
+                models.append(model)
+            else:
+                existing_model.usage.input_tokens += usage.input_tokens
+                existing_model.usage.output_tokens += usage.output_tokens
+                existing_model.usage.cache_read_tokens += usage.cache_read_tokens
+                existing_model.usage.cache_write_tokens += usage.cache_write_tokens
+                existing_model.total_sessions += int(row["total_sessions"])
+                existing_model.total_interactions += int(row["total_interactions"])
+                if cost_usd is not None:
+                    existing_model.has_pricing = True
+                    if existing_model.cost_usd is None:
+                        existing_model.cost_usd = cost_usd
+                    else:
+                        existing_model.cost_usd = round(existing_model.cost_usd + cost_usd, 8)
             interactions_from_models += int(row["total_interactions"])
             existing_provider = provider_map.get(provider)
             if existing_provider is None:
@@ -799,10 +835,19 @@ def get_date_insights(
         project_model_rows: list[dict[str, Any]],
         source_id: str,
     ) -> list[ProjectUsage]:
+        project_id_map = {
+            str(row["project_id"]): _canonical_project_id(
+                str(row["project_id"]),
+                str(row["project_path"]) if row["project_path"] is not None else None,
+            )
+            for row in project_rows
+        }
         project_cost_map: dict[str, float] = {}
         for row in project_model_rows:
-            pid = str(row["project_id"])
-            pricing = pricing_book.get(str(row["model_id"]))
+            pid = project_id_map.get(str(row["project_id"]), str(row["project_id"]))
+            pricing = pricing_book.get(
+                _canonical_model_id(str(row["model_id"]), row["provider_id"])
+            )
             if pricing is None:
                 continue
             cost = calculate_usage_cost(_token_usage_from_row(row), pricing)
@@ -810,7 +855,7 @@ def get_date_insights(
 
         projects: list[ProjectUsage] = []
         for row in project_rows:
-            pid = str(row["project_id"])
+            pid = project_id_map[str(row["project_id"])]
             project_cost = project_cost_map.get(pid)
             projects.append(
                 ProjectUsage(
@@ -831,19 +876,29 @@ def get_date_insights(
 
     def _build_project_models_from_rows(
         project_model_rows: list[dict[str, Any]],
+        project_rows: list[dict[str, Any]],
     ) -> list[ProjectModelUsage]:
-        project_models: list[ProjectModelUsage] = []
+        project_id_map = {
+            str(row["project_id"]): _canonical_project_id(
+                str(row["project_id"]),
+                str(row["project_path"]) if row["project_path"] is not None else None,
+            )
+            for row in project_rows
+        }
+        project_models_map: dict[tuple[str, str], ProjectModelUsage] = {}
         for row in project_model_rows:
-            pid = str(row["project_id"])
-            mid = str(row["model_id"])
+            pid = project_id_map.get(str(row["project_id"]), str(row["project_id"]))
+            mid = _canonical_model_id(str(row["model_id"]), row["provider_id"])
             usage = _token_usage_from_row(row)
             pricing = pricing_book.get(mid)
             cost_usd: float | None = None
             if pricing is not None:
                 cost_usd = round(calculate_usage_cost(usage, pricing), 8)
             provider = provider_from_model_id_and_provider_field(mid, row["provider_id"])
-            project_models.append(
-                ProjectModelUsage(
+            key = (pid, mid)
+            existing = project_models_map.get(key)
+            if existing is None:
+                project_models_map[key] = ProjectModelUsage(
                     project_id=pid,
                     model_id=mid,
                     provider=provider,
@@ -852,8 +907,19 @@ def get_date_insights(
                     cost_usd=cost_usd,
                     has_pricing=pricing is not None,
                 )
-            )
-        return project_models
+            else:
+                existing.usage.input_tokens += usage.input_tokens
+                existing.usage.output_tokens += usage.output_tokens
+                existing.usage.cache_read_tokens += usage.cache_read_tokens
+                existing.usage.cache_write_tokens += usage.cache_write_tokens
+                existing.total_interactions += int(row["total_interactions"])
+                if cost_usd is not None:
+                    existing.has_pricing = True
+                    if existing.cost_usd is None:
+                        existing.cost_usd = cost_usd
+                    else:
+                        existing.cost_usd = round(existing.cost_usd + cost_usd, 8)
+        return list(project_models_map.values())
 
     def _build_sessions_from_rows(
         session_model_rows: list[dict[str, Any]],
@@ -861,7 +927,7 @@ def get_date_insights(
         session_map: dict[str, SessionUsage] = {}
         for row in session_model_rows:
             sid = str(row["session_id"])
-            mid = str(row["model_id"])
+            mid = _canonical_model_id(str(row["model_id"]), row["provider_id"])
             usage = _token_usage_from_row(row)
             pricing = pricing_book.get(mid)
             model_cost: float | None = None
@@ -898,7 +964,21 @@ def get_date_insights(
                     started_at_ms=started_ms,
                 )
             else:
-                existing.models.append(sm)
+                existing_model = next((m for m in existing.models if m.model_id == mid), None)
+                if existing_model is None:
+                    existing.models.append(sm)
+                else:
+                    existing_model.usage.input_tokens += usage.input_tokens
+                    existing_model.usage.output_tokens += usage.output_tokens
+                    existing_model.usage.cache_read_tokens += usage.cache_read_tokens
+                    existing_model.usage.cache_write_tokens += usage.cache_write_tokens
+                    existing_model.total_interactions += int(row["total_interactions"])
+                    if model_cost is not None:
+                        existing_model.has_pricing = True
+                        if existing_model.cost_usd is None:
+                            existing_model.cost_usd = model_cost
+                        else:
+                            existing_model.cost_usd = round(existing_model.cost_usd + model_cost, 8)
                 existing.total_tokens += usage.total_tokens
                 existing.total_interactions += int(row["total_interactions"])
                 if model_cost is not None:
@@ -936,7 +1016,7 @@ def get_date_insights(
         projects.sort(
             key=lambda item: item.cost_usd if item.cost_usd is not None else -1, reverse=True
         )
-        project_models = _build_project_models_from_rows(project_model_rows)
+        project_models = _build_project_models_from_rows(project_model_rows, project_rows)
         project_models.sort(key=lambda item: item.usage.total_tokens, reverse=True)
         sessions = _build_sessions_from_rows(session_model_rows)
 
@@ -1024,7 +1104,7 @@ def get_date_insights(
         _build_projects_from_rows(all_project_rows, all_project_model_rows, "local")
     )
     projects.sort(key=lambda item: item.cost_usd if item.cost_usd is not None else -1, reverse=True)
-    project_models = _build_project_models_from_rows(all_project_model_rows)
+    project_models = _build_project_models_from_rows(all_project_model_rows, all_project_rows)
     project_models.sort(key=lambda item: item.usage.total_tokens, reverse=True)
     sessions = _build_sessions_from_rows(all_session_model_rows)
 
@@ -1163,7 +1243,7 @@ def get_models(
         priced_models = 0
 
         for row in rows:
-            model_id = str(row["model_id"])
+            model_id = _canonical_model_id(str(row["model_id"]), row["provider_id"])
             usage = _token_usage_from_row(row)
             pricing = pricing_book.get(model_id)
 
@@ -1391,7 +1471,7 @@ def get_providers(
         total_cost_usd: float | None = 0.0 if pricing_book else None
 
         for row in model_rows:
-            model_id = str(row["model_id"])
+            model_id = _canonical_model_id(str(row["model_id"]), row["provider_id"])
             provider_id = row["provider_id"]
             provider_name = provider_from_model_id_and_provider_field(model_id, provider_id)
             usage = _token_usage_from_row(row)
@@ -1541,12 +1621,55 @@ def get_model_detail(
     ) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
         requested_model_id = model_id
         row = repo.fetch_model_detail(model_id=requested_model_id, days=days)
+        if row is not None and int(row["total_interactions"]) > 0:
+            return row, None, None
 
-        if (row is None or int(row["total_interactions"]) == 0) and "/" in requested_model_id:
+        if "/" in requested_model_id:
             fallback_model_id = requested_model_id.split("/", maxsplit=1)[1]
             fallback_row = repo.fetch_model_detail(model_id=fallback_model_id, days=days)
             if fallback_row is not None and int(fallback_row["total_interactions"]) > 0:
-                return row, fallback_row, {"model_id": fallback_model_id}
+                return (
+                    row,
+                    fallback_row,
+                    {
+                        "model_id": _canonical_model_id(
+                            fallback_model_id, fallback_row["provider_id"]
+                        ),
+                        "repo_model_id": fallback_model_id,
+                        "provider_id": fallback_row["provider_id"],
+                    },
+                )
+
+        canonical_requested_model_id = _canonical_model_id(requested_model_id)
+        if canonical_requested_model_id != requested_model_id:
+            canonical_row = repo.fetch_model_detail(
+                model_id=canonical_requested_model_id, days=days
+            )
+            if canonical_row is not None and int(canonical_row["total_interactions"]) > 0:
+                return (
+                    row,
+                    canonical_row,
+                    {
+                        "model_id": canonical_requested_model_id,
+                        "repo_model_id": canonical_requested_model_id,
+                        "provider_id": canonical_row["provider_id"],
+                    },
+                )
+
+        if "/" not in requested_model_id:
+            prefixed_model_id = _canonical_model_id(requested_model_id)
+            if prefixed_model_id != requested_model_id:
+                prefixed_row = repo.fetch_model_detail(model_id=prefixed_model_id, days=days)
+                if prefixed_row is not None and int(prefixed_row["total_interactions"]) > 0:
+                    return (
+                        row,
+                        prefixed_row,
+                        {
+                            "model_id": prefixed_model_id,
+                            "repo_model_id": prefixed_model_id,
+                            "provider_id": prefixed_row["provider_id"],
+                        },
+                    )
 
         return row, None, None
 
@@ -1554,7 +1677,12 @@ def get_model_detail(
         source_id, repository = local_repos[0]
         row, fallback_row, fallback_info = _build_model_detail(repository)
         effective_row = fallback_row if fallback_row is not None else row
-        effective_model_id = fallback_info["model_id"] if fallback_info is not None else model_id
+        effective_model_id = (
+            fallback_info["model_id"]
+            if fallback_info is not None
+            else _canonical_model_id(model_id)
+        )
+        repo_model_id = fallback_info["repo_model_id"] if fallback_info is not None else model_id
 
         if effective_row is None:
             raise RuntimeError(f"No data found for model '{model_id}'.")
@@ -1562,7 +1690,7 @@ def get_model_detail(
             raise RuntimeError(f"No data found for model '{model_id}'.")
 
         usage = _token_usage_from_row(effective_row)
-        daily_rows = repository.fetch_daily_model_detail(model_id=effective_model_id, days=days)
+        daily_rows = repository.fetch_daily_model_detail(model_id=repo_model_id, days=days)
         pricing = pricing_book.get(effective_model_id)
         cost_usd = round(calculate_usage_cost(usage, pricing), 8) if pricing is not None else None
 
@@ -1619,12 +1747,19 @@ def get_model_detail(
             if effective_row is None or int(effective_row["total_interactions"]) == 0:
                 continue
 
-            repo_model_id = fallback_info["model_id"] if fallback_info is not None else model_id
+            repo_model_id = (
+                fallback_info["repo_model_id"] if fallback_info is not None else model_id
+            )
+            repo_effective_model_id = (
+                fallback_info["model_id"]
+                if fallback_info is not None
+                else _canonical_model_id(model_id)
+            )
             repo_provider_id = (
                 fallback_info.get("provider_id") if fallback_info is not None else None
             )
             if effective_model_id == model_id and fallback_info is not None:
-                effective_model_id = repo_model_id
+                effective_model_id = repo_effective_model_id
                 effective_provider_id = repo_provider_id
 
             usage = _token_usage_from_row(effective_row)
@@ -1635,7 +1770,7 @@ def get_model_detail(
             merged_sessions += int(effective_row["total_sessions"])
             merged_interactions += int(effective_row["total_interactions"])
 
-            pricing = pricing_book.get(repo_model_id)
+            pricing = pricing_book.get(repo_effective_model_id)
             daily_rows = repository.fetch_daily_model_detail(model_id=repo_model_id, days=days)
             for daily_row in daily_rows:
                 day_str = str(daily_row["day"])
@@ -1798,12 +1933,19 @@ def get_projects(
     def _build_project_rows(
         rows: list[Any], project_model_rows: list[Any], source_id: str
     ) -> tuple[list[ProjectUsage], float | None]:
+        project_id_map = {
+            str(row["project_id"]): _canonical_project_id(
+                str(row["project_id"]),
+                str(row["project_path"]) if row["project_path"] is not None else None,
+            )
+            for row in rows
+        }
         project_cost_map: dict[str, float] = {}
         total_cost_usd: float | None = 0.0 if pricing_book else None
 
         for row in project_model_rows:
-            project_id = str(row["project_id"])
-            model_id = str(row["model_id"])
+            project_id = project_id_map.get(str(row["project_id"]), str(row["project_id"]))
+            model_id = _canonical_model_id(str(row["model_id"]), row["provider_id"])
             pricing = pricing_book.get(model_id)
             if pricing is None:
                 continue
@@ -1814,7 +1956,7 @@ def get_projects(
 
         usage_rows: list[ProjectUsage] = []
         for row in rows:
-            project_id = str(row["project_id"])
+            project_id = project_id_map[str(row["project_id"])]
             project_cost = project_cost_map.get(project_id)
             usage_rows.append(
                 ProjectUsage(
@@ -1937,22 +2079,50 @@ def get_project_detail(
         pricing_file_override=pricing_file_override,
     )
 
+    def _resolve_repo_project_row(
+        repo: UsageRepository,
+        *,
+        requested_project_id: str,
+        known_project_path: str | None,
+    ) -> dict[str, Any] | None:
+        for row in repo.fetch_project_usage_detail(days=days):
+            row_project_id = str(row["project_id"])
+            row_project_path = str(row["project_path"]) if row["project_path"] is not None else None
+            canonical_project_id = _canonical_project_id(row_project_id, row_project_path)
+            if (
+                row_project_id == requested_project_id
+                or canonical_project_id == requested_project_id
+            ):
+                return row
+            if known_project_path is not None and row_project_path == known_project_path:
+                return row
+        return None
+
     def _build_project_detail(
-        repo: UsageRepository, source_id: str
+        repo: UsageRepository, source_id: str, known_project_path: str | None = None
     ) -> tuple[list[ProjectSessionUsage], float | None, TokenUsage, int, str, str | None]:
-        session_rows = repo.fetch_project_session_usage(project_id=project_id, days=days)
+        resolved_project_row = _resolve_repo_project_row(
+            repo,
+            requested_project_id=project_id,
+            known_project_path=known_project_path,
+        )
+        resolved_project_id = project_id
+        if resolved_project_row is not None:
+            resolved_project_id = str(resolved_project_row["project_id"])
+
+        session_rows = repo.fetch_project_session_usage(project_id=resolved_project_id, days=days)
         if not session_rows:
             raise RuntimeError(f"No data found for project '{project_id}'.")
 
         session_model_rows = repo.fetch_project_session_model_usage(
-            project_id=project_id, days=days
+            project_id=resolved_project_id, days=days
         )
 
         session_cost_map: dict[str, float] = {}
         total_cost_usd: float | None = 0.0 if pricing_book else None
         for row in session_model_rows:
             sid = str(row["session_id"])
-            model_id = str(row["model_id"])
+            model_id = _canonical_model_id(str(row["model_id"]), row.get("provider_id"))
             pricing = pricing_book.get(model_id)
             if pricing is None:
                 continue
@@ -2048,7 +2218,7 @@ def get_project_detail(
         sources_considered.append(source_id)
         try:
             repo_sessions, repo_cost, repo_usage, repo_interactions, repo_name, repo_path = (
-                _build_project_detail(repository, source_id)
+                _build_project_detail(repository, source_id, project_path)
             )
             merged_sessions.extend(repo_sessions)
             merged_usage.input_tokens += repo_usage.input_tokens

@@ -68,7 +68,7 @@ function VersionBadge({ className }: { className: string }) {
   )
 }
 
-function DetectedAgentsBadge({ className }: { className: string }) {
+function DetectedAgentsBadge({ className = '' }: { className?: string }) {
   const { data } = useQuery<HealthResponse>({
     queryKey: ['health-version'],
     queryFn: async () => {
