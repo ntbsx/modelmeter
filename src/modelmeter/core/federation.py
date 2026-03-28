@@ -112,8 +112,10 @@ def _merge_usage_data(usage_data: dict[str, int]) -> TokenUsage:
     return TokenUsage(
         input_tokens=int(usage_data.get("input_tokens", 0)),
         output_tokens=int(usage_data.get("output_tokens", 0)),
-        cache_read_tokens=int(usage_data.get("cache_read_tokens", 0)),
-        cache_write_tokens=int(usage_data.get("cache_write_tokens", 0)),
+        cache_read_tokens=int(usage_data.get("cache_read_tokens", usage_data.get("cache_read", 0))),
+        cache_write_tokens=int(
+            usage_data.get("cache_write_tokens", usage_data.get("cache_write", 0))
+        ),
     )
 
 
@@ -322,12 +324,7 @@ def execute_summary_federated(
                 assert source.db_path is not None
                 repo = create_repository("jsonl", source.db_path)
                 row = repo.fetch_summary(days=days)
-                usage = TokenUsage(
-                    input_tokens=int(row.get("input_tokens", 0)),
-                    output_tokens=int(row.get("output_tokens", 0)),
-                    cache_read_tokens=int(row.get("cache_read_tokens", 0)),
-                    cache_write_tokens=int(row.get("cache_write_tokens", 0)),
-                )
+                usage = _merge_usage_data(cast(dict[str, int], row))
                 total_usage = merge_token_usage(total_usage, usage)
                 total_sessions += repo.fetch_session_count(days=days)
             else:
@@ -469,12 +466,7 @@ def execute_daily_federated(
                     summary_row = repo.fetch_summary(days=days)
                 for row in rows:
                     day = date.fromisoformat(str(row["day"]))
-                    usage = TokenUsage(
-                        input_tokens=int(row.get("input_tokens", 0)),
-                        output_tokens=int(row.get("output_tokens", 0)),
-                        cache_read_tokens=int(row.get("cache_read_tokens", 0)),
-                        cache_write_tokens=int(row.get("cache_write_tokens", 0)),
-                    )
+                    usage = _merge_usage_data(cast(dict[str, int], row))
                     sessions = int(row.get("total_sessions", 0))
                     if day in daily_map:
                         existing = daily_map[day]
@@ -490,12 +482,7 @@ def execute_daily_federated(
                         )
                 total_usage = merge_token_usage(
                     total_usage,
-                    TokenUsage(
-                        input_tokens=int(summary_row.get("input_tokens", 0)),
-                        output_tokens=int(summary_row.get("output_tokens", 0)),
-                        cache_read_tokens=int(summary_row.get("cache_read_tokens", 0)),
-                        cache_write_tokens=int(summary_row.get("cache_write_tokens", 0)),
-                    ),
+                    _merge_usage_data(cast(dict[str, int], summary_row)),
                 )
                 resolved_session_source = repo.resolve_session_count_source(
                     days=days,
@@ -666,12 +653,7 @@ def execute_models_federated(
                 rows = repo.fetch_model_usage_detail(days=days)
                 for row in rows:
                     model_id = str(row["model_id"])
-                    usage = TokenUsage(
-                        input_tokens=int(row.get("input_tokens", 0)),
-                        output_tokens=int(row.get("output_tokens", 0)),
-                        cache_read_tokens=int(row.get("cache_read_tokens", 0)),
-                        cache_write_tokens=int(row.get("cache_write_tokens", 0)),
-                    )
+                    usage = _merge_usage_data(cast(dict[str, int], row))
                     model = ModelUsage(
                         model_id=model_id,
                         usage=usage,
@@ -690,10 +672,16 @@ def execute_models_federated(
                         input_tokens=int(sum(int(r.get("input_tokens", 0)) for r in rows)),
                         output_tokens=int(sum(int(r.get("output_tokens", 0)) for r in rows)),
                         cache_read_tokens=int(
-                            sum(int(r.get("cache_read_tokens", 0)) for r in rows)
+                            sum(
+                                int(r.get("cache_read_tokens", r.get("cache_read", 0)))
+                                for r in rows
+                            )
                         ),
                         cache_write_tokens=int(
-                            sum(int(r.get("cache_write_tokens", 0)) for r in rows)
+                            sum(
+                                int(r.get("cache_write_tokens", r.get("cache_write", 0)))
+                                for r in rows
+                            )
                         ),
                     ),
                 )
@@ -900,12 +888,7 @@ def execute_providers_federated(
                     provider = provider_from_model_id_and_provider_field(
                         model_id, row.get("provider_id")
                     )
-                    usage = TokenUsage(
-                        input_tokens=int(row.get("input_tokens", 0)),
-                        output_tokens=int(row.get("output_tokens", 0)),
-                        cache_read_tokens=int(row.get("cache_read_tokens", 0)),
-                        cache_write_tokens=int(row.get("cache_write_tokens", 0)),
-                    )
+                    usage = _merge_usage_data(cast(dict[str, int], row))
                     if provider in provider_map:
                         existing = provider_map[provider]
                         provider_map[provider] = ProviderUsage(
@@ -1129,12 +1112,7 @@ def execute_projects_federated(
                 rows = repo.fetch_project_usage_detail(days=days)
                 for row in rows:
                     project_id = str(row["project_id"])
-                    usage = TokenUsage(
-                        input_tokens=int(row.get("input_tokens", 0)),
-                        output_tokens=int(row.get("output_tokens", 0)),
-                        cache_read_tokens=int(row.get("cache_read_tokens", 0)),
-                        cache_write_tokens=int(row.get("cache_write_tokens", 0)),
-                    )
+                    usage = _merge_usage_data(cast(dict[str, int], row))
                     project_with_source = ProjectUsage(
                         project_id=project_id,
                         project_name=str(row.get("project_name", project_id)),

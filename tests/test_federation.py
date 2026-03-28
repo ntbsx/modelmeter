@@ -4,6 +4,7 @@ import json
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -263,6 +264,141 @@ class TestSourceScope:
 
 class TestFederatedQueries:
     """Test federated queries across multiple sources."""
+
+    def test_federated_jsonl_scope_preserves_cache_tokens(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        class _FakeJsonlRepo:
+            def fetch_summary(self, *, days: int | None = None) -> dict[str, int]:
+                _ = days
+                return {
+                    "input_tokens": 100,
+                    "output_tokens": 50,
+                    "cache_read": 20,
+                    "cache_write": 10,
+                    "total_sessions": 1,
+                }
+
+            def fetch_summary_steps(self, *, days: int | None = None) -> dict[str, int]:
+                return self.fetch_summary(days=days)
+
+            def fetch_session_count(self, *, days: int | None = None) -> int:
+                _ = days
+                return 1
+
+            def resolve_token_source(
+                self, *, days: int | None = None, token_source: str = "auto"
+            ) -> str:
+                _ = days
+                return "message" if token_source == "auto" else token_source
+
+            def resolve_session_count_source(
+                self, *, days: int | None = None, session_count_source: str = "auto"
+            ) -> str:
+                _ = days
+                return "session" if session_count_source == "auto" else session_count_source
+
+            def fetch_daily(
+                self, *, days: int | None = None, timezone_offset_minutes: int = 0
+            ) -> list[dict[str, object]]:
+                _ = (days, timezone_offset_minutes)
+                return [
+                    {
+                        "day": "2026-03-27",
+                        "input_tokens": 100,
+                        "output_tokens": 50,
+                        "cache_read": 20,
+                        "cache_write": 10,
+                        "total_sessions": 1,
+                    }
+                ]
+
+            def fetch_daily_steps(
+                self, *, days: int | None = None, timezone_offset_minutes: int = 0
+            ) -> list[dict[str, object]]:
+                return self.fetch_daily(days=days, timezone_offset_minutes=timezone_offset_minutes)
+
+            def fetch_model_usage_detail(
+                self, *, days: int | None = None
+            ) -> list[dict[str, object]]:
+                _ = days
+                return [
+                    {
+                        "model_id": "claude-sonnet-4-6",
+                        "provider_id": "anthropic",
+                        "input_tokens": 100,
+                        "output_tokens": 50,
+                        "cache_read": 20,
+                        "cache_write": 10,
+                        "total_sessions": 1,
+                        "total_interactions": 2,
+                    }
+                ]
+
+            def fetch_project_usage_detail(
+                self, *, days: int | None = None
+            ) -> list[dict[str, object]]:
+                _ = days
+                return [
+                    {
+                        "project_id": "p1",
+                        "project_name": "demo",
+                        "project_path": "/tmp/demo",
+                        "input_tokens": 100,
+                        "output_tokens": 50,
+                        "cache_read": 20,
+                        "cache_write": 10,
+                        "total_sessions": 1,
+                        "total_interactions": 2,
+                    }
+                ]
+
+        jsonl_dir = tmp_path / "jsonl"
+        jsonl_dir.mkdir()
+        (jsonl_dir / "session-001.jsonl").write_text("{}\n", encoding="utf-8")
+
+        registry_path = tmp_path / "sources.json"
+        settings = AppSettings(source_registry_file=registry_path, claudecode_enabled=False)
+        registry = SourceRegistry(
+            sources=[
+                DataSourceConfig(
+                    source_id="jsonl-source",
+                    kind="jsonl",
+                    db_path=jsonl_dir,
+                    enabled=True,
+                )
+            ]
+        )
+        save_source_registry(settings=settings, registry=registry)
+
+        def _fake_create_repository(kind: str, path: Path) -> Any:
+            _ = (kind, path)
+            return _FakeJsonlRepo()
+
+        monkeypatch.setattr("modelmeter.core.federation.create_repository", _fake_create_repository)
+
+        scope = SourceScope(kind=SourceScopeKind.SPECIFIC, source_id="jsonl-source")
+
+        summary = get_summary(settings=settings, days=7, source_scope=scope)
+        daily = get_daily(settings=settings, days=7, source_scope=scope)
+        models = get_models(settings=settings, days=7, source_scope=scope)
+        providers = get_providers(settings=settings, days=7, source_scope=scope)
+        projects = get_projects(settings=settings, days=7, source_scope=scope)
+
+        assert summary.usage.cache_read_tokens == 20
+        assert summary.usage.cache_write_tokens == 10
+        assert daily.totals.cache_read_tokens == 20
+        assert daily.totals.cache_write_tokens == 10
+        assert daily.daily[0].usage.cache_read_tokens == 20
+        assert daily.daily[0].usage.cache_write_tokens == 10
+        assert models.totals.cache_read_tokens == 20
+        assert models.totals.cache_write_tokens == 10
+        assert models.models[0].usage.cache_read_tokens == 20
+        assert models.models[0].usage.cache_write_tokens == 10
+        assert providers.providers[0].usage.cache_read_tokens == 20
+        assert providers.providers[0].usage.cache_write_tokens == 10
+        assert projects.projects[0].usage.cache_read_tokens == 20
+        assert projects.projects[0].usage.cache_write_tokens == 10
 
     def test_local_scope_returns_local_data(self, tmp_path: Path) -> None:
         """When source_scope=local with db_path_override, should return that db's data."""
