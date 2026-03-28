@@ -935,6 +935,7 @@ class _FakeProjectDetailRepo:
         input_tokens: int,
         output_tokens: int,
         total_interactions: int,
+        last_updated_ms: int = 1000,
     ) -> None:
         self._project_id = project_id
         self._project_name = project_name
@@ -944,7 +945,7 @@ class _FakeProjectDetailRepo:
                 "session_id": session_id,
                 "title": f"session-{session_id}",
                 "directory": "/tmp",
-                "last_updated_ms": 1000,
+                "last_updated_ms": last_updated_ms,
                 "project_id": project_id,
                 "project_name": project_name,
                 "project_path": project_path,
@@ -1118,3 +1119,45 @@ def test_get_project_detail_prices_providerless_model_ids() -> None:
 
     assert result.total_cost_usd is not None
     assert result.sessions[0].cost_usd is not None
+
+
+def test_get_project_detail_merges_sessions_sorted_by_last_updated() -> None:
+    from modelmeter.core.analytics import get_project_detail
+
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeProjectDetailRepo(
+                project_id="p1",
+                project_name="demo",
+                project_path="/tmp/demo",
+                session_id="older-high-token",
+                input_tokens=100,
+                output_tokens=50,
+                total_interactions=10,
+                last_updated_ms=1000,
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeProjectDetailRepo(
+                project_id="p1",
+                project_name="demo",
+                project_path="/tmp/demo",
+                session_id="newer-low-token",
+                input_tokens=10,
+                output_tokens=5,
+                total_interactions=1,
+                last_updated_ms=2000,
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos):
+        result = get_project_detail(settings=settings, project_id="p1")
+
+    assert [session.session_id for session in result.sessions] == [
+        "newer-low-token",
+        "older-high-token",
+    ]

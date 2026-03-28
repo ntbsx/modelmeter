@@ -130,8 +130,15 @@ def _build_live_snapshot(
     session_id: str | None,
 ) -> LiveSnapshotResponse:
     if session_id is not None:
+        requested_source_id: str | None = None
+        raw_session_id = session_id
+        if ":" in session_id:
+            requested_source_id, raw_session_id = session_id.split(":", maxsplit=1)
+
         for source_id, repository in repositories:
-            row = repository.fetch_active_session(session_id=session_id)
+            if requested_source_id is not None and source_id != requested_source_id:
+                continue
+            row = repository.fetch_active_session(session_id=raw_session_id)
             if row is not None:
                 agent = "claudecode" if source_id == "local-claudecode" else "opencode"
                 return _build_snapshot_from_single_source(
@@ -144,7 +151,7 @@ def _build_live_snapshot(
                     token_source=token_source,
                     models_limit=models_limit,
                     tools_limit=tools_limit,
-                    session_id=session_id,
+                    session_id=raw_session_id,
                     agent=agent,
                 )
         raise RuntimeError(f"Live session `{session_id}` was not found.")

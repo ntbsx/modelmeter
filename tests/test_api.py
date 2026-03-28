@@ -9,6 +9,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -954,7 +955,9 @@ def test_list_sessions_includes_claudecode_sessions(
 
     assert response.status_code == 200
     data = cast(list[dict[str, Any]], response.json())
-    session = next(session for session in data if session["session_id"] == "session-001")
+    session = next(
+        session for session in data if session["session_id"] == "local-claudecode:session-001"
+    )
     assert session["is_active"] is True
     assert session["time_updated"] >= int(now * 1000) - 1000
     assert session["agent"] == "claudecode"
@@ -1140,11 +1143,151 @@ def test_list_sessions_filters_by_active_since_hours(
     assert response.status_code == 200
     filtered = cast(list[dict[str, Any]], response.json())
     filtered_ids = {row["session_id"] for row in filtered}
-    assert "new-session" in filtered_ids
-    assert "old-session" not in filtered_ids
+    assert "local-opencode:new-session" in filtered_ids
+    assert "local-opencode:old-session" not in filtered_ids
 
     response_all = client.get("/api/sessions", params={"limit": 100})
     assert response_all.status_code == 200
     unfiltered = cast(list[dict[str, Any]], response_all.json())
     unfiltered_ids = {row["session_id"] for row in unfiltered}
-    assert "old-session" in unfiltered_ids
+    assert "local-opencode:old-session" in unfiltered_ids
+
+
+class _FakeLiveSessionRepo:
+    def __init__(self, *, model_id: str, project_id: str, project_name: str) -> None:
+        self.model_id = model_id
+        self.project_id = project_id
+        self.project_name = project_name
+
+    def fetch_sessions_summary(
+        self,
+        *,
+        limit: int = 20,
+        include_archived: bool = False,
+        min_time_updated_ms: int | None = None,
+    ) -> list[dict[str, Any]]:
+        _ = (limit, include_archived, min_time_updated_ms)
+        return [
+            {
+                "session_id": "shared-session",
+                "title": "Shared Session",
+                "directory": "/tmp/demo",
+                "time_created": 1000,
+                "time_updated": 2000,
+                "time_archived": None,
+                "project_name": self.project_name,
+                "project_id": self.project_id,
+                "message_count": 1,
+                "model_count": 1,
+                "token_count": 15,
+            }
+        ]
+
+    def fetch_active_session(self, *, session_id: str | None = None) -> dict[str, Any] | None:
+        if session_id is not None and session_id != "shared-session":
+            return None
+        return {
+            "id": "shared-session",
+            "title": "Shared Session",
+            "directory": "/tmp/demo",
+            "project_id": self.project_id,
+            "time_updated": 2000,
+            "project_name": self.project_name,
+        }
+
+    def fetch_live_summary_messages(
+        self, *, since_ms: int, session_id: str | None = None
+    ) -> dict[str, Any]:
+        _ = since_ms
+        if session_id is not None and session_id != "shared-session":
+            return {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cache_read": 0,
+                "cache_write": 0,
+                "total_sessions": 0,
+                "total_interactions": 0,
+            }
+        return {
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "cache_read": 0,
+            "cache_write": 0,
+            "total_sessions": 1,
+            "total_interactions": 1,
+        }
+
+    def fetch_live_summary_steps(
+        self, *, since_ms: int, session_id: str | None = None
+    ) -> dict[str, Any]:
+        return self.fetch_live_summary_messages(since_ms=since_ms, session_id=session_id)
+
+    def fetch_live_model_usage(
+        self, *, since_ms: int, limit: int = 5, session_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        _ = (since_ms, limit)
+        if session_id is not None and session_id != "shared-session":
+            return []
+        return [
+            {
+                "model_id": self.model_id,
+                "provider_id": "anthropic",
+                "input_tokens": 10,
+                "output_tokens": 5,
+                "cache_read": 0,
+                "cache_write": 0,
+                "total_sessions": 1,
+                "total_interactions": 1,
+            }
+        ]
+
+    def fetch_live_tool_usage(
+        self, *, since_ms: int, limit: int = 8, session_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        _ = (since_ms, limit, session_id)
+        return []
+
+    def resolve_token_source(self, *, days: int | None = None, token_source: str = "auto") -> str:
+        _ = days
+        return "message" if token_source == "auto" else token_source
+
+
+def test_list_sessions_namespaces_local_ids_and_live_route_disambiguates() -> None:
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeLiveSessionRepo(
+                model_id="anthropic/open-opus",
+                project_id="p1",
+                project_name="OpenCode",
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeLiveSessionRepo(
+                model_id="claude-sonnet-4-6",
+                project_id="p2",
+                project_name="Claude Code",
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos):
+        client = _new_client()
+
+        sessions_response = client.get("/api/sessions", params={"limit": 10})
+        assert sessions_response.status_code == 200
+        sessions = cast(list[dict[str, Any]], sessions_response.json())
+        assert {session["session_id"] for session in sessions} == {
+            "local-opencode:shared-session",
+            "local-claudecode:shared-session",
+        }
+
+        live_response = client.get(
+            "/api/live/session/local-claudecode:shared-session",
+            params={"window_minutes": 60},
+        )
+        assert live_response.status_code == 200
+        data = live_response.json()
+        assert data["active_session"]["project_name"] == "Claude Code"
+        assert data["top_models"][0]["model_id"] == "anthropic/claude-sonnet-4-6"

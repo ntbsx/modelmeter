@@ -673,7 +673,7 @@ def create_app(
                 )
                 for row in repo_rows:
                     session = SessionSummary(
-                        session_id=str(row["session_id"]),
+                        session_id=f"{source_id}:{row['session_id']}",
                         title=str(row["title"]) if row["title"] else None,
                         directory=str(row["directory"]) if row["directory"] else None,
                         project_id=str(row["project_id"]) if row["project_id"] else None,

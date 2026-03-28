@@ -2248,7 +2248,7 @@ def get_project_detail(
         raise RuntimeError("No local data sources available.")
 
     total_sessions = len(merged_sessions)
-    merged_sessions.sort(key=lambda s: s.usage.total_tokens, reverse=True)
+    merged_sessions.sort(key=lambda s: s.last_updated_ms, reverse=True)
     sliced_sessions = merged_sessions[session_offset:]
     if session_limit is not None:
         sliced_sessions = sliced_sessions[:session_limit]
