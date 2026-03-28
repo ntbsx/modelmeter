@@ -6,7 +6,7 @@ import sqlite3
 from datetime import UTC, date, datetime
 from hashlib import md5
 from pathlib import Path
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.doctor import generate_doctor_report
@@ -51,11 +51,11 @@ def _resolved_summary_row(
     repository: UsageRepository,
     *,
     days: int | None,
-    token_source: str,
+    token_source: Literal["auto", "message", "steps"],
 ) -> dict[str, Any]:
     resolved_token_source = repository.resolve_token_source(
         days=days,
-        token_source=cast(Literal["auto", "message", "steps"], token_source),
+        token_source=token_source,
     )
     if resolved_token_source == "steps":
         return repository.fetch_summary_steps(days=days)
@@ -66,15 +66,12 @@ def _resolved_total_sessions(
     repository: UsageRepository,
     *,
     days: int | None,
-    session_count_source: str,
+    session_count_source: Literal["auto", "activity", "session"],
     summary_row: dict[str, Any],
 ) -> int:
     resolved_session_source = repository.resolve_session_count_source(
         days=days,
-        session_count_source=cast(
-            Literal["auto", "activity", "session"],
-            session_count_source,
-        ),
+        session_count_source=session_count_source,
     )
     if resolved_session_source == "activity":
         return int(summary_row["total_sessions"])
@@ -1187,8 +1184,8 @@ def get_models(
     provider: str | None = None,
     offset: int = 0,
     limit: int = 20,
-    token_source: str = "auto",
-    session_count_source: str = "auto",
+    token_source: Literal["auto", "message", "steps"] = "auto",
+    session_count_source: Literal["auto", "activity", "session"] = "auto",
     source_scope: SourceScope | None = None,
 ) -> ModelsResponse:
     """Return top model usage aggregates."""
@@ -1453,8 +1450,8 @@ def get_providers(
     pricing_file_override: Path | None = None,
     offset: int = 0,
     limit: int = 20,
-    token_source: str = "auto",
-    session_count_source: str = "auto",
+    token_source: Literal["auto", "message", "steps"] = "auto",
+    session_count_source: Literal["auto", "activity", "session"] = "auto",
     source_scope: SourceScope | None = None,
 ) -> ProvidersResponse:
     """Return usage aggregates grouped by provider."""
@@ -1959,8 +1956,8 @@ def get_projects(
     pricing_file_override: Path | None = None,
     offset: int = 0,
     limit: int = 20,
-    token_source: str = "auto",
-    session_count_source: str = "auto",
+    token_source: Literal["auto", "message", "steps"] = "auto",
+    session_count_source: Literal["auto", "activity", "session"] = "auto",
     source_scope: SourceScope | None = None,
 ) -> ProjectsResponse:
     """Return top project usage aggregates."""

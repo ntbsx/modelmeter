@@ -1222,7 +1222,7 @@ class SQLiteUsageRepository:
             return self._to_dict(row)
 
     def fetch_live_model_usage(
-        self, *, since_ms: int, limit: int, session_id: str | None = None
+        self, *, since_ms: int, limit: int = 5, session_id: str | None = None
     ) -> list[dict[str, Any]]:
         """Fetch model usage since timestamp, optionally filtered by session_id."""
         query = """
@@ -1270,7 +1270,7 @@ class SQLiteUsageRepository:
             return self._to_dict_list(result)
 
     def fetch_live_tool_usage(
-        self, *, since_ms: int, limit: int, session_id: str | None = None
+        self, *, since_ms: int, limit: int = 8, session_id: str | None = None
     ) -> list[dict[str, Any]]:
         """Fetch tool usage since timestamp from tool parts, optionally filtered by session_id."""
         query = """
