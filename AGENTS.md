@@ -38,7 +38,7 @@ Primary commands (Makefile):
 - `make frontend` run Vite dev server
 - `make format` run `ruff format`
 - `make lint` run `ruff check`
-- `make typecheck` run `pyright` (strict)
+- `make typecheck` run `ty`
 - `make test` run all pytest tests
 - `make gen-types` regenerate OpenAPI + TS generated types
 - `make version-stamp` bump monthly patch CalVer and sync frontend version
@@ -198,7 +198,7 @@ uv run pytest tests/test_updater.py tests/test_cli.py tests/test_api.py tests/te
 Configured hooks in `.pre-commit-config.yaml`:
 - `ruff-format`
 - `ruff --fix`
-- `pyright`
+- `ty`
 
 Recommended pre-PR command:
 

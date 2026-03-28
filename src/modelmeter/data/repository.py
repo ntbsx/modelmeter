@@ -96,11 +96,11 @@ def create_repository(kind: str, path: Path) -> UsageRepository:
     if kind == "sqlite":
         from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 
-        return SQLiteUsageRepository(path)  # type: ignore[return-value]
+        return SQLiteUsageRepository(path)
     if kind == "jsonl":
         from modelmeter.data.jsonl_usage_repository import (
-            JsonlUsageRepository,  # type: ignore[import]
+            JsonlUsageRepository,
         )
 
-        return JsonlUsageRepository(path)  # type: ignore[return-value]
+        return JsonlUsageRepository(path)
     raise ValueError(f"Unknown repository kind: {kind}")

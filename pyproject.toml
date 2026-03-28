@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Nikho Sagala", email = "work@ntbs.dev" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.116.1",
     "pydantic>=2.11.7",
@@ -15,11 +15,10 @@ dependencies = [
     "typer>=0.16.1",
     "uvicorn>=0.35.0",
 ]
-license = {text = "MIT"}
+license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
     "Environment :: Console",
 ]
@@ -32,7 +31,7 @@ dev = [
     "httpx>=0.28.1",
     "pip-audit>=2.9.0",
     "pre-commit>=4.3.0",
-    "pyright>=1.1.405",
+    "ty>=0.0.1",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
     "pytest-xdist>=3.6.1",
@@ -45,7 +44,7 @@ build-backend = "uv_build"
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py313"
 
 [tool.ruff.lint]
 select = [
@@ -56,15 +55,13 @@ select = [
     "B",
 ]
 
-[tool.pyright]
-pythonVersion = "3.12"
-typeCheckingMode = "strict"
+[tool.ty]
+environment.python-version = "3.13"
+
+[tool.ty.src]
 include = ["src", "tests"]
-venvPath = "."
-venv = ".venv"
-reportMissingTypeStubs = false
-reportUnusedFunction = false
-reportPrivateUsage = false
+
+[tool.ty.rules]
 
 [tool.pytest.ini_options]
 minversion = "8.0"

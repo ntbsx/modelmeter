@@ -4333,6 +4333,10 @@
                       },
                       {
                         "items": {
+                          "enum": [
+                            "opencode",
+                            "claudecode"
+                          ],
                           "type": "string"
                         },
                         "type": "array"

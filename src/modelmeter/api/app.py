@@ -202,7 +202,7 @@ def create_app(
         return await call_next(request)
 
     @app.get("/health")
-    def health() -> dict[str, str | bool | list[str]]:
+    def health() -> dict[str, str | bool | list[Literal["opencode", "claudecode"]]]:
         report = generate_doctor_report(settings=settings)
         agents_detected = list(dict.fromkeys(source.agent for source in report.detected_sources))
         return {

@@ -1,10 +1,5 @@
 """Federation service for multi-source analytics."""
 
-# pyright: reportUnknownMemberType=false
-# pyright: reportUnknownArgumentType=false
-# pyright: reportAttributeAccessIssue=false
-# pyright: reportUnusedImport=false
-
 from __future__ import annotations
 
 import base64
@@ -16,7 +11,7 @@ import urllib.parse
 import urllib.request
 from datetime import date
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.models import (
@@ -108,7 +103,6 @@ def merge_project_usage(a: ProjectUsage, b: ProjectUsage) -> ProjectUsage:
     )
 
 
-# pyright: ignore[reportUnknownMemberType, reportUnknownArgumentType, reportAttributeAccessIssue]
 def _merge_usage_data(usage_data: dict[str, int]) -> TokenUsage:
     """Create TokenUsage from usage data dict."""
     return TokenUsage(
@@ -167,8 +161,8 @@ def _fetch_http_daily(
     *,
     days: int | None,
     timezone_offset_minutes: int,
-    token_source: str,
-    session_count_source: str,
+    token_source: Literal["auto", "message", "steps"],
+    session_count_source: Literal["auto", "activity", "session"],
 ) -> dict[str, object]:
     """Fetch daily usage from an HTTP source."""
     assert source.base_url is not None
@@ -200,8 +194,8 @@ def _fetch_http_models(
     offset: int,
     limit: int,
     provider: str | None,
-    token_source: str,
-    session_count_source: str,
+    token_source: Literal["auto", "message", "steps"],
+    session_count_source: Literal["auto", "activity", "session"],
 ) -> dict[str, object]:
     """Fetch models from an HTTP source."""
     assert source.base_url is not None
@@ -235,8 +229,8 @@ def _fetch_http_providers(
     days: int | None,
     offset: int,
     limit: int,
-    token_source: str,
-    session_count_source: str,
+    token_source: Literal["auto", "message", "steps"],
+    session_count_source: Literal["auto", "activity", "session"],
 ) -> dict[str, object]:
     """Fetch providers from an HTTP source."""
     assert source.base_url is not None
@@ -301,8 +295,8 @@ def execute_summary_federated(
     *,
     settings: AppSettings,
     days: int | None = None,
-    token_source: str = "auto",
-    session_count_source: str = "auto",
+    token_source: Literal["auto", "message", "steps"] = "auto",
+    session_count_source: Literal["auto", "activity", "session"] = "auto",
     scope_label: str = "all",
     pricing_file_override: Path | None = None,
 ) -> tuple[SummaryResponse, list[SourceFailure]]:
@@ -328,8 +322,8 @@ def execute_summary_federated(
                     settings=settings,
                     days=days,
                     db_path_override=paths.sqlite_db_path,
-                    token_source=token_source,  # type: ignore[arg-type]
-                    session_count_source=session_count_source,  # type: ignore[arg-type]
+                    token_source=token_source,
+                    session_count_source=session_count_source,
                 )
                 total_usage = merge_token_usage(total_usage, result.usage)
                 total_sessions += result.total_sessions
@@ -372,10 +366,9 @@ def execute_summary_federated(
                     session_count_source=session_count_source,
                 )
                 usage_data_raw = data.get("usage")
-                # pyright: ignore
                 usage_data: dict[str, int] = (
                     usage_data_raw if isinstance(usage_data_raw, dict) else {}
-                )  # type: ignore
+                )
                 total_usage = merge_token_usage(
                     total_usage,
                     _merge_usage_data(usage_data),
@@ -435,8 +428,8 @@ def execute_daily_federated(
     settings: AppSettings,
     days: int | None = None,
     timezone_offset_minutes: int = 0,
-    token_source: str = "auto",
-    session_count_source: str = "auto",
+    token_source: Literal["auto", "message", "steps"] = "auto",
+    session_count_source: Literal["auto", "activity", "session"] = "auto",
     scope_label: str = "all",
     pricing_file_override: Path | None = None,
 ) -> tuple[DailyResponse, list[SourceFailure]]:
@@ -464,8 +457,8 @@ def execute_daily_federated(
                     days=days,
                     timezone_offset_minutes=timezone_offset_minutes,
                     db_path_override=paths.sqlite_db_path,
-                    token_source=token_source,  # type: ignore[arg-type]
-                    session_count_source=session_count_source,  # type: ignore[arg-type]
+                    token_source=token_source,
+                    session_count_source=session_count_source,
                 )
                 total_usage = merge_token_usage(total_usage, result.totals)
                 total_sessions += result.total_sessions
@@ -493,7 +486,7 @@ def execute_daily_federated(
                 repo = create_repository("jsonl", source.db_path)
                 resolved_source = repo.resolve_token_source(
                     days=days,
-                    token_source=token_source,  # type: ignore[arg-type]
+                    token_source=token_source,
                 )
                 if resolved_source == "steps":
                     rows = repo.fetch_daily_steps(
@@ -556,7 +549,7 @@ def execute_daily_federated(
                     pricing_source = jsonl_pricing_source
                 resolved_session_source = repo.resolve_session_count_source(
                     days=days,
-                    session_count_source=session_count_source,  # type: ignore[arg-type]
+                    session_count_source=session_count_source,
                 )
                 if resolved_session_source == "session":
                     total_sessions += repo.fetch_session_count(days=days)
@@ -669,8 +662,8 @@ def execute_models_federated(
     offset: int = 0,
     limit: int = 20,
     provider: str | None = None,
-    token_source: str = "auto",
-    session_count_source: str = "auto",
+    token_source: Literal["auto", "message", "steps"] = "auto",
+    session_count_source: Literal["auto", "activity", "session"] = "auto",
     scope_label: str = "all",
     pricing_file_override: Path | None = None,
 ) -> tuple[ModelsResponse, list[SourceFailure]]:
@@ -941,8 +934,8 @@ def execute_providers_federated(
     days: int | None = None,
     offset: int = 0,
     limit: int = 20,
-    token_source: str = "auto",
-    session_count_source: str = "auto",
+    token_source: Literal["auto", "message", "steps"] = "auto",
+    session_count_source: Literal["auto", "activity", "session"] = "auto",
     scope_label: str = "all",
     pricing_file_override: Path | None = None,
 ) -> tuple[ProvidersResponse, list[SourceFailure]]:
@@ -1187,8 +1180,8 @@ def execute_projects_federated(
     days: int | None = None,
     offset: int = 0,
     limit: int = 20,
-    token_source: str = "auto",
-    session_count_source: str = "auto",
+    token_source: Literal["auto", "message", "steps"] = "auto",
+    session_count_source: Literal["auto", "activity", "session"] = "auto",
     scope_label: str = "all",
     pricing_file_override: Path | None = None,
 ) -> tuple[ProjectsResponse, list[SourceFailure]]:

@@ -6,7 +6,7 @@ Thank you for your interest in contributing to ModelMeter! This document provide
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.13+
 - Node.js 18+ and npm
 - [uv](https://docs.astral.sh/uv/) (Python package manager)
 
@@ -54,7 +54,7 @@ Before submitting a PR, run:
 ```bash
 make format      # Format code with Ruff
 make lint        # Lint with Ruff
-make typecheck   # Type check with Pyright (strict)
+make typecheck   # Type check with ty
 make test        # Run all pytest tests
 ```
 
@@ -124,7 +124,7 @@ make version-check  # Verify versions are aligned
 ### Python
 
 - Ruff is the source of truth for formatting and linting
-- Pyright strict mode is enabled; maintain complete type hints
+- Ty is used for type checking; maintain complete type hints
 - Prefer absolute imports from `modelmeter.*`
 - Max line length: 100 characters
 

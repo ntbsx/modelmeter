@@ -28,7 +28,7 @@ lint:
 	uv run ruff check
 
 typecheck:
-	uv run python -m pyright
+	uv run ty check
 
 test:
 	uv run python -m pytest
