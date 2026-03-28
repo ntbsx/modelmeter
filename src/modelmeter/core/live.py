@@ -153,6 +153,7 @@ def _build_live_snapshot(
         if matched_repositories:
             source_id, repository = matched_repositories[0]
             agent = "claudecode" if source_id == "local-claudecode" else "opencode"
+            namespaced_id = f"{source_id}:{raw_session_id}"
             return _build_snapshot_from_single_source(
                 repository=repository,
                 settings=settings,
@@ -165,7 +166,7 @@ def _build_live_snapshot(
                 tools_limit=tools_limit,
                 session_id=raw_session_id,
                 agent=agent,
-                public_session_id=session_id,
+                public_session_id=namespaced_id,
             )
         raise RuntimeError(f"Live session `{session_id}` was not found.")
 

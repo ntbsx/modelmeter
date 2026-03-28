@@ -109,3 +109,30 @@ def test_fetch_sessions_summary_uses_file_mtime_for_filtering_and_sorting(tmp_pa
 
     assert [row["session_id"] for row in rows] == ["session-001"]
     assert rows[0]["time_updated"] >= int(now * 1000) - 1000
+
+
+def test_fetch_daily_includes_interactions_at_end_of_day(tmp_path: Path) -> None:
+    copied = tmp_path / "claude"
+    shutil.copytree(FIXTURES_DIR, copied)
+    session_dir = copied / "-Users-test-projs-boundary"
+    session_dir.mkdir()
+    session_file = session_dir / "session-boundary.jsonl"
+    session_file.write_text(
+        '{"sessionId": "session-boundary", "cwd": "/Users/test/projs/boundary", '
+        '"type": "user", '
+        '"message": {"role": "user", "content": [{"type": "text", "text": "late"}]}, '
+        '"timestamp": "2026-03-20T23:59:58.000Z"}\n'
+        '{"sessionId": "session-boundary", "cwd": "/Users/test/projs/boundary", '
+        '"type": "assistant", '
+        '"message": {"role": "assistant", "content": [{"type": "text", "text": "reply"}]}, '
+        '"model": "claude-sonnet-4-6", "stop_reason": "end_turn", '
+        '"usage": {"input_tokens": 50, "output_tokens": 25, '
+        '"cache_read": 0, "cache_write": 0}, '
+        '"timestamp": "2026-03-20T23:59:59.500Z"}\n'
+    )
+    repo = JsonlUsageRepository(copied)
+    row = repo.fetch_summary_for_day(day="2026-03-20")
+    assert row["input_tokens"] >= 50, (
+        f"Day-boundary interaction at 23:59:59.500 missing from 2026-03-20. "
+        f"Got {row['input_tokens']} input_tokens"
+    )

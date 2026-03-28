@@ -331,9 +331,10 @@ class JsonlUsageRepository:
             .timestamp()
             * 1000
         )
-        day_end = int(
-            datetime(9999, 12, 31, 23, 59, 59, tzinfo=tz)
-            .replace(year=day_dt.year, month=day_dt.month, day=day_dt.day)
+        next_day = day_dt + timedelta(days=1)
+        day_end_exclusive = int(
+            datetime(1970, 1, 1, tzinfo=tz)
+            .replace(year=next_day.year, month=next_day.month, day=next_day.day)
             .timestamp()
             * 1000
         )
@@ -342,7 +343,7 @@ class JsonlUsageRepository:
             (s, i)
             for s in index.sessions
             for i in s.interactions
-            if day_start <= i.timestamp_ms <= day_end
+            if day_start <= i.timestamp_ms < day_end_exclusive
         ]
 
     def fetch_summary(self, *, days: int | None = None) -> RowDict:

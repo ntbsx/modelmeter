@@ -297,6 +297,32 @@ def test_get_live_snapshot_rejects_ambiguous_unprefixed_local_session_id() -> No
             raise AssertionError("Expected ambiguous unprefixed live session ID to raise")
 
 
+def test_get_live_snapshot_returns_namespaced_id_for_unique_unprefixed_session() -> None:
+    settings = AppSettings()
+    local_repos = [
+        (
+            "local-claudecode",
+            _FakeLiveRepo(
+                session_id="unique-session",
+                project_name="Test",
+                model_id="claude-sonnet-4-6",
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.live._resolve_live_repositories", return_value=local_repos):
+        snapshot = get_live_snapshot(
+            settings=settings,
+            window_minutes=60,
+            token_source="auto",
+            models_limit=5,
+            tools_limit=5,
+            session_id="unique-session",
+        )
+    assert snapshot.active_session is not None
+    assert snapshot.active_session.session_id == "local-claudecode:unique-session"
+
+
 def test_live_snapshot_uses_claudecode_repository_for_claudecode_session(tmp_path: Path) -> None:
     claudecode_dir = _copy_claudecode_fixtures(tmp_path)
     session_file = claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-001.jsonl"
@@ -320,7 +346,7 @@ def test_live_snapshot_uses_claudecode_repository_for_claudecode_session(tmp_pat
     assert snapshot.total_sessions == 1
     assert snapshot.total_interactions > 0
     assert snapshot.active_session is not None
-    assert snapshot.active_session.session_id == "session-001"
+    assert snapshot.active_session.session_id == "local-claudecode:session-001"
     assert snapshot.active_session.project_name == "myproject"
     assert snapshot.active_session.is_active is True
     assert snapshot.active_session.last_updated_ms >= int(now * 1000) - 1000
