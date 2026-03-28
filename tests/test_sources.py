@@ -165,3 +165,23 @@ def test_data_source_config_rejects_http_with_agent() -> None:
             base_url="https://example.com",
             agent="opencode",
         )
+
+
+def test_data_source_config_rejects_sqlite_with_auth() -> None:
+    with pytest.raises(ValueError, match="auth is only supported for http sources"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="sqlite",
+            db_path=Path("/tmp/test.db"),
+            auth=SourceAuth(username="user", password="pass"),
+        )
+
+
+def test_data_source_config_rejects_jsonl_with_auth() -> None:
+    with pytest.raises(ValueError, match="auth is only supported for http sources"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="jsonl",
+            db_path=Path("/tmp/test"),
+            auth=SourceAuth(username="user", password="pass"),
+        )

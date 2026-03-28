@@ -90,6 +90,8 @@ class DataSourceConfig(BaseModel):
             raise ValueError("http source requires base_url")
         if self.kind == "http" and self.agent is not None:
             raise ValueError("http source does not support agent field")
+        if self.kind != "http" and self.auth is not None:
+            raise ValueError("auth is only supported for http sources")
         return self
 
 

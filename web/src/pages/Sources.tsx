@@ -451,7 +451,13 @@ export default function Sources() {
                     const newKind = event.target.value as 'sqlite' | 'http' | 'jsonl'
                     const defaultAgent =
                       newKind === 'jsonl' ? 'claudecode' : newKind === 'sqlite' ? 'opencode' : ''
-                    return { ...prev, kind: newKind, agent: defaultAgent }
+                    const clearAuth = newKind !== 'http'
+                    return {
+                      ...prev,
+                      kind: newKind,
+                      agent: defaultAgent,
+                      ...(clearAuth ? { username: '', password: '' } : {}),
+                    }
                   })
                 }
                 className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
@@ -461,23 +467,25 @@ export default function Sources() {
                 <option value="jsonl">jsonl</option>
               </select>
             </label>
-            <label className="text-sm font-medium text-[var(--text-primary)]">
-              Agent
-              <select
-                value={form.agent}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    agent: event.target.value as '' | 'opencode' | 'claudecode',
-                  }))
-                }
-                className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
-              >
-                <option value="">Unspecified</option>
-                <option value="opencode">opencode</option>
-                <option value="claudecode">claudecode</option>
-              </select>
-            </label>
+            {form.kind !== 'http' && (
+              <label className="text-sm font-medium text-[var(--text-primary)]">
+                Agent
+                <select
+                  value={form.agent}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      agent: event.target.value as '' | 'opencode' | 'claudecode',
+                    }))
+                  }
+                  className="mt-1.5 w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] px-3 py-2 text-sm text-[var(--text-primary)]"
+                >
+                  <option value="">Unspecified</option>
+                  {form.kind === 'sqlite' && <option value="opencode">opencode</option>}
+                  {form.kind === 'jsonl' && <option value="claudecode">claudecode</option>}
+                </select>
+              </label>
+            )}
             <label className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2 mt-7">
               <input
                 type="checkbox"
