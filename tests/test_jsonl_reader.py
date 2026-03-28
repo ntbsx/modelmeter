@@ -98,12 +98,16 @@ def test_fetch_sessions_summary_uses_file_mtime_for_filtering_and_sorting(tmp_pa
     older_session = copied / "-Users-test-projs-myproject" / "session-002.jsonl"
     old_session_3 = copied / "-Users-test-projs-other" / "session-003.jsonl"
     old_session_4 = copied / "-Users-test-projs-myproject" / "session-004.jsonl"
+    old_session_4_subagent = (
+        copied / "-Users-test-projs-myproject" / "session-004" / "subagents" / "agent-sub1.jsonl"
+    )
 
     now = time.time()
     os.utime(fresh_session, (now, now))
     os.utime(older_session, (now - 3600, now - 3600))
     os.utime(old_session_3, (now - 3600, now - 3600))
     os.utime(old_session_4, (now - 3600, now - 3600))
+    os.utime(old_session_4_subagent, (now - 3600, now - 3600))
 
     rows = repo.fetch_sessions_summary(min_time_updated_ms=int((now - 300) * 1000))
 
