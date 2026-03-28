@@ -414,6 +414,8 @@ export interface components {
          * @description Public view of a source config with credentials redacted.
          */
         DataSourcePublic: {
+            /** Agent */
+            agent?: ("opencode" | "claudecode") | null;
             /** Base Url */
             base_url?: string | null;
             /** Db Path */
@@ -432,7 +434,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "sqlite" | "http";
+            kind: "sqlite" | "http" | "jsonl";
             /** Label */
             label?: string | null;
             /** Source Id */
@@ -490,6 +492,35 @@ export interface components {
             usage: components["schemas"]["TokenUsage"];
         };
         /**
+         * DetectedSource
+         * @description Detected data source with agent information.
+         */
+        DetectedSource: {
+            /**
+             * Agent
+             * @enum {string}
+             */
+            agent: "opencode" | "claudecode";
+            /** Details */
+            details?: string | null;
+            /** Exists */
+            exists: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "sqlite" | "jsonl";
+            /** Path */
+            path: string;
+            /** Source Id */
+            source_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "error";
+        };
+        /**
          * DoctorReport
          * @description Top-level health diagnostics payload.
          */
@@ -498,6 +529,10 @@ export interface components {
             app_name: string;
             /** App Version */
             app_version: string;
+            /** Claudecode Data Dir */
+            claudecode_data_dir: string;
+            /** Detected Sources */
+            detected_sources: components["schemas"]["DetectedSource"][];
             legacy: components["schemas"]["LegacyDiagnostics"];
             /** Opencode Data Dir */
             opencode_data_dir: string;
@@ -525,6 +560,8 @@ export interface components {
          * @description Active session metadata in live snapshot.
          */
         LiveActiveSession: {
+            /** Agent */
+            agent?: string | null;
             /** Directory */
             directory?: string | null;
             /**
@@ -1058,6 +1095,8 @@ export interface components {
          * @description Session summary for selection UI.
          */
         SessionSummary: {
+            /** Agent */
+            agent?: ("opencode" | "claudecode") | null;
             /** Cost Usd */
             cost_usd?: number | null;
             /** Directory */
@@ -1165,7 +1204,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "sqlite" | "http";
+            kind: "sqlite" | "http" | "jsonl";
             /** Source Id */
             source_id: string;
         };
@@ -1189,6 +1228,8 @@ export interface components {
         };
         /** SourceUpsertRequest */
         SourceUpsertRequest: {
+            /** Agent */
+            agent?: ("opencode" | "claudecode") | null;
             auth?: components["schemas"]["SourceAuth"] | null;
             /** Base Url */
             base_url?: string | null;
@@ -1203,7 +1244,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "sqlite" | "http";
+            kind: "sqlite" | "http" | "jsonl";
             /** Label */
             label?: string | null;
             /**
@@ -2006,7 +2047,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        [key: string]: string | boolean;
+                        [key: string]: string | boolean | string[];
                     };
                 };
             };

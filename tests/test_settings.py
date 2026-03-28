@@ -19,3 +19,11 @@ def test_update_check_is_enabled_by_default() -> None:
     assert (
         settings.update_check_url == "https://api.github.com/repos/ntbsx/modelmeter/releases/latest"
     )
+
+
+def test_claudecode_settings_defaults() -> None:
+    """Settings should have Claude Code defaults."""
+    settings = AppSettings()
+    assert hasattr(settings, "claudecode_data_dir")
+    assert hasattr(settings, "claudecode_enabled")
+    assert settings.claudecode_enabled is True

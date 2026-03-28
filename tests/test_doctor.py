@@ -61,3 +61,59 @@ def test_doctor_cli_json_output(tmp_path: Path) -> None:
     assert result.exit_code == 0
     payload = json.loads(result.stdout)
     assert payload["selected_source"] == "sqlite"
+
+
+def test_doctor_report_includes_detected_sources(tmp_path: Path) -> None:
+    data_dir = tmp_path / "opencode"
+    data_dir.mkdir()
+    db_path = data_dir / "opencode.db"
+    _create_sqlite_fixture(db_path, full_schema=True)
+
+    settings = AppSettings(opencode_data_dir=data_dir, claudecode_data_dir=tmp_path / ".claude")
+    report = generate_doctor_report(settings=settings)
+
+    assert hasattr(report, "detected_sources")
+    assert isinstance(report.detected_sources, list)
+    assert hasattr(report, "claudecode_data_dir")
+
+
+def test_doctor_report_includes_agent_kinds_and_details(tmp_path: Path) -> None:
+    data_dir = tmp_path / "opencode"
+    data_dir.mkdir()
+    db_path = data_dir / "opencode.db"
+    _create_sqlite_fixture(db_path, full_schema=True)
+
+    claudecode_dir = tmp_path / ".claude"
+    projects_dir = claudecode_dir / "projects" / "-Users-test-projs-myproject"
+    projects_dir.mkdir(parents=True)
+    (projects_dir / "session-001.jsonl").write_text('{"type":"user"}\n', encoding="utf-8")
+
+    report = generate_doctor_report(
+        settings=AppSettings(opencode_data_dir=data_dir, claudecode_data_dir=claudecode_dir)
+    )
+
+    opencode = next(source for source in report.detected_sources if source.agent == "opencode")
+    claudecode = next(source for source in report.detected_sources if source.agent == "claudecode")
+
+    assert opencode.kind == "sqlite"
+    assert opencode.status == "ok"
+    assert opencode.details is not None
+
+    assert claudecode.kind == "jsonl"
+    assert claudecode.status == "ok"
+    assert claudecode.path == str(claudecode_dir)
+    assert claudecode.details == "1 projects, 1 sessions"
+
+
+def test_doctor_legacy_only_does_not_report_fake_sqlite_source(tmp_path: Path) -> None:
+    data_dir = tmp_path / "opencode"
+    legacy_dir = data_dir / "storage" / "message"
+    legacy_dir.mkdir(parents=True)
+
+    report = generate_doctor_report(settings=AppSettings(opencode_data_dir=data_dir))
+
+    assert report.selected_source == "legacy"
+    assert report.legacy.existing_dirs == [str(legacy_dir)]
+    assert not any(
+        source.agent == "opencode" and source.kind == "sqlite" for source in report.detected_sources
+    )

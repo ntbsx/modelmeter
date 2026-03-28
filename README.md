@@ -1,6 +1,6 @@
 # ModelMeter
 
-ModelMeter: OpenCode usage analytics for terminal and web.
+ModelMeter: usage analytics for AI coding agents — terminal and web.
 
 ## Installation
 
@@ -126,7 +126,7 @@ Expected JSON shape (cost per 1M tokens):
 }
 ```
 
-If no local pricing file is provided, ModelMeter falls back to `models.dev` (the model directory used by OpenCode) and caches it at `~/.cache/modelmeter/models_dev_api.json`.
+If no local pricing file is provided, ModelMeter falls back to `models.dev` (the model directory used by OpenCode and Claude Code) and caches it at `~/.cache/modelmeter/models_dev_api.json`.
 
 You can control this with environment variables:
 
@@ -187,7 +187,7 @@ Before opening a PR, run:
 make release-check
 ```
 
-## OpenCode Custom Commands
+## Custom Commands (OpenCode)
 
 This repo includes project-level OpenCode commands:
 
@@ -286,7 +286,7 @@ When auth is enabled, SSE in browsers may fall back to polling because `EventSou
 
 ## Web Dashboard Features
 
-The web dashboard provides visual analytics for OpenCode usage:
+The web dashboard provides visual analytics for your AI coding agent usage:
 
 - **Overview**: Summary stats and daily usage trend chart with tokens, sessions, and cost
 - **Models**: Usage breakdown by model with drill-down to model detail pages

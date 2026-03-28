@@ -14,6 +14,7 @@ import {
 import { formatTokens, formatUsd } from '../lib/utils'
 import type { LivePanel } from '../hooks/useLivePanels'
 import { useLivePanelConnection, type ConnectionState } from '../hooks/useLivePanelConnection'
+import { AgentBadge } from './AgentBadge'
 
 type Props = {
   panel: LivePanel
@@ -129,6 +130,7 @@ export default function LivePanel({ panel, sourceScope, globalPaused, onRemove, 
           )}
         </div>
         <div className="shrink-0 flex items-center gap-1.5">
+          <AgentBadge agent={data.active_session?.agent} />
           <span className={`ds-badge ${effectiveMode === 'streaming' ? 'ds-badge-success' : 'ds-badge-default'} text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center`}>
             {status.icon && <status.icon className="w-3 h-3 mr-1" />}
             {status.label}

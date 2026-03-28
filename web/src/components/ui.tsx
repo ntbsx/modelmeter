@@ -110,7 +110,7 @@ export function StatCard({ label, value, subtitle, trend, className = '', delay 
   )
 }
 
-type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'error'
+type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'error' | 'warm'
 
 type BadgeProps = {
   children: ReactNode
@@ -126,6 +126,7 @@ const badgeVariantClasses: Record<BadgeVariant, string> = {
   success: 'ds-badge-success',
   warning: 'ds-badge-warning',
   error: 'ds-badge-error',
+  warm: 'ds-badge-warm',
 }
 
 export function Badge({ children, variant = 'default', className = '', dot = false, title }: BadgeProps) {

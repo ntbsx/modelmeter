@@ -61,7 +61,7 @@ from modelmeter.core.updater import apply_update, check_for_updates
 app = typer.Typer(
     add_completion=False,
     no_args_is_help=True,
-    help="ModelMeter: OpenCode usage analytics for terminal and web.",
+    help="ModelMeter: usage analytics for AI coding agents — terminal and web.",
 )
 sources_app = typer.Typer(help="Manage multi-machine analytics sources.")
 app.add_typer(sources_app, name="sources")
@@ -336,7 +336,7 @@ def info() -> None:
 
 def _render_doctor_report(console: Console, report: DoctorReport) -> None:
     console.print(f"[bold]ModelMeter[/bold] v{report.app_version}")
-    console.print(f"OpenCode data dir: {report.opencode_data_dir}")
+    console.print(f"Data dir: {report.opencode_data_dir}")
     console.print(f"Selected source: [bold]{report.selected_source}[/bold]")
 
     sqlite_table = Table(title="SQLite Diagnostics")
@@ -708,7 +708,7 @@ def doctor(
         Path | None,
         typer.Option(
             "--db-path",
-            help="Override OpenCode SQLite path for diagnostics.",
+            help="Override source SQLite path for diagnostics.",
         ),
     ] = None,
     json_output: Annotated[
@@ -719,7 +719,7 @@ def doctor(
         ),
     ] = False,
 ) -> None:
-    """Check OpenCode data source and schema compatibility."""
+    """Check data source and schema compatibility."""
     settings = AppSettings()
     report = generate_doctor_report(settings=settings, db_path_override=db_path)
 
@@ -744,7 +744,7 @@ def summary(
         Path | None,
         typer.Option(
             "--db-path",
-            help="Override OpenCode SQLite path.",
+            help="Override source SQLite path.",
         ),
     ] = None,
     pricing_file: Annotated[
@@ -808,7 +808,7 @@ def daily(
         Path | None,
         typer.Option(
             "--db-path",
-            help="Override OpenCode SQLite path.",
+            help="Override source SQLite path.",
         ),
     ] = None,
     pricing_file: Annotated[
@@ -870,7 +870,7 @@ def models(
     ] = 20,
     db_path: Annotated[
         Path | None,
-        typer.Option("--db-path", help="Override OpenCode SQLite path."),
+        typer.Option("--db-path", help="Override source SQLite path."),
     ] = None,
     pricing_file: Annotated[
         Path | None,
@@ -907,7 +907,7 @@ def model_detail(
     ] = 7,
     db_path: Annotated[
         Path | None,
-        typer.Option("--db-path", help="Override OpenCode SQLite path."),
+        typer.Option("--db-path", help="Override source SQLite path."),
     ] = None,
     pricing_file: Annotated[
         Path | None,
@@ -951,7 +951,7 @@ def projects(
     ] = 20,
     db_path: Annotated[
         Path | None,
-        typer.Option("--db-path", help="Override OpenCode SQLite path."),
+        typer.Option("--db-path", help="Override source SQLite path."),
     ] = None,
     pricing_file: Annotated[
         Path | None,
@@ -991,7 +991,7 @@ def providers(
     ] = 20,
     db_path: Annotated[
         Path | None,
-        typer.Option("--db-path", help="Override OpenCode SQLite path."),
+        typer.Option("--db-path", help="Override source SQLite path."),
     ] = None,
     pricing_file: Annotated[
         Path | None,
@@ -1043,7 +1043,7 @@ def live(
     ] = 8,
     db_path: Annotated[
         Path | None,
-        typer.Option("--db-path", help="Override OpenCode SQLite path."),
+        typer.Option("--db-path", help="Override source SQLite path."),
     ] = None,
     pricing_file: Annotated[
         Path | None,

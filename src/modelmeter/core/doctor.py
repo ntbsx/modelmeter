@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +18,18 @@ REQUIRED_SCHEMA: dict[str, set[str]] = {
     "part": {"id", "session_id", "data"},
     "project": {"id"},
 }
+
+
+class DetectedSource(BaseModel):
+    """Detected data source with agent information."""
+
+    source_id: str
+    kind: Literal["sqlite", "jsonl"]
+    agent: Literal["opencode", "claudecode"]
+    status: Literal["ok", "error"]
+    path: str
+    exists: bool
+    details: str | None = None
 
 
 class SQLiteDiagnostics(BaseModel):
@@ -46,9 +59,11 @@ class DoctorReport(BaseModel):
     app_name: str
     app_version: str
     opencode_data_dir: str
+    claudecode_data_dir: str
     selected_source: str
     sqlite: SQLiteDiagnostics
     legacy: LegacyDiagnostics
+    detected_sources: list[DetectedSource]
 
 
 def _inspect_sqlite(db_path: Path) -> SQLiteDiagnostics:
@@ -86,10 +101,36 @@ def _inspect_sqlite(db_path: Path) -> SQLiteDiagnostics:
     return diagnostics
 
 
+def _inspect_claudecode(data_dir: Path) -> DetectedSource | None:
+    projects_dir = data_dir / "projects"
+    if not projects_dir.exists():
+        return None
+
+    project_count = sum(1 for d in projects_dir.iterdir() if d.is_dir())
+    session_count = sum(
+        1
+        for project_dir in projects_dir.iterdir()
+        if project_dir.is_dir()
+        for _ in project_dir.glob("*.jsonl")
+    )
+    if session_count == 0:
+        return None
+
+    return DetectedSource(
+        source_id="local-claudecode",
+        kind="jsonl",
+        agent="claudecode",
+        status="ok",
+        path=str(data_dir),
+        exists=True,
+        details=f"{project_count} projects, {session_count} sessions",
+    )
+
+
 def generate_doctor_report(
     settings: AppSettings, db_path_override: Path | None = None
 ) -> DoctorReport:
-    """Generate diagnostics for OpenCode storage availability and schema compatibility."""
+    """Generate diagnostics for agent storage availability and schema compatibility."""
     paths = resolve_storage_paths(settings, db_path_override=db_path_override)
     sqlite_diag = _inspect_sqlite(paths.sqlite_db_path)
 
@@ -103,11 +144,32 @@ def generate_doctor_report(
     elif legacy_diag.existing_dirs:
         selected_source = "legacy"
 
+    detected_sources: list[DetectedSource] = []
+
+    if paths.sqlite_db_path.exists():
+        detected_sources.append(
+            DetectedSource(
+                source_id="local-opencode",
+                kind="sqlite",
+                agent="opencode",
+                status="ok",
+                path=str(paths.sqlite_db_path),
+                exists=True,
+                details="Local OpenCode data detected",
+            )
+        )
+
+    claudecode_source = _inspect_claudecode(settings.claudecode_data_dir)
+    if claudecode_source is not None:
+        detected_sources.append(claudecode_source)
+
     return DoctorReport(
         app_name=settings.app_name,
         app_version=settings.app_runtime_version,
         opencode_data_dir=str(settings.opencode_data_dir),
+        claudecode_data_dir=str(settings.claudecode_data_dir),
         selected_source=selected_source,
         sqlite=sqlite_diag,
         legacy=legacy_diag,
+        detected_sources=detected_sources,
     )

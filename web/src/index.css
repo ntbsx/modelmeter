@@ -53,6 +53,9 @@
     --color-info: #7c3aed;
     --color-info-muted: #f5f3ff;
     --color-info-muted-foreground: #5b21b6;
+    --color-warm: #d97706;
+    --color-warm-muted: #fef3c7;
+    --color-warm-muted-foreground: #92400e;
     
     /* Chart colors - theme-aware */
     --chart-tokens: #2563eb;
@@ -113,6 +116,9 @@
     --color-info: #a78bfa;
     --color-info-muted: #2e1065;
     --color-info-muted-foreground: #c4b5fd;
+    --color-warm: #f59e0b;
+    --color-warm-muted: #451a03;
+    --color-warm-muted-foreground: #fde68a;
     
     /* Chart colors */
     --chart-tokens: #60a5fa;
@@ -414,5 +420,10 @@
   .ds-badge-error {
     background-color: var(--color-error-muted);
     color: var(--color-error-muted-foreground);
+  }
+  
+  .ds-badge-warm {
+    background-color: var(--color-warm-muted, #fef3c7);
+    color: var(--color-warm-muted-foreground, #92400e);
   }
 }

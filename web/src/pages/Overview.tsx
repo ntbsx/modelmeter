@@ -120,7 +120,7 @@ export default function Overview() {
     <div className="px-4 py-8 sm:px-8 sm:py-10 lg:py-12 max-w-6xl mx-auto space-y-10 sm:space-y-12 lg:space-y-16">
       <PageHeader
         title="Overview"
-        description={`${days === 1 ? 'Last 24 hours' : `Last ${days} days`} of OpenCode usage`}
+        description={`${days === 1 ? 'Last 24 hours' : `Last ${days} days`} of usage`}
         actions={<DaysFilterPicker scope="overview" />}
       />
 

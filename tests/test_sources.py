@@ -101,3 +101,87 @@ def test_check_source_health_reports_http_auth_failures(
     assert health.is_reachable is False
     assert health.detail == "HTTP 401"
     assert health.error == "Unauthorized"
+
+
+def test_data_source_config_jsonl_kind() -> None:
+    source = DataSourceConfig(
+        source_id="local-claudecode",
+        kind="jsonl",
+        db_path=Path("/tmp/test"),
+    )
+    assert source.kind == "jsonl"
+
+
+def test_data_source_config_agent_field() -> None:
+    source = DataSourceConfig(
+        source_id="local-opencode",
+        kind="sqlite",
+        db_path=Path("/tmp/test.db"),
+        agent="opencode",
+    )
+    assert source.agent == "opencode"
+
+
+def test_check_source_health_accepts_jsonl_directory(tmp_path: Path) -> None:
+    projects_dir = tmp_path / "projects"
+    projects_dir.mkdir()
+    (projects_dir / "session-001.jsonl").write_text('{"sessionId":"session-001"}\n')
+
+    health = check_source_health(
+        source=DataSourceConfig(source_id="local-jsonl", kind="jsonl", db_path=tmp_path),
+        settings=AppSettings(),
+    )
+
+    assert health.is_reachable is True
+    assert health.error is None
+    assert health.detail is not None
+
+
+def test_data_source_config_rejects_sqlite_with_claudecode_agent() -> None:
+    with pytest.raises(ValueError, match="sqlite source only supports agent='opencode'"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="sqlite",
+            db_path=Path("/tmp/test.db"),
+            agent="claudecode",
+        )
+
+
+def test_data_source_config_rejects_jsonl_with_opencode_agent() -> None:
+    with pytest.raises(ValueError, match="jsonl source only supports agent='claudecode'"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="jsonl",
+            db_path=Path("/tmp/test"),
+            agent="opencode",
+        )
+
+
+def test_data_source_config_rejects_http_with_agent() -> None:
+    with pytest.raises(ValueError, match="http source does not support agent field"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="http",
+            base_url="https://example.com",
+            agent="opencode",
+        )
+
+
+def test_data_source_config_rejects_sqlite_with_auth() -> None:
+    with pytest.raises(ValueError, match="auth is only supported for http sources"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="sqlite",
+            db_path=Path("/tmp/test.db"),
+            auth=SourceAuth(username="user", password="pass"),
+        )
+
+
+def test_data_source_config_rejects_jsonl_with_auth() -> None:
+    with pytest.raises(ValueError, match="auth is only supported for http sources"):
+        DataSourceConfig(
+            source_id="bad",
+            kind="jsonl",
+            db_path=Path("/tmp/test"),
+            auth=SourceAuth(username="user", password="pass"),
+        )

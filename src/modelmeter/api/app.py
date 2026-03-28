@@ -66,7 +66,6 @@ from modelmeter.core.sources import (
     upsert_source,
 )
 from modelmeter.core.updater import check_for_updates
-from modelmeter.data.sqlite_usage_repository import SQLiteUsageRepository
 from modelmeter.data.storage import resolve_storage_paths
 
 LOCAL_CORS_ORIGINS = [
@@ -82,7 +81,8 @@ SSE_PATH_PREFIXES = ("/api/live/events",)
 
 class SourceUpsertRequest(BaseModel):
     label: str | None = None
-    kind: Literal["sqlite", "http"]
+    kind: Literal["sqlite", "http", "jsonl"]
+    agent: Literal["opencode", "claudecode"] | None = None
     enabled: bool = True
     db_path: str | None = None
     base_url: str | None = None
@@ -202,11 +202,14 @@ def create_app(
         return await call_next(request)
 
     @app.get("/health")
-    def health() -> dict[str, str | bool]:
+    def health() -> dict[str, str | bool | list[str]]:
+        report = generate_doctor_report(settings=settings)
+        agents_detected = list(dict.fromkeys(source.agent for source in report.detected_sources))
         return {
             "status": "ok",
             "app_version": settings.app_runtime_version,
             "auth_required": auth_enabled,
+            "agents_detected": agents_detected,
         }
 
     @app.get("/doc", include_in_schema=False)
@@ -262,6 +265,7 @@ def create_app(
                 source_id=source_id,
                 label=payload.label,
                 kind=payload.kind,
+                agent=payload.agent,
                 enabled=payload.enabled,
                 db_path=_optional_path(payload.db_path),
                 base_url=payload.base_url,
@@ -638,45 +642,58 @@ def create_app(
         If `active_since_hours` is provided, only return sessions updated within that time window.
         """
         try:
+            from modelmeter.core.analytics import _resolve_local_repositories
+
             scope = SourceScope.parse(source_scope) if source_scope is not None else None
             if scope is not None and scope.kind != SourceScopeKind.LOCAL:
                 raise NotImplementedError("Federated session list not yet implemented")
 
-            sqlite_db_path = _resolve_sqlite_path(settings=settings, db_path_override=None)
-            repository = SQLiteUsageRepository(sqlite_db_path)
-
             now_ms = int(time.time() * 1000)
-            # Calculate the cutoff for active_since_hours filter
             active_since_ms: int | None = None
             if active_since_hours is not None:
                 active_since_ms = now_ms - (active_since_hours * 60 * 60 * 1000)
 
-            session_rows = repository.fetch_sessions_summary(
-                limit=limit,
-                include_archived=include_archived,
-                min_time_updated_ms=active_since_ms,
-            )
+            repositories = _resolve_local_repositories(settings=settings, db_path_override=None)
+            if not repositories:
+                raise RuntimeError(
+                    "No local session data source available. Run `modelmeter doctor` for details."
+                )
 
             sessions: list[SessionSummary] = []
-            for row in session_rows:
-                session = SessionSummary(
-                    session_id=str(row["session_id"]),
-                    title=str(row["title"]) if row["title"] else None,
-                    directory=str(row["directory"]) if row["directory"] else None,
-                    project_id=str(row["project_id"]) if row["project_id"] else None,
-                    project_name=str(row["project_name"]) if row["project_name"] else None,
-                    time_created=int(row["time_created"]),
-                    time_updated=int(row["time_updated"]),
-                    time_archived=int(row["time_archived"]) if row["time_archived"] else None,
-                    message_count=int(row["message_count"]),
-                    model_count=int(row["model_count"]),
-                    token_count=int(row["token_count"]),
-                    is_active=(not row["time_archived"])
-                    and (now_ms - int(row["time_updated"])) <= ACTIVE_SESSION_THRESHOLD_MS,
+            for source_id, repository in repositories:
+                agent: Literal["opencode", "claudecode"] | None = (
+                    "claudecode"
+                    if source_id == "local-claudecode"
+                    else "opencode"
+                    if source_id == "local-opencode"
+                    else None
                 )
-                sessions.append(session)
+                repo_rows = repository.fetch_sessions_summary(
+                    limit=limit,
+                    include_archived=include_archived,
+                    min_time_updated_ms=active_since_ms,
+                )
+                for row in repo_rows:
+                    session = SessionSummary(
+                        session_id=f"{source_id}:{row['session_id']}",
+                        title=str(row["title"]) if row["title"] else None,
+                        directory=str(row["directory"]) if row["directory"] else None,
+                        project_id=str(row["project_id"]) if row["project_id"] else None,
+                        project_name=str(row["project_name"]) if row["project_name"] else None,
+                        time_created=int(row["time_created"]),
+                        time_updated=int(row["time_updated"]),
+                        time_archived=int(row["time_archived"]) if row["time_archived"] else None,
+                        message_count=int(row["message_count"]),
+                        model_count=int(row["model_count"]),
+                        token_count=int(row["token_count"]),
+                        is_active=(not row["time_archived"])
+                        and (now_ms - int(row["time_updated"])) <= ACTIVE_SESSION_THRESHOLD_MS,
+                        agent=agent,
+                    )
+                    sessions.append(session)
 
-            return sessions
+            sessions.sort(key=lambda s: s.time_updated, reverse=True)
+            return sessions[:limit]
         except NotImplementedError as exc:
             raise HTTPException(status_code=501, detail=str(exc)) from exc
         except RuntimeError as exc:

@@ -52,7 +52,7 @@ class SourceFailure(BaseModel):
 
     source_id: str
     error: str
-    kind: Literal["sqlite", "http"]
+    kind: Literal["sqlite", "http", "jsonl"]
 
 
 class SourceAuth(BaseModel):
@@ -67,19 +67,38 @@ class DataSourceConfig(BaseModel):
 
     source_id: str = Field(min_length=1, max_length=64)
     label: str | None = None
-    kind: Literal["sqlite", "http"]
+    kind: Literal["sqlite", "http", "jsonl"]
     enabled: bool = True
     db_path: Path | None = None
     base_url: str | None = None
     auth: SourceAuth | None = None
+    agent: Literal["opencode", "claudecode"] | None = None
 
     @model_validator(mode="after")
     def validate_kind_fields(self) -> DataSourceConfig:
         if self.kind == "sqlite":
             if self.db_path is None:
                 raise ValueError("sqlite source requires db_path")
-        elif self.base_url is None:
-            raise ValueError("http source requires base_url")
+            if self.agent not in (None, "opencode"):
+                raise ValueError("sqlite source only supports agent='opencode'")
+            if self.base_url is not None:
+                raise ValueError("sqlite source must not set base_url; use db_path instead")
+        elif self.kind == "jsonl":
+            if self.db_path is None:
+                raise ValueError("jsonl source requires db_path")
+            if self.agent not in (None, "claudecode"):
+                raise ValueError("jsonl source only supports agent='claudecode'")
+            if self.base_url is not None:
+                raise ValueError("jsonl source must not set base_url; use db_path instead")
+        elif self.kind == "http":
+            if self.base_url is None:
+                raise ValueError("http source requires base_url")
+            if self.db_path is not None:
+                raise ValueError("http source must not set db_path; use base_url instead")
+            if self.agent is not None:
+                raise ValueError("http source does not support agent field")
+        if self.kind != "http" and self.auth is not None:
+            raise ValueError("auth is only supported for http sources")
         return self
 
 
@@ -97,11 +116,12 @@ class DataSourcePublic(BaseModel):
 
     source_id: str
     label: str | None = None
-    kind: Literal["sqlite", "http"]
+    kind: Literal["sqlite", "http", "jsonl"]
     enabled: bool = True
     db_path: Path | None = None
     base_url: str | None = None
     has_auth: bool = False
+    agent: Literal["opencode", "claudecode"] | None = None
 
 
 class SourceRegistryPublic(BaseModel):
@@ -117,7 +137,7 @@ class SourceHealth(BaseModel):
     """Health status for one source."""
 
     source_id: str
-    kind: Literal["sqlite", "http"]
+    kind: Literal["sqlite", "http", "jsonl"]
     is_reachable: bool
     detail: str | None = None
     error: str | None = None
@@ -257,6 +277,56 @@ def _check_http_source(source: DataSourceConfig, *, timeout_seconds: int) -> Sou
     )
 
 
+def _check_jsonl_source(source: DataSourceConfig) -> SourceHealth:
+    assert source.db_path is not None
+    if not source.db_path.exists():
+        return SourceHealth(
+            source_id=source.source_id,
+            kind=source.kind,
+            is_reachable=False,
+            error=f"Directory not found at {source.db_path}",
+        )
+
+    if not source.db_path.is_dir():
+        return SourceHealth(
+            source_id=source.source_id,
+            kind=source.kind,
+            is_reachable=False,
+            error=f"Not a directory at {source.db_path}",
+        )
+
+    jsonl_files = [p for p in source.db_path.rglob("*.jsonl") if "subagents" not in p.parts]
+    if not jsonl_files:
+        return SourceHealth(
+            source_id=source.source_id,
+            kind=source.kind,
+            is_reachable=False,
+            error="No JSONL session files found",
+        )
+
+    try:
+        with open(jsonl_files[0], encoding="utf-8") as f:
+            line_count = 0
+            for _ in f:
+                line_count += 1
+                if line_count >= 10:
+                    break
+    except OSError as exc:
+        return SourceHealth(
+            source_id=source.source_id,
+            kind=source.kind,
+            is_reachable=False,
+            error=str(exc),
+        )
+
+    return SourceHealth(
+        source_id=source.source_id,
+        kind=source.kind,
+        is_reachable=True,
+        detail=f"jsonl directory, {line_count} lines sampled",
+    )
+
+
 def to_public_registry(registry: SourceRegistry) -> SourceRegistryPublic:
     """Strip credentials from a registry for API responses."""
     public_sources = [
@@ -268,6 +338,7 @@ def to_public_registry(registry: SourceRegistry) -> SourceRegistryPublic:
             db_path=source.db_path,
             base_url=source.base_url,
             has_auth=source.auth is not None,
+            agent=source.agent,
         )
         for source in registry.sources
     ]
@@ -278,6 +349,8 @@ def check_source_health(*, source: DataSourceConfig, settings: AppSettings) -> S
     """Run reachability checks for one source."""
     if source.kind == "sqlite":
         return _check_sqlite_source(source)
+    if source.kind == "jsonl":
+        return _check_jsonl_source(source)
     return _check_http_source(source, timeout_seconds=settings.source_http_timeout_seconds)
 
 

@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import base64
 import json
+import os
+import shutil
 import sqlite3
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, cast
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,7 +17,10 @@ from fastapi.testclient import TestClient
 import modelmeter.api.app as api_app_module
 from modelmeter.api.app import create_app
 from modelmeter.config.settings import AppSettings
+from modelmeter.core.analytics import _canonical_project_id
 from modelmeter.core.models import UpdateCheckResponse
+
+CLAUDECODE_FIXTURES_DIR = Path(__file__).parent / "fixtures" / "claudecode"
 
 
 def _new_client(**create_app_kwargs: Any) -> Any:
@@ -115,6 +121,12 @@ def _create_api_fixture(db_path: Path) -> None:
         )
 
 
+def _copy_claudecode_fixtures(destination: Path) -> Path:
+    target = destination / ".claude" / "projects"
+    shutil.copytree(CLAUDECODE_FIXTURES_DIR, target)
+    return destination / ".claude"
+
+
 def _create_daily_boundary_fixture(db_path: Path) -> tuple[str, str]:
     """Create fixture with a timestamp at 18:30 UTC two days ago.
 
@@ -208,6 +220,21 @@ def test_health_reports_auth_required_when_password_set() -> None:
     payload = _get_json(response)
     assert payload["status"] == "ok"
     assert payload["auth_required"] is True
+
+
+def test_health_includes_agents_detected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    claudecode_dir = _copy_claudecode_fixtures(tmp_path)
+    monkeypatch.setenv("MODELMETER_OPENCODE_DATA_DIR", str(tmp_path / "missing-opencode"))
+    monkeypatch.setenv("MODELMETER_CLAUDECODE_DATA_DIR", str(claudecode_dir))
+    monkeypatch.setenv("MODELMETER_CLAUDECODE_ENABLED", "true")
+
+    client = _new_client()
+    response = client.get("/health")
+
+    assert response.status_code == 200
+    data = _get_json(response)
+    assert "agents_detected" in data
+    assert data["agents_detected"] == ["claudecode"]
 
 
 def test_doctor_endpoint_with_db_path(tmp_path: Path) -> None:
@@ -322,6 +349,61 @@ def test_sources_upsert_endpoint_saves_sqlite_source(
     assert payload["sources"][0]["source_id"] == "work-laptop"
     assert payload["sources"][0]["kind"] == "sqlite"
     assert payload["sources"][0]["db_path"] == str(tmp_path / "opencode.db")
+
+
+def test_sources_upsert_endpoint_saves_jsonl_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    jsonl_dir = tmp_path / "claudecode-data"
+    jsonl_dir.mkdir()
+    (jsonl_dir / "projects").mkdir()
+
+    client = _new_client()
+    response = client.put(
+        "/api/sources/local-jsonl",
+        json={
+            "kind": "jsonl",
+            "label": "Claude Code data",
+            "db_path": str(jsonl_dir),
+            "enabled": True,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["sources"][0]["source_id"] == "local-jsonl"
+    assert payload["sources"][0]["kind"] == "jsonl"
+    assert payload["sources"][0]["db_path"] == str(jsonl_dir)
+
+
+def test_sources_upsert_endpoint_persists_agent_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registry_path = tmp_path / "sources.json"
+    monkeypatch.setenv("MODELMETER_SOURCE_REGISTRY_FILE", str(registry_path))
+
+    jsonl_dir = tmp_path / "claudecode-data"
+    jsonl_dir.mkdir()
+    (jsonl_dir / "projects").mkdir()
+
+    client = _new_client()
+    response = client.put(
+        "/api/sources/local-jsonl",
+        json={
+            "kind": "jsonl",
+            "label": "Claude Code data",
+            "agent": "claudecode",
+            "db_path": str(jsonl_dir),
+            "enabled": True,
+        },
+    )
+
+    assert response.status_code == 200
+    payload = _get_json(response)
+    assert payload["sources"][0]["agent"] == "claudecode"
 
 
 def test_sources_upsert_endpoint_preserves_existing_http_auth(
@@ -615,7 +697,7 @@ def test_date_insights_endpoint_returns_daily_breakdowns(tmp_path: Path) -> None
     assert payload["usage"]["total_tokens"] == 18
     assert payload["models"][0]["model_id"] == "anthropic/claude-sonnet-4-5"
     assert payload["providers"][0]["provider"] == "anthropic"
-    assert payload["projects"][0]["project_id"] == "p1"
+    assert payload["projects"][0]["project_id"] == _canonical_project_id("p1", "/tmp/api-proj")
 
 
 def test_date_insights_sessions_field(tmp_path: Path) -> None:
@@ -884,6 +966,30 @@ def test_list_sessions_returns_recent_sessions(
     assert "is_active" in session
 
 
+def test_list_sessions_includes_claudecode_sessions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    claudecode_dir = _copy_claudecode_fixtures(tmp_path)
+    session_file = claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-001.jsonl"
+    now = time.time()
+    os.utime(session_file, (now, now))
+    monkeypatch.setenv("MODELMETER_OPENCODE_DATA_DIR", str(tmp_path / "missing-opencode"))
+    monkeypatch.setenv("MODELMETER_CLAUDECODE_DATA_DIR", str(claudecode_dir))
+    monkeypatch.setenv("MODELMETER_CLAUDECODE_ENABLED", "true")
+
+    client = _new_client()
+    response = client.get("/api/sessions", params={"limit": 10})
+
+    assert response.status_code == 200
+    data = cast(list[dict[str, Any]], response.json())
+    session = next(
+        session for session in data if session["session_id"] == "local-claudecode:session-001"
+    )
+    assert session["is_active"] is True
+    assert session["time_updated"] >= int(now * 1000) - 1000
+    assert session["agent"] == "claudecode"
+
+
 def test_list_sessions_respects_limit_parameter(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1064,11 +1170,164 @@ def test_list_sessions_filters_by_active_since_hours(
     assert response.status_code == 200
     filtered = cast(list[dict[str, Any]], response.json())
     filtered_ids = {row["session_id"] for row in filtered}
-    assert "new-session" in filtered_ids
-    assert "old-session" not in filtered_ids
+    assert "local-opencode:new-session" in filtered_ids
+    assert "local-opencode:old-session" not in filtered_ids
 
     response_all = client.get("/api/sessions", params={"limit": 100})
     assert response_all.status_code == 200
     unfiltered = cast(list[dict[str, Any]], response_all.json())
     unfiltered_ids = {row["session_id"] for row in unfiltered}
-    assert "old-session" in unfiltered_ids
+    assert "local-opencode:old-session" in unfiltered_ids
+
+
+class _FakeLiveSessionRepo:
+    def __init__(self, *, model_id: str, project_id: str, project_name: str) -> None:
+        self.model_id = model_id
+        self.project_id = project_id
+        self.project_name = project_name
+
+    def fetch_sessions_summary(
+        self,
+        *,
+        limit: int = 20,
+        include_archived: bool = False,
+        min_time_updated_ms: int | None = None,
+    ) -> list[dict[str, Any]]:
+        _ = (limit, include_archived, min_time_updated_ms)
+        return [
+            {
+                "session_id": "shared-session",
+                "title": "Shared Session",
+                "directory": "/tmp/demo",
+                "time_created": 1000,
+                "time_updated": 2000,
+                "time_archived": None,
+                "project_name": self.project_name,
+                "project_id": self.project_id,
+                "message_count": 1,
+                "model_count": 1,
+                "token_count": 15,
+            }
+        ]
+
+    def fetch_active_session(self, *, session_id: str | None = None) -> dict[str, Any] | None:
+        if session_id is not None and session_id != "shared-session":
+            return None
+        return {
+            "id": "shared-session",
+            "title": "Shared Session",
+            "directory": "/tmp/demo",
+            "project_id": self.project_id,
+            "time_updated": 2000,
+            "project_name": self.project_name,
+        }
+
+    def fetch_live_summary_messages(
+        self, *, since_ms: int, session_id: str | None = None
+    ) -> dict[str, Any]:
+        _ = since_ms
+        if session_id is not None and session_id != "shared-session":
+            return {
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cache_read": 0,
+                "cache_write": 0,
+                "total_sessions": 0,
+                "total_interactions": 0,
+            }
+        return {
+            "input_tokens": 10,
+            "output_tokens": 5,
+            "cache_read": 0,
+            "cache_write": 0,
+            "total_sessions": 1,
+            "total_interactions": 1,
+        }
+
+    def fetch_live_summary_steps(
+        self, *, since_ms: int, session_id: str | None = None
+    ) -> dict[str, Any]:
+        return self.fetch_live_summary_messages(since_ms=since_ms, session_id=session_id)
+
+    def fetch_live_model_usage(
+        self, *, since_ms: int, limit: int = 5, session_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        _ = (since_ms, limit)
+        if session_id is not None and session_id != "shared-session":
+            return []
+        return [
+            {
+                "model_id": self.model_id,
+                "provider_id": "anthropic",
+                "input_tokens": 10,
+                "output_tokens": 5,
+                "cache_read": 0,
+                "cache_write": 0,
+                "total_sessions": 1,
+                "total_interactions": 1,
+            }
+        ]
+
+    def fetch_live_tool_usage(
+        self, *, since_ms: int, limit: int = 8, session_id: str | None = None
+    ) -> list[dict[str, Any]]:
+        _ = (since_ms, limit, session_id)
+        return []
+
+    def resolve_token_source(self, *, days: int | None = None, token_source: str = "auto") -> str:
+        _ = days
+        return "message" if token_source == "auto" else token_source
+
+
+def test_list_sessions_namespaces_local_ids_and_live_route_disambiguates() -> None:
+    local_repos = [
+        (
+            "local-opencode",
+            _FakeLiveSessionRepo(
+                model_id="anthropic/open-opus",
+                project_id="p1",
+                project_name="OpenCode",
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeLiveSessionRepo(
+                model_id="claude-sonnet-4-6",
+                project_id="p2",
+                project_name="Claude Code",
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.analytics._resolve_local_repositories", return_value=local_repos):
+        client = _new_client()
+
+        sessions_response = client.get("/api/sessions", params={"limit": 10})
+        assert sessions_response.status_code == 200
+        sessions = cast(list[dict[str, Any]], sessions_response.json())
+        assert {session["session_id"] for session in sessions} == {
+            "local-opencode:shared-session",
+            "local-claudecode:shared-session",
+        }
+
+        live_response = client.get(
+            "/api/live/session/local-claudecode:shared-session",
+            params={"window_minutes": 60},
+        )
+        assert live_response.status_code == 200
+        data = live_response.json()
+        assert data["active_session"]["project_name"] == "Claude Code"
+        assert data["top_models"][0]["model_id"] == "anthropic/claude-sonnet-4-6"
+        assert data["active_session"]["session_id"] == "local-claudecode:shared-session", (
+            f"Expected namespaced session ID, got {data['active_session']['session_id']}"
+        )
+
+        snapshot_response = client.get(
+            "/api/live/snapshot",
+            params={"window_minutes": 60},
+        )
+        assert snapshot_response.status_code == 200
+        snapshot = snapshot_response.json()
+        assert snapshot["active_session"]["session_id"] == "local-opencode:shared-session", (
+            "Expected aggregated live snapshot to namespace the active session ID"
+        )

@@ -135,6 +135,21 @@
       "DataSourcePublic": {
         "description": "Public view of a source config with credentials redacted.",
         "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "enum": [
+                  "opencode",
+                  "claudecode"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
           "base_url": {
             "anyOf": [
               {
@@ -171,7 +186,8 @@
           "kind": {
             "enum": [
               "sqlite",
-              "http"
+              "http",
+              "jsonl"
             ],
             "title": "Kind",
             "type": "string"
@@ -329,6 +345,68 @@
         "title": "DateInsightsResponse",
         "type": "object"
       },
+      "DetectedSource": {
+        "description": "Detected data source with agent information.",
+        "properties": {
+          "agent": {
+            "enum": [
+              "opencode",
+              "claudecode"
+            ],
+            "title": "Agent",
+            "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "exists": {
+            "title": "Exists",
+            "type": "boolean"
+          },
+          "kind": {
+            "enum": [
+              "sqlite",
+              "jsonl"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "error"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "kind",
+          "agent",
+          "status",
+          "path",
+          "exists"
+        ],
+        "title": "DetectedSource",
+        "type": "object"
+      },
       "DoctorReport": {
         "description": "Top-level health diagnostics payload.",
         "properties": {
@@ -339,6 +417,17 @@
           "app_version": {
             "title": "App Version",
             "type": "string"
+          },
+          "claudecode_data_dir": {
+            "title": "Claudecode Data Dir",
+            "type": "string"
+          },
+          "detected_sources": {
+            "items": {
+              "$ref": "#/components/schemas/DetectedSource"
+            },
+            "title": "Detected Sources",
+            "type": "array"
           },
           "legacy": {
             "$ref": "#/components/schemas/LegacyDiagnostics"
@@ -359,9 +448,11 @@
           "app_name",
           "app_version",
           "opencode_data_dir",
+          "claudecode_data_dir",
           "selected_source",
           "sqlite",
-          "legacy"
+          "legacy",
+          "detected_sources"
         ],
         "title": "DoctorReport",
         "type": "object"
@@ -403,6 +494,17 @@
       "LiveActiveSession": {
         "description": "Active session metadata in live snapshot.",
         "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
           "directory": {
             "anyOf": [
               {
@@ -1689,6 +1791,21 @@
       "SessionSummary": {
         "description": "Session summary for selection UI.",
         "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "enum": [
+                  "opencode",
+                  "claudecode"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
           "cost_usd": {
             "anyOf": [
               {
@@ -1957,7 +2074,8 @@
           "kind": {
             "enum": [
               "sqlite",
-              "http"
+              "http",
+              "jsonl"
             ],
             "title": "Kind",
             "type": "string"
@@ -2009,6 +2127,21 @@
       },
       "SourceUpsertRequest": {
         "properties": {
+          "agent": {
+            "anyOf": [
+              {
+                "enum": [
+                  "opencode",
+                  "claudecode"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent"
+          },
           "auth": {
             "anyOf": [
               {
@@ -2049,7 +2182,8 @@
           "kind": {
             "enum": [
               "sqlite",
-              "http"
+              "http",
+              "jsonl"
             ],
             "title": "Kind",
             "type": "string"
@@ -2318,7 +2452,7 @@
   },
   "info": {
     "title": "ModelMeter",
-    "version": "2026.3.24"
+    "version": "2026.3.28"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -4196,6 +4330,12 @@
                       },
                       {
                         "type": "boolean"
+                      },
+                      {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
                       }
                     ]
                   },

@@ -17,6 +17,7 @@ import { ThemeProvider } from './components/ThemeProvider'
 import { ThemeToggle } from './components/ThemeToggle'
 import { AuthProvider } from './components/AuthProvider'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { AgentBadge } from './components/AgentBadge'
 import SourceScopePicker from './components/SourceScopePicker'
 import { useAuth } from './hooks/useAuth'
 import { fetchApi } from './lib/api'
@@ -39,6 +40,7 @@ type HealthResponse = {
   status: string
   app_version?: string
   auth_required?: boolean
+  agents_detected?: string[]
 }
 
 function VersionBadge({ className }: { className: string }) {
@@ -59,7 +61,38 @@ function VersionBadge({ className }: { className: string }) {
     return null
   }
 
-  return <span className={className}>v{data.app_version}</span>
+  return (
+    <span className={className}>
+      v{data.app_version}
+    </span>
+  )
+}
+
+function DetectedAgentsBadge({ className = '' }: { className?: string }) {
+  const { data } = useQuery<HealthResponse>({
+    queryKey: ['health-version'],
+    queryFn: async () => {
+      const response = await fetch('/health')
+      if (!response.ok) {
+        throw new Error(response.statusText)
+      }
+      return response.json() as Promise<HealthResponse>
+    },
+    staleTime: 60_000,
+    retry: false,
+  })
+
+  if (!data?.agents_detected?.length) {
+    return null
+  }
+
+  return (
+    <div className={`flex items-center gap-1.5 ${className}`}>
+      {data.agents_detected.map((agent) => (
+        <AgentBadge key={agent} agent={agent} />
+      ))}
+    </div>
+  )
 }
 
 const links = [
@@ -230,7 +263,6 @@ function MobileBottomNav() {
             </Link>
           )
         })}
-        <SourceScopePicker compact />
         {authRequired && (
           <button
             onClick={logout}
@@ -274,12 +306,16 @@ function AuthGate() {
           <div className="hidden lg:flex items-center gap-3">
             <SourceScopePicker />
             <HeaderSourceStatus />
+            <div className="flex items-center gap-1.5" title="Detected local agent runtimes">
+              <DetectedAgentsBadge />
+            </div>
             <div className="hidden sm:block">
               <LogoutButton compact />
             </div>
             <ThemeToggle />
           </div>
           <div className="lg:hidden flex items-center gap-2">
+            <SourceScopePicker compact />
             <HeaderSourceStatus />
             <ThemeToggle />
           </div>

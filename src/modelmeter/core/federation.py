@@ -15,6 +15,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import date
+from pathlib import Path
 from typing import Any, cast
 
 from modelmeter.config.settings import AppSettings
@@ -30,10 +31,13 @@ from modelmeter.core.models import (
     SummaryResponse,
     TokenUsage,
 )
+from modelmeter.core.pricing import calculate_usage_cost, load_pricing_book
+from modelmeter.core.providers import provider_from_model_id_and_provider_field
 from modelmeter.core.sources import (
     DataSourceConfig,
     SourceFailure,
 )
+from modelmeter.data.repository import create_repository
 
 # Maximum number of items to fetch from a remote source to prevent memory exhaustion
 MAX_FETCH_LIMIT = 5000
@@ -62,6 +66,7 @@ def merge_model_usage(a: ModelUsage, b: ModelUsage) -> ModelUsage:
     """Merge two ModelUsage objects by summing fields."""
     return ModelUsage(
         model_id=a.model_id,
+        provider=a.provider or b.provider,
         usage=merge_token_usage(a.usage, b.usage),
         total_sessions=a.total_sessions + b.total_sessions,
         total_interactions=a.total_interactions + b.total_interactions,
@@ -109,9 +114,23 @@ def _merge_usage_data(usage_data: dict[str, int]) -> TokenUsage:
     return TokenUsage(
         input_tokens=int(usage_data.get("input_tokens", 0)),
         output_tokens=int(usage_data.get("output_tokens", 0)),
-        cache_read_tokens=int(usage_data.get("cache_read_tokens", 0)),
-        cache_write_tokens=int(usage_data.get("cache_write_tokens", 0)),
+        cache_read_tokens=int(usage_data.get("cache_read_tokens", usage_data.get("cache_read", 0))),
+        cache_write_tokens=int(
+            usage_data.get("cache_write_tokens", usage_data.get("cache_write", 0))
+        ),
     )
+
+
+def _canonical_model_id(model_id: str, provider_id: str | None = None) -> str:
+    from modelmeter.core.analytics import _canonical_model_id as analytics_canonical_model_id
+
+    return analytics_canonical_model_id(model_id, provider_id)
+
+
+def _canonical_project_id(project_id: str, project_path: str | None) -> str:
+    from modelmeter.core.analytics import _canonical_project_id as analytics_canonical_project_id
+
+    return analytics_canonical_project_id(project_id, project_path)
 
 
 def _fetch_http_summary(
@@ -285,6 +304,7 @@ def execute_summary_federated(
     token_source: str = "auto",
     session_count_source: str = "auto",
     scope_label: str = "all",
+    pricing_file_override: Path | None = None,
 ) -> tuple[SummaryResponse, list[SourceFailure]]:
     """Execute a federated summary query across multiple sources."""
     from modelmeter.core.analytics import get_summary as get_local_summary
@@ -294,6 +314,10 @@ def execute_summary_federated(
     total_sessions = 0
     total_cost: float | None = None
     pricing_source: str | None = None
+    pricing_book, jsonl_pricing_source = load_pricing_book(
+        settings=settings,
+        pricing_file_override=pricing_file_override,
+    )
 
     for source in sources:
         try:
@@ -315,6 +339,31 @@ def execute_summary_federated(
                     total_cost += result.cost_usd
                 if result.pricing_source:
                     pricing_source = result.pricing_source
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                row = repo.fetch_summary(days=days)
+                usage = _merge_usage_data(cast(dict[str, int], row))
+                total_usage = merge_token_usage(total_usage, usage)
+                total_sessions += repo.fetch_session_count(days=days)
+                repo_cost = 0.0
+                has_repo_cost = False
+                for model_row in repo.fetch_model_usage(days=days):
+                    model_id = _canonical_model_id(
+                        str(model_row["model_id"]), cast(str | None, model_row.get("provider_id"))
+                    )
+                    pricing = pricing_book.get(model_id)
+                    if pricing is None:
+                        continue
+                    repo_cost += calculate_usage_cost(
+                        _merge_usage_data(cast(dict[str, int], model_row)), pricing
+                    )
+                    has_repo_cost = True
+                if has_repo_cost:
+                    if total_cost is None:
+                        total_cost = 0.0
+                    total_cost += repo_cost
+                    pricing_source = jsonl_pricing_source
             else:
                 data = _fetch_http_summary(
                     source,
@@ -353,7 +402,7 @@ def execute_summary_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 
@@ -389,6 +438,7 @@ def execute_daily_federated(
     token_source: str = "auto",
     session_count_source: str = "auto",
     scope_label: str = "all",
+    pricing_file_override: Path | None = None,
 ) -> tuple[DailyResponse, list[SourceFailure]]:
     """Execute a federated daily query across multiple sources."""
     from modelmeter.core.analytics import get_daily as get_local_daily
@@ -399,6 +449,10 @@ def execute_daily_federated(
     total_sessions = 0
     total_cost: float | None = None
     pricing_source: str | None = None
+    pricing_book, jsonl_pricing_source = load_pricing_book(
+        settings=settings,
+        pricing_file_override=pricing_file_override,
+    )
 
     for source in sources:
         try:
@@ -434,6 +488,80 @@ def execute_daily_federated(
                         )
                     else:
                         daily_map[daily_usage.day] = daily_usage
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                resolved_source = repo.resolve_token_source(
+                    days=days,
+                    token_source=token_source,  # type: ignore[arg-type]
+                )
+                if resolved_source == "steps":
+                    rows = repo.fetch_daily_steps(
+                        days=days,
+                        timezone_offset_minutes=timezone_offset_minutes,
+                    )
+                    summary_row = repo.fetch_summary_steps(days=days)
+                else:
+                    rows = repo.fetch_daily(
+                        days=days, timezone_offset_minutes=timezone_offset_minutes
+                    )
+                    summary_row = repo.fetch_summary(days=days)
+                repo_daily_costs: dict[date, float] = {}
+                repo_total_cost = 0.0
+                has_repo_cost = False
+                for model_row in repo.fetch_daily_model_usage(
+                    days=days,
+                    timezone_offset_minutes=timezone_offset_minutes,
+                ):
+                    model_id = _canonical_model_id(
+                        str(model_row["model_id"]), cast(str | None, model_row.get("provider_id"))
+                    )
+                    pricing = pricing_book.get(model_id)
+                    if pricing is None:
+                        continue
+                    day_key = date.fromisoformat(str(model_row["day"]))
+                    cost = calculate_usage_cost(
+                        _merge_usage_data(cast(dict[str, int], model_row)), pricing
+                    )
+                    repo_daily_costs[day_key] = repo_daily_costs.get(day_key, 0.0) + cost
+                    repo_total_cost += cost
+                    has_repo_cost = True
+                for row in rows:
+                    day = date.fromisoformat(str(row["day"]))
+                    usage = _merge_usage_data(cast(dict[str, int], row))
+                    sessions = int(row.get("total_sessions", 0))
+                    cost_usd = round(repo_daily_costs[day], 8) if day in repo_daily_costs else None
+                    if day in daily_map:
+                        existing = daily_map[day]
+                        daily_map[day] = DailyUsage(
+                            day=day,
+                            usage=merge_token_usage(existing.usage, usage),
+                            total_sessions=existing.total_sessions + sessions,
+                            cost_usd=((existing.cost_usd or 0.0) + (cost_usd or 0.0))
+                            if existing.cost_usd is not None or cost_usd is not None
+                            else None,
+                        )
+                    else:
+                        daily_map[day] = DailyUsage(
+                            day=day, usage=usage, total_sessions=sessions, cost_usd=cost_usd
+                        )
+                total_usage = merge_token_usage(
+                    total_usage,
+                    _merge_usage_data(cast(dict[str, int], summary_row)),
+                )
+                if has_repo_cost:
+                    if total_cost is None:
+                        total_cost = 0.0
+                    total_cost += repo_total_cost
+                    pricing_source = jsonl_pricing_source
+                resolved_session_source = repo.resolve_session_count_source(
+                    days=days,
+                    session_count_source=session_count_source,  # type: ignore[arg-type]
+                )
+                if resolved_session_source == "session":
+                    total_sessions += repo.fetch_session_count(days=days)
+                else:
+                    total_sessions += int(summary_row.get("total_sessions", 0))
             else:
                 data = _fetch_http_daily(
                     source,
@@ -503,7 +631,7 @@ def execute_daily_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 
@@ -544,6 +672,7 @@ def execute_models_federated(
     token_source: str = "auto",
     session_count_source: str = "auto",
     scope_label: str = "all",
+    pricing_file_override: Path | None = None,
 ) -> tuple[ModelsResponse, list[SourceFailure]]:
     """Execute a federated models query across multiple sources."""
     from modelmeter.core.analytics import get_models as get_local_models
@@ -557,6 +686,10 @@ def execute_models_federated(
     pricing_source: str | None = None
     priced_models = 0
     unpriced_models = 0
+    pricing_book, jsonl_pricing_source = load_pricing_book(
+        settings=settings,
+        pricing_file_override=pricing_file_override,
+    )
 
     for source in sources:
         try:
@@ -589,6 +722,76 @@ def execute_models_federated(
                         )
                     else:
                         model_map[model.model_id] = model
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                all_rows = repo.fetch_model_usage_detail(days=days)
+                rows = [
+                    row
+                    for row in all_rows
+                    if provider is None
+                    or provider_from_model_id_and_provider_field(
+                        str(row["model_id"]), cast(str | None, row.get("provider_id"))
+                    )
+                    == provider
+                ]
+                for row in rows:
+                    model_id = _canonical_model_id(
+                        str(row["model_id"]), cast(str | None, row.get("provider_id"))
+                    )
+                    usage = _merge_usage_data(cast(dict[str, int], row))
+                    pricing = pricing_book.get(model_id)
+                    cost_usd = (
+                        round(calculate_usage_cost(usage, pricing), 8)
+                        if pricing is not None
+                        else None
+                    )
+                    model = ModelUsage(
+                        model_id=model_id,
+                        provider=provider_from_model_id_and_provider_field(
+                            model_id, cast(str | None, row.get("provider_id"))
+                        ),
+                        usage=usage,
+                        total_sessions=int(row.get("total_sessions", 0)),
+                        total_interactions=int(row.get("total_interactions", 0)),
+                        cost_usd=cost_usd,
+                        has_pricing=pricing is not None,
+                    )
+                    if model_id in model_map:
+                        model_map[model_id] = merge_model_usage(model_map[model_id], model)
+                    else:
+                        model_map[model_id] = model
+                    if cost_usd is not None:
+                        if total_cost is None:
+                            total_cost = 0.0
+                        total_cost += cost_usd
+                        pricing_source = jsonl_pricing_source
+                total_usage = merge_token_usage(
+                    total_usage,
+                    _merge_usage_data(cast(dict[str, int], repo.fetch_summary(days=days)))
+                    if provider is None
+                    else TokenUsage(
+                        input_tokens=int(sum(int(r.get("input_tokens", 0)) for r in rows)),
+                        output_tokens=int(sum(int(r.get("output_tokens", 0)) for r in rows)),
+                        cache_read_tokens=int(
+                            sum(
+                                int(r.get("cache_read_tokens", r.get("cache_read", 0)))
+                                for r in rows
+                            )
+                        ),
+                        cache_write_tokens=int(
+                            sum(
+                                int(r.get("cache_write_tokens", r.get("cache_write", 0)))
+                                for r in rows
+                            )
+                        ),
+                    ),
+                )
+                total_sessions += (
+                    repo.fetch_session_count(days=days)
+                    if provider is None
+                    else sum(int(r.get("total_sessions", 0)) for r in rows)
+                )
             else:
                 page_size = 1000
                 data = _fetch_http_models(
@@ -688,7 +891,7 @@ def execute_models_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 
@@ -741,6 +944,7 @@ def execute_providers_federated(
     token_source: str = "auto",
     session_count_source: str = "auto",
     scope_label: str = "all",
+    pricing_file_override: Path | None = None,
 ) -> tuple[ProvidersResponse, list[SourceFailure]]:
     """Execute a federated providers query across multiple sources."""
     from modelmeter.core.analytics import get_providers as get_local_providers
@@ -751,6 +955,10 @@ def execute_providers_federated(
     total_sessions = 0
     total_cost: float | None = None
     pricing_source: str | None = None
+    pricing_book, jsonl_pricing_source = load_pricing_book(
+        settings=settings,
+        pricing_file_override=pricing_file_override,
+    )
 
     for source in sources:
         try:
@@ -782,6 +990,62 @@ def execute_providers_federated(
                         )
                     else:
                         provider_map[provider.provider] = provider
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                total_usage = merge_token_usage(
+                    total_usage,
+                    _merge_usage_data(cast(dict[str, int], repo.fetch_summary(days=days))),
+                )
+                rows = repo.fetch_model_usage_detail(days=days)
+                provider_model_ids: dict[str, set[str]] = {}
+                for row in rows:
+                    model_id = _canonical_model_id(
+                        str(row["model_id"]), cast(str | None, row.get("provider_id"))
+                    )
+                    provider = provider_from_model_id_and_provider_field(
+                        model_id, cast(str | None, row.get("provider_id"))
+                    )
+                    if provider not in provider_model_ids:
+                        provider_model_ids[provider] = set()
+                    if model_id in provider_model_ids[provider]:
+                        continue
+                    provider_model_ids[provider].add(model_id)
+                    usage = _merge_usage_data(cast(dict[str, int], row))
+                    pricing = pricing_book.get(model_id)
+                    cost_usd = (
+                        round(calculate_usage_cost(usage, pricing), 8)
+                        if pricing is not None
+                        else None
+                    )
+                    if provider in provider_map:
+                        existing = provider_map[provider]
+                        provider_map[provider] = ProviderUsage(
+                            provider=provider,
+                            usage=merge_token_usage(existing.usage, usage),
+                            total_models=len(provider_model_ids[provider]),
+                            total_interactions=existing.total_interactions
+                            + int(row.get("total_interactions", 0)),
+                            cost_usd=((existing.cost_usd or 0.0) + (cost_usd or 0.0))
+                            if existing.cost_usd is not None or cost_usd is not None
+                            else None,
+                            has_pricing=existing.has_pricing or pricing is not None,
+                        )
+                    else:
+                        provider_map[provider] = ProviderUsage(
+                            provider=provider,
+                            usage=usage,
+                            total_models=1,
+                            total_interactions=int(row.get("total_interactions", 0)),
+                            cost_usd=cost_usd,
+                            has_pricing=pricing is not None,
+                        )
+                    if cost_usd is not None:
+                        if total_cost is None:
+                            total_cost = 0.0
+                        total_cost += cost_usd
+                        pricing_source = jsonl_pricing_source
+                total_sessions += repo.fetch_session_count(days=days)
             else:
                 page_size = 1000
                 data = _fetch_http_providers(
@@ -875,7 +1139,7 @@ def execute_providers_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 
@@ -926,6 +1190,7 @@ def execute_projects_federated(
     token_source: str = "auto",
     session_count_source: str = "auto",
     scope_label: str = "all",
+    pricing_file_override: Path | None = None,
 ) -> tuple[ProjectsResponse, list[SourceFailure]]:
     """Execute a federated projects query across multiple sources."""
     from modelmeter.core.analytics import get_projects as get_local_projects
@@ -936,6 +1201,10 @@ def execute_projects_federated(
     total_sessions = 0
     total_cost: float | None = None
     pricing_source: str | None = None
+    pricing_book, jsonl_pricing_source = load_pricing_book(
+        settings=settings,
+        pricing_file_override=pricing_file_override,
+    )
 
     for source in sources:
         try:
@@ -978,6 +1247,61 @@ def execute_projects_federated(
                         )
                     else:
                         project_map[project.project_id] = project_with_source
+            elif source.kind == "jsonl":
+                assert source.db_path is not None
+                repo = create_repository("jsonl", source.db_path)
+                total_usage = merge_token_usage(
+                    total_usage,
+                    _merge_usage_data(cast(dict[str, int], repo.fetch_summary(days=days))),
+                )
+                rows = repo.fetch_project_usage_detail(days=days)
+                project_paths = {
+                    str(row["project_id"]): cast(str | None, row.get("project_path"))
+                    for row in rows
+                }
+                project_cost_map: dict[str, float] = {}
+                for row in repo.fetch_project_model_usage(days=days):
+                    project_path = project_paths.get(str(row["project_id"]))
+                    project_id = _canonical_project_id(str(row["project_id"]), project_path)
+                    model_id = _canonical_model_id(
+                        str(row["model_id"]), cast(str | None, row.get("provider_id"))
+                    )
+                    pricing = pricing_book.get(model_id)
+                    if pricing is None:
+                        continue
+                    cost = calculate_usage_cost(
+                        _merge_usage_data(cast(dict[str, int], row)), pricing
+                    )
+                    project_cost_map[project_id] = project_cost_map.get(project_id, 0.0) + cost
+                    if total_cost is None:
+                        total_cost = 0.0
+                    total_cost += cost
+                    pricing_source = jsonl_pricing_source
+                for row in rows:
+                    project_id = _canonical_project_id(
+                        str(row["project_id"]), cast(str | None, row.get("project_path"))
+                    )
+                    usage = _merge_usage_data(cast(dict[str, int], row))
+                    project_with_source = ProjectUsage(
+                        project_id=project_id,
+                        project_name=str(row.get("project_name", project_id)),
+                        project_path=cast(str | None, row.get("project_path")),
+                        usage=usage,
+                        total_sessions=int(row.get("total_sessions", 0)),
+                        total_interactions=int(row.get("total_interactions", 0)),
+                        cost_usd=round(project_cost_map[project_id], 8)
+                        if project_id in project_cost_map
+                        else None,
+                        has_pricing=project_id in project_cost_map,
+                        sources=[source.source_id],
+                    )
+                    if project_id in project_map:
+                        project_map[project_id] = merge_project_usage(
+                            project_map[project_id], project_with_source
+                        )
+                    else:
+                        project_map[project_id] = project_with_source
+                total_sessions += repo.fetch_session_count(days=days)
             else:
                 page_size = 1000
                 data = _fetch_http_projects(
@@ -1072,7 +1396,7 @@ def execute_projects_federated(
                 SourceFailure(
                     source_id=source.source_id,
                     error=str(e),
-                    kind="sqlite" if source.kind == "sqlite" else "http",
+                    kind=source.kind if source.kind in ("sqlite", "jsonl") else "http",
                 )
             )
 
