@@ -263,7 +263,6 @@ function MobileBottomNav() {
             </Link>
           )
         })}
-        <SourceScopePicker compact />
         {authRequired && (
           <button
             onClick={logout}
@@ -307,7 +306,9 @@ function AuthGate() {
           <div className="hidden lg:flex items-center gap-3">
             <SourceScopePicker />
             <HeaderSourceStatus />
-            <DetectedAgentsBadge />
+            <div className="flex items-center gap-1.5" title="Detected local agent runtimes">
+              <DetectedAgentsBadge />
+            </div>
             <div className="hidden sm:block">
               <LogoutButton compact />
             </div>
@@ -315,7 +316,6 @@ function AuthGate() {
           </div>
           <div className="lg:hidden flex items-center gap-2">
             <HeaderSourceStatus />
-            <DetectedAgentsBadge />
             <ThemeToggle />
           </div>
         </header>

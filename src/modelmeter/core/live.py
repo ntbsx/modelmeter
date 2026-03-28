@@ -277,21 +277,28 @@ def _build_live_snapshot(
             ):
                 model_map[mid][key] = int(model_map[mid].get(key, 0)) + int(row.get(key, 0))
 
-    top_models: list[LiveModelUsage] = []
-    total_cost = 0.0
-    has_any_priced_model = False
-    for mid, row in sorted(
+    sorted_models = sorted(
         model_map.items(),
         key=lambda x: x[1].get("input_tokens", 0) + x[1].get("output_tokens", 0),
         reverse=True,
-    )[:models_limit]:
+    )
+    total_cost = 0.0
+    has_any_priced_model = False
+    for mid, row in sorted_models:
         usage = _token_usage_from_row(row)
         pricing = pricing_book.get(mid)
-        model_cost: float | None = None
         if pricing is not None:
             has_any_priced_model = True
             model_cost = round(calculate_usage_cost(usage, pricing), 8)
             total_cost += model_cost
+
+    top_models: list[LiveModelUsage] = []
+    for mid, row in sorted_models[:models_limit]:
+        usage = _token_usage_from_row(row)
+        pricing = pricing_book.get(mid)
+        model_cost: float | None = None
+        if pricing is not None:
+            model_cost = round(calculate_usage_cost(usage, pricing), 8)
         top_models.append(
             LiveModelUsage(
                 model_id=mid,

@@ -1332,9 +1332,18 @@ def get_models(
             )
             total_sessions = sum(int(r["total_sessions"]) for r in rows)
         else:
-            summary_row = repository.fetch_summary(days=days)
+            summary_row = _resolved_summary_row(
+                repository,
+                days=days,
+                token_source=token_source,
+            )
             totals = _token_usage_from_row(summary_row)
-            total_sessions = repository.fetch_session_count(days=days)
+            total_sessions = _resolved_total_sessions(
+                repository,
+                days=days,
+                session_count_source=session_count_source,
+                summary_row=summary_row,
+            )
 
         usage_rows, total_cost_usd, priced_models = _build_model_usage_rows(rows)
         total_models = len(usage_rows)
@@ -1527,7 +1536,7 @@ def get_providers(
     )
 
     def _build_provider_rows(model_rows: list[Any]) -> tuple[list[ProviderUsage], float | None]:
-        provider_map: dict[str, ProviderUsage] = {}
+        provider_map: dict[str, tuple[ProviderUsage, set[str]]] = {}
         total_cost_usd: float | None = 0.0 if pricing_book else None
 
         for row in model_rows:
@@ -1545,44 +1554,61 @@ def get_providers(
 
             existing = provider_map.get(provider_name)
             if existing is None:
-                provider_map[provider_name] = ProviderUsage(
-                    provider=provider_name,
-                    usage=TokenUsage(
-                        input_tokens=usage.input_tokens,
-                        output_tokens=usage.output_tokens,
-                        cache_read_tokens=usage.cache_read_tokens,
-                        cache_write_tokens=usage.cache_write_tokens,
+                provider_map[provider_name] = (
+                    ProviderUsage(
+                        provider=provider_name,
+                        usage=TokenUsage(
+                            input_tokens=usage.input_tokens,
+                            output_tokens=usage.output_tokens,
+                            cache_read_tokens=usage.cache_read_tokens,
+                            cache_write_tokens=usage.cache_write_tokens,
+                        ),
+                        total_models=1,
+                        total_interactions=int(row["total_interactions"]),
+                        cost_usd=model_cost,
+                        has_pricing=model_cost is not None,
                     ),
-                    total_models=1,
-                    total_interactions=int(row["total_interactions"]),
-                    cost_usd=model_cost,
-                    has_pricing=model_cost is not None,
+                    {model_id},
                 )
                 continue
 
-            existing.usage.input_tokens += usage.input_tokens
-            existing.usage.output_tokens += usage.output_tokens
-            existing.usage.cache_read_tokens += usage.cache_read_tokens
-            existing.usage.cache_write_tokens += usage.cache_write_tokens
-            existing.total_models += 1
-            existing.total_interactions += int(row["total_interactions"])
+            prov_usage, seen_models = existing
+            if model_id not in seen_models:
+                seen_models.add(model_id)
+                prov_usage.total_models += 1
+            prov_usage.usage.input_tokens += usage.input_tokens
+            prov_usage.usage.output_tokens += usage.output_tokens
+            prov_usage.usage.cache_read_tokens += usage.cache_read_tokens
+            prov_usage.usage.cache_write_tokens += usage.cache_write_tokens
+            prov_usage.total_interactions += int(row["total_interactions"])
             if model_cost is not None:
-                existing.has_pricing = True
-                if existing.cost_usd is None:
-                    existing.cost_usd = model_cost
+                prov_usage.has_pricing = True
+                if prov_usage.cost_usd is None:
+                    prov_usage.cost_usd = model_cost
                 else:
-                    existing.cost_usd = round(existing.cost_usd + model_cost, 8)
+                    prov_usage.cost_usd = round(prov_usage.cost_usd + model_cost, 8)
 
         provider_rows = sorted(
-            provider_map.values(), key=lambda item: item.usage.total_tokens, reverse=True
+            (p for p, _ in provider_map.values()),
+            key=lambda item: item.usage.total_tokens,
+            reverse=True,
         )
         return provider_rows, total_cost_usd
 
     if len(local_repos) == 1:
         source_id, repository = local_repos[0]
         model_rows = repository.fetch_model_usage_detail(days=days)
-        summary_row = repository.fetch_summary(days=days)
-        total_sessions = repository.fetch_session_count(days=days)
+        summary_row = _resolved_summary_row(
+            repository,
+            days=days,
+            token_source=token_source,
+        )
+        total_sessions = _resolved_total_sessions(
+            repository,
+            days=days,
+            session_count_source=session_count_source,
+            summary_row=summary_row,
+        )
         provider_rows, total_cost_usd = _build_provider_rows(model_rows)
         total_providers = len(provider_rows)
         paged_rows = _paginate_rows(provider_rows, offset=offset, limit=limit)
@@ -2050,8 +2076,17 @@ def get_projects(
     if len(local_repos) == 1:
         source_id, repository = local_repos[0]
         rows = repository.fetch_project_usage_detail(days=days)
-        summary_row = repository.fetch_summary(days=days)
-        total_sessions = repository.fetch_session_count(days=days)
+        summary_row = _resolved_summary_row(
+            repository,
+            days=days,
+            token_source=token_source,
+        )
+        total_sessions = _resolved_total_sessions(
+            repository,
+            days=days,
+            session_count_source=session_count_source,
+            summary_row=summary_row,
+        )
         usage_rows, total_cost_usd = _build_project_rows(
             rows, repository.fetch_project_model_usage(days=days), source_id
         )
