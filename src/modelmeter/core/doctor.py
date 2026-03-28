@@ -141,23 +141,18 @@ def generate_doctor_report(
 
     detected_sources: list[DetectedSource] = []
 
-    opencode_paths = [
-        paths.sqlite_db_path,
-        *(paths.legacy_message_dirs),
-    ]
-    for opencode_path in opencode_paths:
-        if opencode_path and opencode_path.exists():
-            detected_sources.append(
-                DetectedSource(
-                    source_id="local-opencode",
-                    kind="sqlite",
-                    agent="opencode",
-                    status="ok",
-                    path=str(opencode_path),
-                    exists=True,
-                    details="OpenCode local data detected",
-                )
+    if paths.sqlite_db_path.exists():
+        detected_sources.append(
+            DetectedSource(
+                source_id="local-opencode",
+                kind="sqlite",
+                agent="opencode",
+                status="ok",
+                path=str(paths.sqlite_db_path),
+                exists=True,
+                details="OpenCode local data detected",
             )
+        )
 
     claudecode_source = _inspect_claudecode(settings.claudecode_data_dir)
     if claudecode_source is not None:

@@ -103,3 +103,17 @@ def test_doctor_report_includes_agent_kinds_and_details(tmp_path: Path) -> None:
     assert claudecode.status == "ok"
     assert claudecode.path == str(claudecode_dir)
     assert claudecode.details == "1 projects, 1 sessions"
+
+
+def test_doctor_legacy_only_does_not_report_fake_sqlite_source(tmp_path: Path) -> None:
+    data_dir = tmp_path / "opencode"
+    legacy_dir = data_dir / "storage" / "message"
+    legacy_dir.mkdir(parents=True)
+
+    report = generate_doctor_report(settings=AppSettings(opencode_data_dir=data_dir))
+
+    assert report.selected_source == "legacy"
+    assert report.legacy.existing_dirs == [str(legacy_dir)]
+    assert not any(
+        source.agent == "opencode" and source.kind == "sqlite" for source in report.detected_sources
+    )
