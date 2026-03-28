@@ -473,6 +473,114 @@ class TestFederatedQueries:
         assert projects.projects[0].usage.cache_read_tokens == 20
         assert projects.projects[0].usage.cache_write_tokens == 10
 
+    def test_federated_jsonl_provider_deduplicates_duplicate_model_rows(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """JSONL source returning 2 rows with same model_id should report total_models=1."""
+
+        class _FakeJsonlRepoWithDupes:
+            def fetch_summary(self, *, days: int | None = None) -> dict[str, int]:
+                _ = days
+                return {
+                    "input_tokens": 100,
+                    "output_tokens": 50,
+                    "cache_read": 20,
+                    "cache_write": 10,
+                    "total_sessions": 2,
+                }
+
+            def fetch_summary_steps(self, *, days: int | None = None) -> dict[str, int]:
+                return self.fetch_summary(days=days)
+
+            def fetch_session_count(self, *, days: int | None = None) -> int:
+                _ = days
+                return 2
+
+            def resolve_token_source(
+                self, *, days: int | None = None, token_source: str = "auto"
+            ) -> str:
+                _ = days
+                return "message" if token_source == "auto" else token_source
+
+            def resolve_session_count_source(
+                self, *, days: int | None = None, session_count_source: str = "auto"
+            ) -> str:
+                _ = days
+                return "session" if session_count_source == "auto" else session_count_source
+
+            def fetch_model_usage_detail(
+                self, *, days: int | None = None
+            ) -> list[dict[str, object]]:
+                _ = days
+                return [
+                    {
+                        "model_id": "claude-sonnet-4-6",
+                        "provider_id": "anthropic",
+                        "input_tokens": 50,
+                        "output_tokens": 25,
+                        "cache_read": 10,
+                        "cache_write": 5,
+                        "total_sessions": 1,
+                        "total_interactions": 1,
+                    },
+                    {
+                        "model_id": "claude-sonnet-4-6",
+                        "provider_id": "anthropic",
+                        "input_tokens": 50,
+                        "output_tokens": 25,
+                        "cache_read": 10,
+                        "cache_write": 5,
+                        "total_sessions": 1,
+                        "total_interactions": 1,
+                    },
+                ]
+
+        jsonl_dir = tmp_path / "jsonl"
+        jsonl_dir.mkdir()
+        (jsonl_dir / "session-001.jsonl").write_text("{}\n", encoding="utf-8")
+
+        registry_path = tmp_path / "sources.json"
+        settings = AppSettings(source_registry_file=registry_path, claudecode_enabled=False)
+        registry = SourceRegistry(
+            sources=[
+                DataSourceConfig(
+                    source_id="jsonl-dupes",
+                    kind="jsonl",
+                    db_path=jsonl_dir,
+                    enabled=True,
+                )
+            ]
+        )
+        save_source_registry(settings=settings, registry=registry)
+
+        def _fake_create_repository(kind: str, path: Path) -> Any:
+            _ = (kind, path)
+            return _FakeJsonlRepoWithDupes()
+
+        monkeypatch.setattr("modelmeter.core.federation.create_repository", _fake_create_repository)
+
+        def _fake_load_pricing_book(
+            settings: AppSettings, pricing_file_override: Path | None = None
+        ) -> tuple[dict[str, ModelPricing], str]:
+            _ = (settings, pricing_file_override)
+            pricing_book = {"anthropic/claude-sonnet-4-6": ModelPricing(3.0, 15.0, 0.3, 3.75)}
+            return pricing_book, "test-pricing"
+
+        monkeypatch.setattr(
+            "modelmeter.core.federation.load_pricing_book",
+            _fake_load_pricing_book,
+            raising=False,
+        )
+
+        scope = SourceScope(kind=SourceScopeKind.SPECIFIC, source_id="jsonl-dupes")
+        providers = get_providers(settings=settings, days=7, source_scope=scope)
+
+        assert len(providers.providers) == 1
+        assert providers.providers[0].provider == "anthropic"
+        assert providers.providers[0].total_models == 1
+        assert providers.providers[0].total_interactions == 1
+        assert providers.total_sessions == 2
+
     def test_local_scope_returns_local_data(self, tmp_path: Path) -> None:
         """When source_scope=local with db_path_override, should return that db's data."""
         db_path = tmp_path / "test.db"

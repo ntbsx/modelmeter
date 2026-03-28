@@ -189,47 +189,6 @@ def _merge_model_rows(
     return sorted(merged.values(), key=lambda item: item.usage.total_tokens, reverse=True)
 
 
-def _deduplicated_provider_rows(
-    rows: list[ProviderUsage],
-    *,
-    seen: dict[str, set[str]],
-) -> list[ProviderUsage]:
-    """Merge provider rows, tracking unique model IDs to avoid double-counting."""
-    from modelmeter.core.federation import merge_provider_usage
-
-    result: dict[str, ProviderUsage] = {}
-    for row in rows:
-        if row.provider not in result:
-            result[row.provider] = row
-            seen[row.provider] = _provider_model_ids(row)
-        else:
-            existing = result[row.provider]
-            new_ids = _provider_model_ids(row) - seen[row.provider]
-            seen[row.provider].update(new_ids)
-            result[row.provider] = merge_provider_usage(
-                existing,
-                ProviderUsage(
-                    provider=row.provider,
-                    usage=row.usage,
-                    total_models=len(new_ids),
-                    total_interactions=row.total_interactions,
-                    cost_usd=row.cost_usd,
-                    has_pricing=row.has_pricing,
-                ),
-            )
-    return list(result.values())
-
-
-def _provider_model_ids(provider: ProviderUsage) -> set[str]:
-    """Return canonical model IDs associated with a provider (best-effort).
-
-    Returns an empty set when model IDs cannot be recovered from the
-    ProviderUsage row. Callers that need accurate cross-source deduplication
-    should merge at the model level instead.
-    """
-    return set()
-
-
 def _merge_provider_rows(
     local_rows: list[ProviderUsage], federated_rows: list[ProviderUsage]
 ) -> list[ProviderUsage]:
