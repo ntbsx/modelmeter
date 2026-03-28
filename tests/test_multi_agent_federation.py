@@ -138,6 +138,19 @@ class _FakeModelsRepo:
         cache_write: int,
         total_sessions: int,
         total_interactions: int,
+        summary_input_tokens: int | None = None,
+        summary_output_tokens: int | None = None,
+        summary_cache_read: int | None = None,
+        summary_cache_write: int | None = None,
+        summary_total_sessions: int | None = None,
+        steps_input_tokens: int | None = None,
+        steps_output_tokens: int | None = None,
+        steps_cache_read: int | None = None,
+        steps_cache_write: int | None = None,
+        steps_total_sessions: int | None = None,
+        resolved_token_source: str = "message",
+        resolved_session_count_source: str = "session",
+        session_count: int | None = None,
     ) -> None:
         self._rows = [
             {
@@ -152,12 +165,32 @@ class _FakeModelsRepo:
             }
         ]
         self._summary = {
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "cache_read": cache_read,
-            "cache_write": cache_write,
-            "total_sessions": total_sessions,
+            "input_tokens": summary_input_tokens
+            if summary_input_tokens is not None
+            else input_tokens,
+            "output_tokens": summary_output_tokens
+            if summary_output_tokens is not None
+            else output_tokens,
+            "cache_read": summary_cache_read if summary_cache_read is not None else cache_read,
+            "cache_write": summary_cache_write if summary_cache_write is not None else cache_write,
+            "total_sessions": summary_total_sessions
+            if summary_total_sessions is not None
+            else total_sessions,
         }
+        self._steps_summary = {
+            "input_tokens": steps_input_tokens if steps_input_tokens is not None else input_tokens,
+            "output_tokens": steps_output_tokens
+            if steps_output_tokens is not None
+            else output_tokens,
+            "cache_read": steps_cache_read if steps_cache_read is not None else cache_read,
+            "cache_write": steps_cache_write if steps_cache_write is not None else cache_write,
+            "total_sessions": steps_total_sessions
+            if steps_total_sessions is not None
+            else total_sessions,
+        }
+        self._resolved_token_source = resolved_token_source
+        self._resolved_session_count_source = resolved_session_count_source
+        self._session_count = session_count if session_count is not None else total_sessions
 
     def fetch_model_usage_detail(self, *, days: int | None = None) -> list[dict[str, Any]]:
         return self._rows
@@ -165,8 +198,23 @@ class _FakeModelsRepo:
     def fetch_summary(self, *, days: int | None = None) -> dict[str, int]:
         return self._summary
 
+    def fetch_summary_steps(self, *, days: int | None = None) -> dict[str, int]:
+        return self._steps_summary
+
+    def resolve_token_source(self, *, days: int | None = None, token_source: str = "auto") -> str:
+        return self._resolved_token_source if token_source in {"auto", "steps"} else token_source
+
+    def resolve_session_count_source(
+        self, *, days: int | None = None, session_count_source: str = "auto"
+    ) -> str:
+        return (
+            self._resolved_session_count_source
+            if session_count_source in {"auto", "activity"}
+            else session_count_source
+        )
+
     def fetch_session_count(self, *, days: int | None = None) -> int:
-        return int(self._summary["total_sessions"])
+        return self._session_count
 
 
 class _FakeProjectsRepo:
@@ -183,6 +231,19 @@ class _FakeProjectsRepo:
         cache_write: int,
         total_sessions: int,
         total_interactions: int,
+        summary_input_tokens: int | None = None,
+        summary_output_tokens: int | None = None,
+        summary_cache_read: int | None = None,
+        summary_cache_write: int | None = None,
+        summary_total_sessions: int | None = None,
+        steps_input_tokens: int | None = None,
+        steps_output_tokens: int | None = None,
+        steps_cache_read: int | None = None,
+        steps_cache_write: int | None = None,
+        steps_total_sessions: int | None = None,
+        resolved_token_source: str = "message",
+        resolved_session_count_source: str = "session",
+        session_count: int | None = None,
     ) -> None:
         self._project_rows = [
             {
@@ -198,12 +259,32 @@ class _FakeProjectsRepo:
             }
         ]
         self._summary = {
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "cache_read": cache_read,
-            "cache_write": cache_write,
-            "total_sessions": total_sessions,
+            "input_tokens": summary_input_tokens
+            if summary_input_tokens is not None
+            else input_tokens,
+            "output_tokens": summary_output_tokens
+            if summary_output_tokens is not None
+            else output_tokens,
+            "cache_read": summary_cache_read if summary_cache_read is not None else cache_read,
+            "cache_write": summary_cache_write if summary_cache_write is not None else cache_write,
+            "total_sessions": summary_total_sessions
+            if summary_total_sessions is not None
+            else total_sessions,
         }
+        self._steps_summary = {
+            "input_tokens": steps_input_tokens if steps_input_tokens is not None else input_tokens,
+            "output_tokens": steps_output_tokens
+            if steps_output_tokens is not None
+            else output_tokens,
+            "cache_read": steps_cache_read if steps_cache_read is not None else cache_read,
+            "cache_write": steps_cache_write if steps_cache_write is not None else cache_write,
+            "total_sessions": steps_total_sessions
+            if steps_total_sessions is not None
+            else total_sessions,
+        }
+        self._resolved_token_source = resolved_token_source
+        self._resolved_session_count_source = resolved_session_count_source
+        self._session_count = session_count if session_count is not None else total_sessions
         self._project_model_rows = [
             {
                 "project_id": project_id,
@@ -222,8 +303,23 @@ class _FakeProjectsRepo:
     def fetch_summary(self, *, days: int | None = None) -> dict[str, int]:
         return self._summary
 
+    def fetch_summary_steps(self, *, days: int | None = None) -> dict[str, int]:
+        return self._steps_summary
+
+    def resolve_token_source(self, *, days: int | None = None, token_source: str = "auto") -> str:
+        return self._resolved_token_source if token_source in {"auto", "steps"} else token_source
+
+    def resolve_session_count_source(
+        self, *, days: int | None = None, session_count_source: str = "auto"
+    ) -> str:
+        return (
+            self._resolved_session_count_source
+            if session_count_source in {"auto", "activity"}
+            else session_count_source
+        )
+
     def fetch_session_count(self, *, days: int | None = None) -> int:
-        return int(self._summary["total_sessions"])
+        return self._session_count
 
     def fetch_project_model_usage(self, *, days: int | None = None) -> list[dict[str, Any]]:
         return self._project_model_rows
@@ -686,6 +782,144 @@ def test_get_projects_merges_local_sources() -> None:
     assert result.sources_considered == ["local-opencode", "local-claudecode"]
     assert result.sources_succeeded == ["local-opencode", "local-claudecode"]
     assert result.sources_failed == []
+
+
+def test_multi_local_aggregates_use_resolved_steps_summary_for_totals() -> None:
+    from modelmeter.core.analytics import get_models, get_projects, get_providers
+
+    settings = AppSettings()
+    model_repos = [
+        (
+            "local-opencode",
+            _FakeModelsRepo(
+                model_id="anthropic/claude-sonnet-4-5",
+                provider_id="anthropic",
+                input_tokens=10,
+                output_tokens=5,
+                cache_read=2,
+                cache_write=1,
+                total_sessions=1,
+                total_interactions=3,
+                summary_input_tokens=100,
+                summary_output_tokens=50,
+                summary_cache_read=20,
+                summary_cache_write=10,
+                summary_total_sessions=9,
+                steps_input_tokens=10,
+                steps_output_tokens=5,
+                steps_cache_read=2,
+                steps_cache_write=1,
+                steps_total_sessions=1,
+                resolved_token_source="steps",
+                resolved_session_count_source="activity",
+                session_count=9,
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeModelsRepo(
+                model_id="claude-sonnet-4-6",
+                provider_id="anthropic",
+                input_tokens=20,
+                output_tokens=7,
+                cache_read=3,
+                cache_write=4,
+                total_sessions=2,
+                total_interactions=4,
+                resolved_token_source="message",
+                resolved_session_count_source="activity",
+                session_count=2,
+            ),
+        ),
+    ]
+    project_repos = [
+        (
+            "local-opencode",
+            _FakeProjectsRepo(
+                project_id="p1",
+                project_name="demo",
+                project_path="/tmp/demo",
+                model_id="anthropic/claude-sonnet-4-5",
+                input_tokens=10,
+                output_tokens=5,
+                cache_read=2,
+                cache_write=1,
+                total_sessions=1,
+                total_interactions=3,
+                summary_input_tokens=100,
+                summary_output_tokens=50,
+                summary_cache_read=20,
+                summary_cache_write=10,
+                summary_total_sessions=9,
+                steps_input_tokens=10,
+                steps_output_tokens=5,
+                steps_cache_read=2,
+                steps_cache_write=1,
+                steps_total_sessions=1,
+                resolved_token_source="steps",
+                resolved_session_count_source="activity",
+                session_count=9,
+            ),
+        ),
+        (
+            "local-claudecode",
+            _FakeProjectsRepo(
+                project_id="p1",
+                project_name="demo",
+                project_path="/tmp/demo",
+                model_id="claude-sonnet-4-6",
+                input_tokens=20,
+                output_tokens=7,
+                cache_read=3,
+                cache_write=4,
+                total_sessions=2,
+                total_interactions=4,
+                resolved_token_source="message",
+                resolved_session_count_source="activity",
+                session_count=2,
+            ),
+        ),
+    ]
+
+    with patch("modelmeter.core.analytics._resolve_local_repositories", return_value=model_repos):
+        models = get_models(
+            settings=settings,
+            limit=0,
+            token_source="steps",
+            session_count_source="activity",
+        )
+        providers = get_providers(
+            settings=settings,
+            limit=0,
+            token_source="steps",
+            session_count_source="activity",
+        )
+
+    with patch("modelmeter.core.analytics._resolve_local_repositories", return_value=project_repos):
+        projects = get_projects(
+            settings=settings,
+            limit=0,
+            token_source="steps",
+            session_count_source="activity",
+        )
+
+    assert models.totals.input_tokens == 30
+    assert models.totals.output_tokens == 12
+    assert models.totals.cache_read_tokens == 5
+    assert models.totals.cache_write_tokens == 5
+    assert models.total_sessions == 3
+
+    assert providers.totals.input_tokens == 30
+    assert providers.totals.output_tokens == 12
+    assert providers.totals.cache_read_tokens == 5
+    assert providers.totals.cache_write_tokens == 5
+    assert providers.total_sessions == 3
+
+    assert projects.totals.input_tokens == 30
+    assert projects.totals.output_tokens == 12
+    assert projects.totals.cache_read_tokens == 5
+    assert projects.totals.cache_write_tokens == 5
+    assert projects.total_sessions == 3
 
 
 class _FakeDateInsightsRepo:

@@ -6,7 +6,7 @@ import sqlite3
 from datetime import UTC, date, datetime
 from hashlib import md5
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from modelmeter.config.settings import AppSettings
 from modelmeter.core.doctor import generate_doctor_report
@@ -45,6 +45,40 @@ def _token_usage_from_row(row: dict[str, Any]) -> TokenUsage:
         cache_read_tokens=int(mapping.get("cache_read_tokens", mapping.get("cache_read", 0))),
         cache_write_tokens=int(mapping.get("cache_write_tokens", mapping.get("cache_write", 0))),
     )
+
+
+def _resolved_summary_row(
+    repository: UsageRepository,
+    *,
+    days: int | None,
+    token_source: str,
+) -> dict[str, Any]:
+    resolved_token_source = repository.resolve_token_source(
+        days=days,
+        token_source=cast(Literal["auto", "message", "steps"], token_source),
+    )
+    if resolved_token_source == "steps":
+        return repository.fetch_summary_steps(days=days)
+    return repository.fetch_summary(days=days)
+
+
+def _resolved_total_sessions(
+    repository: UsageRepository,
+    *,
+    days: int | None,
+    session_count_source: str,
+    summary_row: dict[str, Any],
+) -> int:
+    resolved_session_source = repository.resolve_session_count_source(
+        days=days,
+        session_count_source=cast(
+            Literal["auto", "activity", "session"],
+            session_count_source,
+        ),
+    )
+    if resolved_session_source == "activity":
+        return int(summary_row["total_sessions"])
+    return repository.fetch_session_count(days=days)
 
 
 def _resolve_sqlite_path(settings: AppSettings, db_path_override: Path | None = None) -> Path:
@@ -1347,8 +1381,18 @@ def get_models(
                 )
                 repo_total_sessions = sum(int(r["total_sessions"]) for r in rows)
             else:
-                repo_totals = _token_usage_from_row(repository.fetch_summary(days=days))
-                repo_total_sessions = repository.fetch_session_count(days=days)
+                repo_summary_row = _resolved_summary_row(
+                    repository,
+                    days=days,
+                    token_source=token_source,
+                )
+                repo_totals = _token_usage_from_row(repo_summary_row)
+                repo_total_sessions = _resolved_total_sessions(
+                    repository,
+                    days=days,
+                    session_count_source=session_count_source,
+                    summary_row=repo_summary_row,
+                )
 
             repo_usage_rows, repo_total_cost, _ = _build_model_usage_rows(rows)
             merged_rows = _merge_model_rows(merged_rows, repo_usage_rows)
@@ -1575,10 +1619,20 @@ def get_providers(
             model_rows = repository.fetch_model_usage_detail(days=days)
             repo_provider_rows, repo_total_cost = _build_provider_rows(model_rows)
             merged_provider_rows = _merge_provider_rows(merged_provider_rows, repo_provider_rows)
-            merged_totals = merge_token_usage(
-                merged_totals, _token_usage_from_row(repository.fetch_summary(days=days))
+            repo_summary_row = _resolved_summary_row(
+                repository,
+                days=days,
+                token_source=token_source,
             )
-            merged_total_sessions += repository.fetch_session_count(days=days)
+            merged_totals = merge_token_usage(
+                merged_totals, _token_usage_from_row(repo_summary_row)
+            )
+            merged_total_sessions += _resolved_total_sessions(
+                repository,
+                days=days,
+                session_count_source=session_count_source,
+                summary_row=repo_summary_row,
+            )
             if repo_total_cost is not None:
                 merged_total_cost += repo_total_cost
                 has_cost = True
@@ -2038,10 +2092,20 @@ def get_projects(
                 source_id,
             )
             merged_project_rows = _merge_project_rows(merged_project_rows, repo_project_rows)
-            merged_totals = merge_token_usage(
-                merged_totals, _token_usage_from_row(repository.fetch_summary(days=days))
+            repo_summary_row = _resolved_summary_row(
+                repository,
+                days=days,
+                token_source=token_source,
             )
-            merged_total_sessions += repository.fetch_session_count(days=days)
+            merged_totals = merge_token_usage(
+                merged_totals, _token_usage_from_row(repo_summary_row)
+            )
+            merged_total_sessions += _resolved_total_sessions(
+                repository,
+                days=days,
+                session_count_source=session_count_source,
+                summary_row=repo_summary_row,
+            )
             if repo_total_cost is not None:
                 merged_total_cost += repo_total_cost
                 has_cost = True
