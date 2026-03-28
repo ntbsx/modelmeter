@@ -125,7 +125,7 @@ def _inspect_claudecode(data_dir: Path) -> DetectedSource | None:
 def generate_doctor_report(
     settings: AppSettings, db_path_override: Path | None = None
 ) -> DoctorReport:
-    """Generate diagnostics for OpenCode storage availability and schema compatibility."""
+    """Generate diagnostics for agent storage availability and schema compatibility."""
     paths = resolve_storage_paths(settings, db_path_override=db_path_override)
     sqlite_diag = _inspect_sqlite(paths.sqlite_db_path)
 
@@ -150,7 +150,7 @@ def generate_doctor_report(
                 status="ok",
                 path=str(paths.sqlite_db_path),
                 exists=True,
-                details="OpenCode local data detected",
+                details="Local OpenCode data detected",
             )
         )
 

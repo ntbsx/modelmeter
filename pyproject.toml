@@ -1,7 +1,7 @@
 [project]
 name = "modelmeter"
 version = "2026.3.28"
-description = "OpenCode usage analytics for terminal and web"
+description = "Usage analytics for AI coding agents — terminal and web"
 readme = "README.md"
 authors = [
     { name = "Nikho Sagala", email = "work@ntbs.dev" }

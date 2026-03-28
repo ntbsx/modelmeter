@@ -213,7 +213,7 @@ make format && make lint && make typecheck && make test
 - Start with smallest relevant verification, then widen coverage.
 - Update docs when changing developer workflows.
 
-OpenCode custom commands in this repo:
+Custom commands (OpenCode) in this repo:
 - `.opencode/commands/cleanup_local_branches.md`
 - `.opencode/commands/create_release.md`
 - Usage in OpenCode TUI:

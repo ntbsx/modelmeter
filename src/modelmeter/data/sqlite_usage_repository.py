@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 
 class SQLiteUsageRepository:
-    """Read-only usage queries against the OpenCode SQLite database."""
+    """Read-only usage queries against agent SQLite databases."""
 
     def __init__(self, db_path: Path):
         self._db_path = db_path

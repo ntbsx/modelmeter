@@ -1,4 +1,4 @@
-"""Storage path discovery for OpenCode data."""
+"""Storage path discovery for agent data sources."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from modelmeter.config.settings import AppSettings
 
 @dataclass(frozen=True)
 class StoragePaths:
-    """Resolved paths to OpenCode data sources."""
+    """Resolved paths to agent data sources."""
 
     data_dir: Path
     sqlite_db_path: Path

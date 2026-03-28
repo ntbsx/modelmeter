@@ -23,11 +23,11 @@ def test_repo_builds_index(repo: JsonlUsageRepository) -> None:
     assert len(index.sessions) >= 4
 
 
-def test_repo_skips_streaming_duplicates(repo: JsonlUsageRepository) -> None:
-    """Records with stop_reason=null should not be counted."""
+def test_repo_skips_zero_token_records(repo: JsonlUsageRepository) -> None:
+    """Records with zero input and output tokens should not be counted."""
     index = repo.get_index()
     session_002 = next(s for s in index.sessions if s.session_id == "session-002")
-    # Only the final record (stop_reason="end_turn") should be counted
+    # First record has 0 tokens (streaming partial), only the final record counts
     assert len(session_002.interactions) == 1
 
 

@@ -218,12 +218,17 @@ class JsonlUsageRepository:
             if rec_type != "assistant":
                 continue
 
-            stop_reason = rec.get("stop_reason")
-            if stop_reason is None:
+            # Claude Code nests model/usage/stop_reason inside message;
+            # fall back to top-level for older formats.
+            msg = rec.get("message", {})
+            model_id = msg.get("model") or rec.get("model", "unknown")
+            usage = msg.get("usage") or rec.get("usage", {})
+
+            input_tokens = usage.get("input_tokens", 0)
+            output_tokens = usage.get("output_tokens", 0)
+            if input_tokens == 0 and output_tokens == 0:
                 continue
 
-            model_id = rec.get("model", "unknown")
-            usage = rec.get("usage", {})
             ts = rec.get("timestamp", "")
 
             timestamp_ms = 0
@@ -236,13 +241,16 @@ class JsonlUsageRepository:
 
             provider_id = provider_from_model_id(model_id)
 
+            cache_read = usage.get("cache_read_input_tokens") or usage.get("cache_read", 0)
+            cache_write = usage.get("cache_creation_input_tokens") or usage.get("cache_write", 0)
+
             interaction = Interaction(
                 model_id=model_id,
                 provider_id=provider_id,
-                input_tokens=usage.get("input_tokens", 0),
-                output_tokens=usage.get("output_tokens", 0),
-                cache_read=usage.get("cache_read", 0),
-                cache_write=usage.get("cache_write", 0),
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cache_read=cache_read,
+                cache_write=cache_write,
                 timestamp_ms=timestamp_ms,
                 session_id=session_id,
             )

@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 class SQLiteInspector:
-    """Inspect OpenCode SQLite metadata in read-only mode."""
+    """Inspect agent SQLite metadata in read-only mode."""
 
     def __init__(self, db_path: Path):
         self._db_path = db_path
