@@ -77,9 +77,9 @@ Key milestones:
 - Sources page card redesign
 - Session cards in Date Insights with per-model breakdown
 
-### Phase 6: Multi-Agent Support — Claude Code Integration (Active)
+### Phase 6: Multi-Agent Support — Claude Code Integration (Completed 2026-03-29)
 
-Plans (27-32). See: [phase-6/README.md](phase-6/README.md)
+All plans (27-32) completed. See: [completed/phase-6/](completed/phase-6/)
 
 Key milestones:
 - Repository Protocol abstraction and factory pattern
@@ -88,6 +88,7 @@ Key milestones:
 - Agent identity field on sources (opencode, claudecode)
 - Full analytics parity across both agents
 - Live monitoring for Claude Code sessions via mtime polling
+- Doctor/health check extension for multi-agent detection
 - Frontend agent identity display
 
 ## Future Phases
@@ -105,5 +106,5 @@ Potential areas after Phase 6:
 - **Phase 4 Part 1 Archive:** [completed/phase-4_part_1/phase-4-part-1-README.md](completed/phase-4_part_1/phase-4-part-1-README.md)
 - **Phase 4 Part 2 Archive:** [completed/phase-4_part_2/](completed/phase-4_part_2/)
 - **Phase 5 Archive:** [completed/phase-5/README.md](completed/phase-5/README.md)
-- **Phase 6 Plans:** [phase-6/README.md](phase-6/README.md)
+- **Phase 6 Archive:** [completed/phase-6/](completed/phase-6/)
 - **Planning Guide:** [README.md](README.md)
