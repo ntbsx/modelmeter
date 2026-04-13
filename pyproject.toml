@@ -34,7 +34,7 @@ dev = [
     "ty>=0.0.1",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
-    "pytest-xdist>=3.6.1",
+    "pytest-xdist>=3.8.0",
     "ruff>=0.13.0",
 ]
 
