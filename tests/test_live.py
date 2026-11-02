@@ -5,10 +5,12 @@ import os
 import shutil
 import sqlite3
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 from unittest.mock import patch
 
+import pytest
 from typer.testing import CliRunner
 
 from modelmeter.cli.main import app
@@ -332,7 +334,12 @@ def test_get_live_snapshot_returns_namespaced_id_for_unique_unprefixed_session()
     assert snapshot.active_session.session_id == "local-claudecode:unique-session"
 
 
-def test_live_snapshot_uses_claudecode_repository_for_claudecode_session(tmp_path: Path) -> None:
+def test_live_snapshot_uses_claudecode_repository_for_claudecode_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Keep the rolling window aligned with the static JSONL fixture timestamps.
+    now = datetime(2026, 3, 22, 12, tzinfo=UTC).timestamp()
+    monkeypatch.setattr(time, "time", lambda: now)
     claudecode_dir = _copy_claudecode_fixtures(tmp_path)
     session_file = claudecode_dir / "projects" / "-Users-test-projs-myproject" / "session-001.jsonl"
     now = time.time()
@@ -362,7 +369,12 @@ def test_live_snapshot_uses_claudecode_repository_for_claudecode_session(tmp_pat
     assert snapshot.top_models[0].model_id == "anthropic/claude-sonnet-4-6"
 
 
-def test_live_snapshot_normalizes_providerless_model_ids_across_sources(tmp_path: Path) -> None:
+def test_live_snapshot_normalizes_providerless_model_ids_across_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Keep both sources inside the same rolling window as the static JSONL fixtures.
+    now = datetime(2026, 3, 22, 12, tzinfo=UTC).timestamp()
+    monkeypatch.setattr(time, "time", lambda: now)
     db_path = tmp_path / "opencode.db"
     _create_live_fixture(db_path, model_id="anthropic/claude-sonnet-4-6")
 
